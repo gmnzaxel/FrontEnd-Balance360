@@ -1,30 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
-import { Plus, Trash, Search } from 'lucide-react';
+import { Plus, Trash, Search, ShoppingCart } from 'lucide-react';
+import { formatCurrency } from '../utils/format';
 
 const NewSale = () => {
     const [products, setProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [cart, setCart] = useState([]);
-    const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
     const [discount, setDiscount] = useState(0);
+    const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
+
+    // Reset products when search term changes
+    useEffect(() => {
+        setProducts([]);
+        setPage(1);
+        setHasMore(true);
+    }, [searchTerm]);
 
     useEffect(() => {
         const fetchProducts = async () => {
+            if (loading || !hasMore) return;
+            setLoading(true);
             try {
-                const response = await api.get(`inventory/products/?search=${searchTerm}`);
-                setProducts(response.data.results || response.data);
+                const response = await api.get(`inventory/products/?search=${searchTerm}&page=${page}`);
+                const newProducts = response.data.results;
+
+                setProducts(prev => {
+                    // Filter duplicates just in case
+                    const existingIds = new Set(prev.map(p => p.id));
+                    const uniqueNew = newProducts.filter(p => !existingIds.has(p.id));
+                    return [...prev, ...uniqueNew];
+                });
+
+                setHasMore(!!response.data.next);
+                setLoading(false);
             } catch (error) {
                 console.error(error);
+                setLoading(false);
             }
         };
+
         const delayDebounceFn = setTimeout(() => {
             fetchProducts();
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm]);
+    }, [searchTerm, page]);
+
+    const handleScroll = (e) => {
+        const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+        if (scrollHeight - scrollTop <= clientHeight + 50 && hasMore && !loading) {
+            setPage(prev => prev + 1);
+        }
+    };
 
     const addToCart = (product) => {
         const existing = cart.find(item => item.product === product.id);
@@ -47,9 +79,10 @@ const NewSale = () => {
     };
 
     const updateQuantity = (productId, qty) => {
-        if (qty < 1) return;
+        const quantity = parseInt(qty);
+        if (isNaN(quantity) || quantity < 1) return;
         setCart(cart.map(item =>
-            item.product === productId ? { ...item, quantity: parseInt(qty) } : item
+            item.product === productId ? { ...item, quantity } : item
         ));
     };
 
@@ -85,61 +118,106 @@ const NewSale = () => {
     };
 
     return (
-        <div className="new-sale-page">
-            <div className="product-selector">
-                <div className="search-bar">
-                    <Search size={20} />
+        <div className="pos-layout">
+            <div className="pos-products">
+                <div className="pos-search">
+                    <Search size={20} className="text-muted" />
                     <input
                         type="text"
-                        placeholder="Buscar producto..."
+                        placeholder="Buscar producto por nombre o código..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
+                        autoFocus
                     />
                 </div>
-                <div className="product-list">
+                <div
+                    className="pos-grid"
+                    onScroll={handleScroll}
+                    style={{ position: 'relative' }}
+                >
                     {products.map(p => (
-                        <div key={p.id} className="product-card" onClick={() => addToCart(p)}>
-                            <div className="p-info">
-                                <strong>{p.nombre}</strong>
-                                <span>{p.codigo}</span>
+                        <button
+                            key={p.id}
+                            className="product-card"
+                            onClick={() => addToCart(p)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    addToCart(p);
+                                }
+                            }}
+                            type="button"
+                            aria-label={`Agregar ${p.nombre} al carrito, precio ${formatCurrency(p.precio_venta)}`}
+                            disabled={p.stock_actual <= 0}
+                        >
+                            <div style={{ width: '100%', textAlign: 'left' }}>
+                                <h4 className="pc-title">{p.nombre}</h4>
+                                <p className="pc-stock">Stock: {p.stock_actual}</p>
                             </div>
-                            <div className="p-price">${p.precio_venta}</div>
-                            <div className={`stock-badge ${p.bajo_stock ? 'low' : ''}`}>
-                                Stock: {p.stock_actual}
+                            <div style={{ marginTop: 'auto', width: '100%', textAlign: 'left' }}>
+                                {p.bajo_stock && <span className="badge badge-danger" style={{ fontSize: '0.65rem', marginBottom: '0.25rem' }}>Bajo Stock</span>}
+                                {p.stock_actual <= 0 && <span className="badge badge-neutral" style={{ fontSize: '0.65rem', marginBottom: '0.25rem' }}>Sin Stock</span>}
+                                <div className="pc-price">{formatCurrency(p.precio_venta)}</div>
                             </div>
-                        </div>
+                        </button>
                     ))}
+                    {loading && <div className="loading-spinner">Cargando...</div>}
                 </div>
             </div>
 
-            <div className="cart-panel">
-                <h3>Nueva Venta</h3>
-                <div className="cart-items">
-                    {cart.map(item => (
-                        <div key={item.product} className="cart-item">
-                            <div className="item-details">
-                                <span>{item.nombre}</span>
-                                <small>${item.price}</small>
-                            </div>
-                            <div className="item-actions">
-                                <input
-                                    type="number"
-                                    value={item.quantity}
-                                    onChange={e => updateQuantity(item.product, e.target.value)}
-                                    min="1"
-                                />
-                                <button onClick={() => removeFromCart(item.product)} className="btn-danger-icon">
-                                    <Trash size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+            <div className="card pos-cart">
+                <div className="cart-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <ShoppingCart size={20} />
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Carrito Actual</h3>
+                    </div>
                 </div>
 
-                <div className="cart-summary">
-                    <div className="form-group">
-                        <label>Método de Pago</label>
-                        <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+                <div className="cart-items">
+                    {cart.length === 0 ? (
+                        <div className="flex-center" style={{ height: '100%', color: 'var(--text-muted)', flexDirection: 'column', gap: '1rem' }}>
+                            <ShoppingCart size={48} opacity={0.2} />
+                            <p>Agrega productos</p>
+                        </div>
+                    ) : (
+                        cart.map(item => (
+                            <div key={item.product} className="cart-item">
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: '500' }}>{item.nombre}</div>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{formatCurrency(item.price)} x {item.quantity}</div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <input
+                                        type="number"
+                                        className="input-control"
+                                        style={{ width: '60px', padding: '0.25rem', textAlign: 'center' }}
+                                        value={item.quantity}
+                                        onChange={e => updateQuantity(item.product, e.target.value)}
+                                        min="1"
+                                    />
+                                    <button onClick={() => removeFromCart(item.product)} className="btn-icon danger">
+                                        <Trash size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <div className="cart-total-section">
+                    <div className="input-group">
+                        <label className="input-label">Descuento (ARS)</label>
+                        <input
+                            type="number"
+                            className="input-control"
+                            value={discount}
+                            onChange={e => setDiscount(e.target.value)}
+                            min="0"
+                        />
+                    </div>
+                    <div className="input-group">
+                        <label className="input-label">Método de Pago</label>
+                        <select className="select-control" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
                             <option value="EFECTIVO">Efectivo</option>
                             <option value="DEBITO">Débito</option>
                             <option value="CREDITO">Crédito</option>
@@ -148,19 +226,15 @@ const NewSale = () => {
                             <option value="OTRO">Otro</option>
                         </select>
                     </div>
-                    <div className="form-group">
-                        <label>Descuento</label>
-                        <input
-                            type="number"
-                            value={discount}
-                            onChange={e => setDiscount(e.target.value)}
-                        />
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '1.5rem 0' }}>
+                        <span style={{ fontSize: '1.25rem', fontWeight: '500' }}>Total</span>
+                        <span style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary-600)' }}>
+                            {formatCurrency(calculateTotal())}
+                        </span>
                     </div>
-                    <div className="total-display">
-                        <span>Total:</span>
-                        <strong>${calculateTotal().toFixed(2)}</strong>
-                    </div>
-                    <button className="btn-primary full-width" onClick={handleSubmit}>
+
+                    <button className="btn btn-primary" style={{ width: '100%', padding: '1rem' }} onClick={handleSubmit}>
                         Confirmar Venta
                     </button>
                 </div>

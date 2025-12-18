@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Download, BarChart2 } from 'lucide-react';
+import { formatCurrency } from '../utils/format';
 
 const Reports = () => {
     const [months, setMonths] = useState(6);
@@ -65,10 +66,10 @@ const Reports = () => {
                                 <div
                                     className="bar"
                                     style={{ height: `${Math.min(item.total / 1000, 200)}px` }}
-                                    title={`$${item.total}`}
+                                    title={formatCurrency(item.total)}
                                 ></div>
                                 <span className="label">{item.month}</span>
-                                <span className="value">${item.total}</span>
+                                <span className="value">{formatCurrency(item.total)}</span>
                             </div>
                         ))}
                     </div>
