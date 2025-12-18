@@ -1,8 +1,9 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
-import { User, Key, Building, MapPin, Phone, Shield } from 'lucide-react';
+import { User, Key, Building, ShieldCheck } from 'lucide-react';
 
 const Profile = () => {
     const { user: currentUser } = useContext(AuthContext);
@@ -13,10 +14,18 @@ const Profile = () => {
         confirm_password: ''
     });
     const [loading, setLoading] = useState(false);
+    const [searchParams] = useSearchParams();
+    const securityRef = useRef(null);
 
     useEffect(() => {
         fetchProfile();
     }, []);
+
+    useEffect(() => {
+        if (searchParams.get('tab') === 'seguridad' && securityRef.current) {
+            securityRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [searchParams, profileData]);
 
     const fetchProfile = async () => {
         try {
@@ -51,99 +60,91 @@ const Profile = () => {
         }
     };
 
-    if (!profileData) return <div className="p-8 text-center">Cargando perfil...</div>;
+    if (!profileData) return <div className="p-8 text-center text-muted">Cargando perfil...</div>;
+
+    const InfoCard = ({ icon, title, children, innerRef }) => (
+        <div className="card h-full" ref={innerRef}>
+            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
+                <div style={{ padding: '0.5rem', borderRadius: '50%', background: 'var(--primary-50)', color: 'var(--primary-600)' }}>
+                    {icon}
+                </div>
+                <h3 className="text-lg font-semibold text-slate-800 m-0">{title}</h3>
+            </div>
+            <div className="flex flex-col gap-4">
+                {children}
+            </div>
+        </div>
+    );
+
+    const InfoRow = ({ label, value, badge }) => (
+        <div>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">{label}</label>
+            {badge ? (
+                <span className={`badge ${badge === 'primary' ? 'badge-primary' : 'badge-neutral'}`}>{value}</span>
+            ) : (
+                <p className="text-slate-800 font-medium m-0">{value}</p>
+            )}
+        </div>
+    );
 
     return (
-        <div className="profile-page fade-in">
-            <div className="profile-grid">
+        <div className="profile-page max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Mi Perfil</h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
                 {/* User Info Card */}
-                <div className="card profile-info-card">
-                    <div className="card-header">
-                        <User size={20} className="text-primary" />
-                        <h3>Información de Usuario</h3>
-                    </div>
-                    <div className="card-body">
-                        <div className="info-item">
-                            <label>Nombre de Usuario</label>
-                            <p>{profileData.username}</p>
-                        </div>
-                        <div className="info-item">
-                            <label>Email</label>
-                            <p>{profileData.email || 'No proporcionado'}</p>
-                        </div>
-                        <div className="info-item">
-                            <label>Rol</label>
-                            <span className={`badge ${profileData.role === 'ADMIN' ? 'badge-primary' : 'badge-neutral'}`}>
-                                {profileData.role}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                <InfoCard icon={<User size={20} />} title="Información Personal">
+                    <InfoRow label="Nombre de Usuario" value={profileData.username} />
+                    <InfoRow label="Email" value={profileData.email || 'No proporcionado'} />
+                    <InfoRow label="Rol de Usuario" value={profileData.role} badge="primary" />
+                </InfoCard>
 
                 {/* Company Info Card */}
-                <div className="card profile-company-card">
-                    <div className="card-header">
-                        <Building size={20} className="text-primary" />
-                        <h3>Mi Empresa</h3>
-                    </div>
-                    <div className="card-body">
-                        <div className="info-item">
-                            <label>Nombre</label>
-                            <p>{profileData.company_name}</p>
-                        </div>
-                        <div className="info-item">
-                            <label>Sucursal Principal</label>
-                            <p>{profileData.branch_name}</p>
-                        </div>
-                        <div className="info-item">
-                            <label>Moneda</label>
-                            <p>{profileData.currency}</p>
-                        </div>
-                    </div>
-                </div>
+                <InfoCard icon={<Building size={20} />} title="Detalles de Empresa">
+                    <InfoRow label="Nombre Comercial" value={profileData.company_name} />
+                    <InfoRow label="Sucursal Actual" value={profileData.branch_name} />
+                    <InfoRow label="Moneda Configurada" value={profileData.currency || 'ARS'} />
+                </InfoCard>
 
                 {/* Password Change Card */}
-                <div className="card profile-password-card">
-                    <div className="card-header">
-                        <Key size={20} className="text-primary" />
-                        <h3>Cambiar Contraseña</h3>
-                    </div>
-                    <div className="card-body">
-                        <form onSubmit={handlePasswordChange}>
-                            <div className="form-group">
-                                <label>Contraseña Actual</label>
-                                <input
-                                    type="password"
-                                    value={passwordData.old_password}
-                                    onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Nueva Contraseña</label>
-                                <input
-                                    type="password"
-                                    value={passwordData.new_password}
-                                    onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                                    required
-                                    placeholder="Mínimo 8 caracteres y 1 número"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Confirmar Nueva Contraseña</label>
-                                <input
-                                    type="password"
-                                    value={passwordData.confirm_password}
-                                    onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <button type="submit" className="btn-primary w-full" disabled={loading}>
-                                {loading ? 'Actualizando...' : 'Actualizar Contraseña'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
+                <InfoCard icon={<ShieldCheck size={20} />} title="Seguridad" innerRef={securityRef}>
+                    <form onSubmit={handlePasswordChange}>
+                        <div className="form-group">
+                            <label>Contraseña Actual</label>
+                            <input
+                                className="input-control"
+                                type="password"
+                                value={passwordData.old_password}
+                                onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Nueva Contraseña</label>
+                            <input
+                                className="input-control"
+                                type="password"
+                                value={passwordData.new_password}
+                                onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                                required
+                                placeholder="8+ caracteres"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Confirmar Nueva</label>
+                            <input
+                                className="input-control"
+                                type="password"
+                                value={passwordData.confirm_password}
+                                onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <button type="submit" className="btn btn-primary w-full mt-2" disabled={loading}>
+                            {loading ? 'Procesando...' : 'Actualizar Contraseña'}
+                        </button>
+                    </form>
+                </InfoCard>
             </div>
         </div>
     );

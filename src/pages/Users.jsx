@@ -35,7 +35,7 @@ const Users = () => {
     };
 
     if (currentUser?.role !== 'ADMIN') {
-        return <div className="p-4">No tienes permisos para ver esta página.</div>;
+        return <div className="p-8 text-center text-muted">No tienes permisos para ver esta página.</div>;
     }
 
     const handleChange = (e) => {
@@ -64,16 +64,15 @@ const Users = () => {
     };
 
     const handleDelete = async (id) => {
-        const confirmText = prompt("Escriba 'borrar' para confirmar la eliminación del usuario:");
-        if (confirmText !== 'borrar') return;
-
-        try {
-            await api.delete(`users/users/${id}/`);
-            toast.success("Usuario eliminado");
-            fetchUsers();
-        } catch (error) {
-            console.error(error);
-            toast.error("Error al eliminar");
+        if (window.confirm("¿Seguro que desea eliminar este usuario?")) {
+            try {
+                await api.delete(`users/users/${id}/`);
+                toast.success("Usuario eliminado");
+                fetchUsers();
+            } catch (error) {
+                console.error(error);
+                toast.error("Error al eliminar");
+            }
         }
     };
 
@@ -94,29 +93,32 @@ const Users = () => {
     };
 
     return (
-        <div className="users-page fade-in">
-            <div className="page-header">
-                <h2>Gestión de Usuarios</h2>
-                <button className="btn-primary" onClick={() => { setEditingUser(null); resetForm(); setShowModal(true); }}>
+        <div className="users-page">
+            <div className="card mb-6 flex-between">
+                <div>
+                    <h2 className="text-xl font-bold text-slate-900">Gestión de Usuarios</h2>
+                    <p className="text-sm text-slate-500">Administra el acceso y roles del sistema.</p>
+                </div>
+                <button className="btn btn-primary" onClick={() => { setEditingUser(null); resetForm(); setShowModal(true); }}>
                     <Plus size={18} /> Nuevo Usuario
                 </button>
             </div>
 
-            <div className="table-container">
-                <table className="data-table">
+            <div className="table-container shadow-sm">
+                <table className="styled-table">
                     <thead>
                         <tr>
                             <th>Usuario</th>
                             <th>Email</th>
                             <th>Rol</th>
                             <th>Estado</th>
-                            <th>Acciones</th>
+                            <th style={{ textAlign: 'right' }}>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {users.map(u => (
                             <tr key={u.id}>
-                                <td>{u.username}</td>
+                                <td className="font-medium text-slate-800">{u.username}</td>
                                 <td>{u.email}</td>
                                 <td>
                                     <span className={`badge ${u.role === 'ADMIN' ? 'badge-primary' : 'badge-neutral'}`}>
@@ -125,61 +127,95 @@ const Users = () => {
                                 </td>
                                 <td>
                                     {u.is_active ?
-                                        <span className="badge badge-success"><UserCheck size={12} /> Activo</span> :
-                                        <span className="badge badge-danger"><UserX size={12} /> Inactivo</span>
+                                        <span className="badge badge-success flex items-center gap-1 w-fit"><UserCheck size={12} /> Activo</span> :
+                                        <span className="badge badge-danger flex items-center gap-1 w-fit"><UserX size={12} /> Inactivo</span>
                                     }
                                 </td>
-                                <td>
-                                    <div className="action-buttons">
-                                        <button className="btn-icon" onClick={() => handleEdit(u)}>
+                                <td style={{ textAlign: 'right' }}>
+                                    <div className="flex justify-end gap-1">
+                                        <button className="btn-icon" onClick={() => handleEdit(u)} title="Editar">
                                             <Edit size={18} />
                                         </button>
-                                        <button className="btn-icon danger" onClick={() => handleDelete(u.id)}>
+                                        <button className="btn-icon danger" onClick={() => handleDelete(u.id)} title="Eliminar">
                                             <Trash2 size={18} />
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                         ))}
+                        {users.length === 0 && !loading && (
+                            <tr><td colSpan="5" className="text-center p-8 text-muted">No hay usuarios registrados</td></tr>
+                        )}
                     </tbody>
                 </table>
             </div>
 
             {showModal && (
                 <div className="modal-overlay">
-                    <div className="modal-content">
-                        <h3>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
+                    <div className="modal">
+                        <div className="modal-header">
+                            {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+                        </div>
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
-                                <label>Usuario</label>
-                                <input name="username" value={formData.username} onChange={handleChange} required disabled={!!editingUser} />
+                                <label>Nombre de Usuario</label>
+                                <input
+                                    className="input-control"
+                                    name="username"
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                    required
+                                    disabled={!!editingUser}
+                                    placeholder="ej. jperez"
+                                />
                             </div>
                             <div className="form-group">
                                 <label>Email</label>
-                                <input type="email" name="email" value={formData.email} onChange={handleChange} />
+                                <input
+                                    className="input-control"
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    placeholder="ej. juan@empresa.com"
+                                />
                             </div>
                             {!editingUser && (
                                 <div className="form-group">
                                     <label>Contraseña</label>
-                                    <input type="password" name="password" value={formData.password} onChange={handleChange} required />
+                                    <input
+                                        className="input-control"
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="••••••••"
+                                    />
                                 </div>
                             )}
                             <div className="form-group">
-                                <label>Rol</label>
-                                <select name="role" value={formData.role} onChange={handleChange}>
+                                <label>Rol de Acceso</label>
+                                <select className="select-control" name="role" value={formData.role} onChange={handleChange}>
                                     <option value="USER">Usuario (Vendedor)</option>
                                     <option value="ADMIN">Administrador</option>
                                 </select>
                             </div>
-                            <div className="form-group checkbox-group">
-                                <label>
-                                    <input type="checkbox" name="is_active" checked={formData.is_active} onChange={handleChange} />
-                                    Activo
-                                </label>
+                            <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', marginTop: '1rem' }}>
+                                <div className="checkbox-wrapper">
+                                    <input
+                                        type="checkbox"
+                                        name="is_active"
+                                        checked={formData.is_active}
+                                        onChange={handleChange}
+                                        id="active-check"
+                                    />
+                                    <label htmlFor="active-check" style={{ marginBottom: 0, cursor: 'pointer' }}>Usuario Activo</label>
+                                </div>
                             </div>
                             <div className="modal-actions">
-                                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn-primary">Guardar</button>
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary">Guardar Usuario</button>
                             </div>
                         </form>
                     </div>

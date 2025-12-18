@@ -1,46 +1,105 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/';
 
 const api = axios.create({
-    baseURL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-api.interceptors.request.use(async (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-        const decoded = jwtDecode(token);
-        const isExpired = decoded.exp < Date.now() / 1000;
+let refreshPromise = null;
 
-        if (isExpired) {
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (refreshToken) {
-                try {
-                    const response = await axios.post(`${baseURL}token/refresh/`, {
-                        refresh: refreshToken,
-                    });
-                    localStorage.setItem('access_token', response.data.access);
-                    config.headers.Authorization = `Bearer ${response.data.access}`;
-                } catch (error) {
-                    console.error('Session expired', error);
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
-                    window.location.href = '/login';
-                }
-            } else {
-                window.location.href = '/login';
-            }
-        } else {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+const decodeToken = (token) => {
+  try {
+    return jwtDecode(token);
+  } catch (_e) {
+    return null;
+  }
+};
+
+const refreshAccessToken = async () => {
+  if (refreshPromise) return refreshPromise;
+
+  const refresh = localStorage.getItem('refresh_token');
+  if (!refresh) {
+    throw new Error('No refresh token');
+  }
+
+  refreshPromise = axios.post(`${API_BASE_URL}token/refresh/`, { refresh })
+    .then((response) => {
+      const newAccess = response.data.access;
+      if (newAccess) {
+        localStorage.setItem('access_token', newAccess);
+      }
+      return newAccess;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+};
+
+const attachAuthHeader = async (config) => {
+  const isRefreshCall = config?.url?.includes('token/refresh');
+  if (isRefreshCall) return config;
+
+  const token = localStorage.getItem('access_token');
+  if (!token) return config;
+
+  const decoded = decodeToken(token);
+  const isExpired = !decoded || decoded.exp * 1000 <= Date.now() + 30_000;
+
+  if (isExpired) {
+    try {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        config.headers.Authorization = `Bearer ${newToken}`;
+      }
+    } catch (_error) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
     }
     return config;
-}, (error) => {
+  }
+
+  config.headers.Authorization = `Bearer ${token}`;
+  return config;
+};
+
+api.interceptors.request.use(attachAuthHeader, (error) => Promise.reject(error));
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const { response, config } = error;
+    if (!response) return Promise.reject(error);
+
+    const isAuthEndpoint = config?.url?.includes('token/');
+    if (response.status === 401 && !config?._retry && !isAuthEndpoint) {
+      config._retry = true;
+      try {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          config.headers.Authorization = `Bearer ${newToken}`;
+          return api(config);
+        }
+      } catch (_e) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/login';
+      }
+    }
     return Promise.reject(error);
-});
+  }
+);
+
+export const clearStoredTokens = () => {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+};
 
 export default api;
