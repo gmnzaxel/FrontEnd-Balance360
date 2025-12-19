@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
 import { Eye, RotateCcw, Trash2, AlertCircle, X, Search, Calendar, Filter } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatCurrency, formatDate } from '../utils/format';
+import Modal from '../components/ui/Modal';
 
 const Sales = () => {
     const { user } = useContext(AuthContext);
@@ -16,6 +17,10 @@ const Sales = () => {
     const [reason, setReason] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [dateFilter, setDateFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const dateInputRef = useRef(null);
 
     useEffect(() => {
         fetchSales();
@@ -23,11 +28,22 @@ const Sales = () => {
 
     useEffect(() => {
         if (!sales) return;
-        setFilteredSales(sales.filter(s =>
-            s.id.toString().includes(searchTerm) ||
-            s.user_name?.toLowerCase().includes(searchTerm.toLowerCase())
-        ));
-    }, [searchTerm, sales]);
+        setFilteredSales(sales.filter(s => {
+            const matchesSearch = s.id.toString().includes(searchTerm) ||
+                s.user_name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+            // Date filtering (matches YYYY-MM-DD part of ISO string)
+            const matchesDate = dateFilter ? s.date.startsWith(dateFilter) : true;
+
+            // Status filtering
+            const matchesStatus = statusFilter === 'ALL' ? true :
+                statusFilter === 'VOIDED' ? s.is_voided :
+                    statusFilter === 'REFUNDED' ? s.is_refunded :
+                        statusFilter === 'COMPLETED' ? (!s.is_voided && !s.is_refunded) : true;
+
+            return matchesSearch && matchesDate && matchesStatus;
+        }));
+    }, [searchTerm, dateFilter, statusFilter, sales]);
 
     const fetchSales = async () => {
         try {
@@ -81,7 +97,7 @@ const Sales = () => {
     return (
         <div className="sales-page">
             {/* Header / Toolbar */}
-            <div className="card mb-6" style={{ marginBottom: '1.5rem' }}>
+            <div className="card mb-6" style={{ marginBottom: '1.5rem', overflow: 'visible' }}>
                 <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
                     <div style={{ position: 'relative', width: '300px' }}>
                         <Search size={18} style={{ position: 'absolute', top: '10px', left: '10px', color: 'var(--slate-400)' }} />
@@ -93,13 +109,93 @@ const Sales = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="actions" style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button className="btn btn-secondary">
-                            <Calendar size={16} /> Fecha
-                        </button>
-                        <button className="btn btn-secondary">
-                            <Filter size={16} /> Filtrar
-                        </button>
+                    <div className="actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        {/* Date Picker using showPicker API */}
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                ref={dateInputRef}
+                                type="date"
+                                style={{
+                                    position: 'absolute',
+                                    visibility: 'hidden', // Completely hide it but keep it in DOM
+                                    width: 0,
+                                    height: 0,
+                                    bottom: 0,
+                                    left: 0
+                                }}
+                                onChange={(e) => setDateFilter(e.target.value)}
+                                value={dateFilter}
+                            />
+                            <button
+                                className={`ui-btn ${dateFilter ? 'ui-btn-primary' : 'ui-btn-secondary'}`}
+                                onClick={() => {
+                                    if (dateInputRef.current) {
+                                        try {
+                                            dateInputRef.current.showPicker();
+                                        } catch (err) {
+                                            // Fallback for browsers not supporting showPicker
+                                            dateInputRef.current.style.visibility = 'visible';
+                                            dateInputRef.current.focus();
+                                            dateInputRef.current.click();
+                                            setTimeout(() => { dateInputRef.current.style.visibility = 'hidden'; }, 100);
+                                        }
+                                    }
+                                }}
+                            >
+                                <Calendar size={16} />
+                                {dateFilter ? formatDate(dateFilter) : 'Fecha'}
+                                {dateFilter && (
+                                    <div
+                                        style={{ marginLeft: 8 }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDateFilter('');
+                                        }}
+                                    >
+                                        <X size={14} />
+                                    </div>
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Status Filter Dropdown */}
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                className={`ui-btn ${statusFilter !== 'ALL' ? 'ui-btn-primary' : 'ui-btn-secondary'}`}
+                                onClick={() => setShowFilterMenu(!showFilterMenu)}
+                            >
+                                <Filter size={16} />
+                                {statusFilter === 'ALL' ? 'Filtrar' :
+                                    statusFilter === 'COMPLETED' ? 'Completas' :
+                                        statusFilter === 'VOIDED' ? 'Anuladas' : 'Reembolsadas'}
+                            </button>
+
+                            {showFilterMenu && (
+                                <div className="user-dropdown" style={{ top: '110%', right: 0, minWidth: '160px', zIndex: 50 }}>
+                                    <button className={`dropdown-item ${statusFilter === 'ALL' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('ALL'); setShowFilterMenu(false); }}>
+                                        Todas
+                                    </button>
+                                    <button className={`dropdown-item ${statusFilter === 'COMPLETED' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('COMPLETED'); setShowFilterMenu(false); }}>
+                                        <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Completadas
+                                    </button>
+                                    <button className={`dropdown-item ${statusFilter === 'VOIDED' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('VOIDED'); setShowFilterMenu(false); }}>
+                                        <span className="w-2 h-2 rounded-full bg-red-500 mr-2"></span> Anuladas
+                                    </button>
+                                    <button className={`dropdown-item ${statusFilter === 'REFUNDED' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('REFUNDED'); setShowFilterMenu(false); }}>
+                                        <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></span> Reembolsadas
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Click outside closer helper could go here or generic window listener, 
+                                but for simplicity we assume user clicks option or toggles. */}
+                            {showFilterMenu && (
+                                <div
+                                    style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+                                    onClick={() => setShowFilterMenu(false)}
+                                />
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -157,84 +253,103 @@ const Sales = () => {
 
             {/* Sale Detail Modal */}
             {selectedSale && !showActionModal && (
-                <div className="modal-overlay" onClick={() => setSelectedSale(null)}>
-                    <div className="modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
-                        <div className="modal-header flex-between mb-4">
-                            <h3 className="text-lg font-bold text-slate-800">Detalle Venta #{selectedSale.id}</h3>
-                            <button className="btn-icon" onClick={() => setSelectedSale(null)}><X size={20} /></button>
+                <Modal
+                    title={`Detalle Venta #${selectedSale.id}`}
+                    onClose={() => setSelectedSale(null)}
+                    size="lg"
+                    footer={(
+                        <div className="flex-between w-full">
+                            {isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded && (
+                                <div className="flex-row gap-sm">
+                                    <button
+                                        onClick={() => setShowActionModal('reembolsar')}
+                                        className="ui-btn ui-btn-secondary text-warning"
+                                    >
+                                        <RotateCcw size={16} /> Reembolsar
+                                    </button>
+                                    <button
+                                        onClick={() => setShowActionModal('anular')}
+                                        className="ui-btn ui-btn-danger"
+                                    >
+                                        <Trash2 size={16} /> Anular
+                                    </button>
+                                </div>
+                            )}
+                            <div className="flex-row gap-sm ml-auto">
+                                <button className="ui-btn ui-btn-primary" onClick={() => setSelectedSale(null)}>Cerrar</button>
+                            </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                            <div><span className="text-xs text-slate-500 uppercase font-bold block">Fecha</span> {formatDate(selectedSale.date)}</div>
-                            <div><span className="text-xs text-slate-500 uppercase font-bold block">Vendedor</span> {selectedSale.user_name}</div>
-                            <div><span className="text-xs text-slate-500 uppercase font-bold block">Método</span> {selectedSale.payment_method}</div>
-                            <div><span className="text-xs text-slate-500 uppercase font-bold block">Estado</span>
-                                {selectedSale.is_voided ? <span className="text-red-600 font-bold">ANULADA</span> :
-                                    selectedSale.is_refunded ? <span className="text-yellow-600 font-bold">REEMBOLSADA</span> :
-                                        <span className="text-green-600 font-bold">COMPLETADA</span>}
+                    )}
+                >
+                    <div className="stack gap-md">
+                        {/* Summary Header */}
+                        <div className="grid four-cols gap-md p-md bg-slate-50 rounded-lg border border-slate-200">
+                            <div className="stack gap-xs">
+                                <span className="eyebrow">Fecha</span>
+                                <span className="font-medium text-slate-700">{formatDate(selectedSale.date)}</span>
+                            </div>
+                            <div className="stack gap-xs">
+                                <span className="eyebrow">Vendedor</span>
+                                <div className="flex-row gap-xs items-center">
+                                    <div className="avatar" style={{ width: 24, height: 24, fontSize: '0.7rem' }}>
+                                        {selectedSale.user_name?.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="font-medium text-slate-700">{selectedSale.user_name}</span>
+                                </div>
+                            </div>
+                            <div className="stack gap-xs">
+                                <span className="eyebrow">Método</span>
+                                <span className="font-medium text-slate-700">{selectedSale.payment_method}</span>
+                            </div>
+                            <div className="stack gap-xs">
+                                <span className="eyebrow">Estado</span>
+                                <div>
+                                    {selectedSale.is_voided ? <span className="badge badge-danger">ANULADA</span> :
+                                        selectedSale.is_refunded ? <span className="badge badge-warning">REEMBOLSADA</span> :
+                                            <span className="badge badge-success">COMPLETADA</span>}
+                                </div>
                             </div>
                         </div>
 
-                        <div className="mb-4 overflow-hidden rounded-md border border-slate-200">
-                            <table className="styled-table" style={{ margin: 0 }}>
+                        {/* Items Table */}
+                        <div className="table-container compact">
+                            <table className="styled-table">
                                 <thead>
                                     <tr>
-                                        <th className="bg-slate-50 py-2 text-xs uppercase font-semibold text-slate-500">Producto</th>
-                                        <th className="bg-slate-50 py-2 text-xs uppercase font-semibold text-slate-500 text-right">Cant</th>
-                                        <th className="bg-slate-50 py-2 text-xs uppercase font-semibold text-slate-500 text-right">Precio</th>
-                                        <th className="bg-slate-50 py-2 text-xs uppercase font-semibold text-slate-500 text-right">Total</th>
+                                        <th>Producto</th>
+                                        <th style={{ textAlign: 'right' }}>Cant.</th>
+                                        <th style={{ textAlign: 'right' }}>Precio</th>
+                                        <th style={{ textAlign: 'right' }}>Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {selectedSale.items.map(item => (
                                         <tr key={item.id}>
-                                            <td className="py-2 text-sm text-slate-700">{item.producto_nombre}</td>
-                                            <td className="py-2 text-sm text-slate-700 text-right">{item.quantity}</td>
-                                            <td className="py-2 text-sm text-slate-700 text-right">{formatCurrency(item.price)}</td>
-                                            <td className="py-2 text-sm text-slate-700 font-medium text-right">{formatCurrency(item.quantity * item.price)}</td>
+                                            <td>{item.producto_nombre}</td>
+                                            <td style={{ textAlign: 'right' }}>{item.quantity}</td>
+                                            <td style={{ textAlign: 'right' }}>{formatCurrency(item.price)}</td>
+                                            <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(item.quantity * item.price)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
 
-                        <div className="flex justify-between items-end mb-6">
-                            <div className="text-sm">
-                                {(selectedSale.is_voided || selectedSale.is_refunded) && (
-                                    <div className="text-xs text-red-600 font-medium bg-red-50 px-2 py-1 rounded border border-red-100 inline-flex items-center gap-1">
-                                        <AlertCircle size={12} />
-                                        Esta venta no puede ser modificada
-                                    </div>
-                                )}
-                            </div>
-                            <div className="text-right">
-                                {selectedSale.discount > 0 && <p className="text-sm text-red-500">Descuento: -{formatCurrency(selectedSale.discount)}</p>}
-                                <h4 className="text-xl font-bold text-slate-900">Total: {formatCurrency(selectedSale.total)}</h4>
-                            </div>
-                        </div>
-
-                        <div className="modal-actions border-t border-slate-100 pt-4">
-                            {isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded && (
-                                <>
-                                    <button
-                                        onClick={() => setShowActionModal('reembolsar')}
-                                        className="btn btn-secondary text-warning-text hover:bg-warning-bg hover:border-warning-text flex items-center gap-2"
-                                        style={{ marginRight: 'auto' }}
-                                    >
-                                        <RotateCcw size={16} /> Reembolsar
-                                    </button>
-                                    <button
-                                        onClick={() => setShowActionModal('anular')}
-                                        className="btn btn-secondary text-danger-text hover:bg-danger-bg hover:border-danger-text flex items-center gap-2"
-                                    >
-                                        <Trash2 size={16} /> Anular Venta
-                                    </button>
-                                </>
+                        {/* Totals */}
+                        <div className="flex-col items-end gap-xs pt-sm border-t border-slate-200">
+                            {selectedSale.discount > 0 && (
+                                <div className="flex-row gap-lg text-sm text-danger-text">
+                                    <span>Descuento:</span>
+                                    <span>- {formatCurrency(selectedSale.discount)}</span>
+                                </div>
                             )}
-                            <button className="btn btn-primary" onClick={() => setSelectedSale(null)}>Cerrar</button>
+                            <div className="flex-row gap-lg text-lg font-bold text-slate-900">
+                                <span>Total:</span>
+                                <span>{formatCurrency(selectedSale.total)}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </Modal>
             )}
 
             {/* Confirmation Action Modal */}

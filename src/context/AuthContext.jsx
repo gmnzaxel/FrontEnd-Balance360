@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useCallback, useMemo } from 
 import { jwtDecode } from 'jwt-decode';
 import api, { clearStoredTokens, API_BASE_URL } from '../api/axios';
 import { toast } from 'react-toastify';
+import { getErrorMessage } from '../utils/errorUtils';
 
 export const AuthContext = createContext();
 
@@ -78,8 +79,13 @@ export const AuthProvider = ({ children }) => {
       setUser(decoded);
       toast.success('Bienvenido de nuevo');
       return true;
-    } catch (_error) {
-      toast.error('Credenciales inválidas');
+    } catch (error) {
+      // Specialized message for 401 on login
+      if (error.response && error.response.status === 401) {
+        toast.error('Credenciales inválidas');
+      } else {
+        toast.error(getErrorMessage(error));
+      }
       return false;
     }
   }, []);

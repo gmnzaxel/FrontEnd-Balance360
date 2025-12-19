@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Building, MapPin, Phone, Store, User, Lock, ArrowLeft, ArrowRight } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
+import { getErrorMessage } from '../utils/errorUtils';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -36,8 +37,7 @@ const Register = () => {
       toast.success('¡Empresa registrada con éxito!');
       navigate('/login');
     } catch (error) {
-      const msg = error.response?.data?.password?.[0] || 'Error en el registro. Verifique los datos.';
-      toast.error(msg);
+      toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }

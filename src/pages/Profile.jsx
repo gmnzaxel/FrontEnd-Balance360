@@ -29,7 +29,7 @@ const Profile = () => {
 
     const fetchProfile = async () => {
         try {
-            const response = await api.get('users/me/');
+            const response = await api.get('me/');
             setProfileData(response.data);
         } catch (error) {
             console.error(error);
@@ -45,7 +45,7 @@ const Profile = () => {
         }
         setLoading(true);
         try {
-            await api.post('users/profile/change-password/', {
+            await api.post('profile/change-password/', {
                 old_password: passwordData.old_password,
                 new_password: passwordData.new_password
             });

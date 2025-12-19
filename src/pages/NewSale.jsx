@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search, ShoppingCart, Tag, CreditCard, Trash2, Wrench, PackageX } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
+import { getErrorMessage } from '../utils/errorUtils';
 import { formatARS } from '../utils/format';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -22,6 +23,9 @@ const NewSale = () => {
   const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [serviceForm, setServiceForm] = useState({ description: '', price: '' });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [lastSale, setLastSale] = useState(null);
+  const [ticketConfig, setTicketConfig] = useState(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -30,7 +34,7 @@ const NewSale = () => {
       const list = response.data.results || response.data;
       setProducts(Array.isArray(list) ? list : []);
     } catch (error) {
-      toast.error('Error al cargar productos');
+      toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -38,11 +42,106 @@ const NewSale = () => {
 
   useEffect(() => {
     fetchProducts();
+    // Fetch Ticket Settings
+    api.get('core/settings/')
+      .then(res => setTicketConfig(res.data))
+      .catch(err => console.error("Error loading ticket settings", err));
   }, [fetchProducts]);
 
   useEffect(() => {
     setPage(1);
   }, [search]);
+
+  /* 
+     Re-inserting correctly the handlePrintTicket function 
+     and removing the accidental comment/broken code 
+  */
+  const handlePrintTicket = () => {
+    if (!lastSale) return;
+
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (!printWindow) return;
+
+    const headerText = ticketConfig?.ticket_header || 'BALANCE 360';
+    const footerText = ticketConfig?.ticket_footer || '¡Gracias por su compra!';
+
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Ticket de Venta #${lastSale.id}</title>
+          <style>
+            body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 10px; font-size: 12px; }
+            .header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+            .company { font-size: 16px; font-weight: bold; margin-bottom: 5px; white-space: pre-wrap; }
+            .info { font-size: 10px; margin-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+            th { text-align: left; border-bottom: 1px solid #000; }
+            td { padding: 4px 0; }
+            .text-right { text-align: right; }
+            .totals { border-top: 1px dashed #000; padding-top: 10px; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+            .footer { text-align: center; margin-top: 20px; font-size: 10px; white-space: pre-wrap; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="company">${headerText}</div>
+            <div class="info">Fecha: ${new Date(lastSale.date).toLocaleString()}</div>
+            <div class="info">Ticket #${lastSale.id}</div>
+            <div class="info">Pago: ${lastSale.payment_method}</div>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Desc</th>
+                <th class="text-right">Cant</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${lastSale.items.map(item => `
+                <tr>
+                  <td>${item.nombre || item.description}</td>
+                  <td class="text-right">${item.quantity}</td>
+                  <td class="text-right">$${(item.price * item.quantity).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="row">
+              <span>Subtotal:</span>
+              <span>$${lastSale.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            ${lastSale.discount > 0 ? `
+            <div class="row">
+              <span>Descuento:</span>
+              <span>-$${lastSale.discount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            </div>` : ''}
+            <div class="row" style="font-weight: bold; font-size: 14px; margin-top: 5px;">
+              <span>TOTAL:</span>
+              <span>$${lastSale.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>${footerText}</p>
+            <p>*** Copia Cliente ***</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
 
   const filteredProducts = useMemo(() => {
     const term = search.toLowerCase();
@@ -113,6 +212,7 @@ const NewSale = () => {
       toast.warning('El carrito está vacío');
       return;
     }
+
     try {
       const payload = {
         payment_method: paymentMethod,
@@ -125,15 +225,34 @@ const NewSale = () => {
           price: item.price,
         })),
       };
-      await api.post('sales/sales/', payload);
-      toast.success('Venta registrada con éxito');
+
+      const response = await api.post('sales/sales/', payload);
+
+      const saleSnapshot = {
+        id: response.data.id,
+        date: response.data.date, // Backend date
+        items: [...cart],
+        subtotal: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0),
+        discount: parseFloat(discount) || 0,
+        total: total, // Calculated total from frontend state
+        payment_method: paymentMethod,
+      };
+
+      setLastSale(saleSnapshot);
+      setShowSuccessModal(true);
+
+      // Clear form
       setCart([]);
       setDiscount(0);
       setPaymentMethod('EFECTIVO');
+      toast.success('Venta registrada con éxito');
     } catch (error) {
-      toast.error('Error al registrar venta');
+      console.error(error);
+      toast.error(getErrorMessage(error));
     }
   };
+
+
 
   return (
     <div className="pos-shell">
@@ -149,32 +268,72 @@ const NewSale = () => {
             + Servicio
           </Button>
         </div>
-        <div className="muted small">Catálogo</div>
-        <div className="catalog-grid">
-          {loading ? (
-            Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} height={140} />)
-          ) : (
-            pageProducts.map((p) => (
-              <button
-                key={p.id}
-                className={`catalog-card ${p.stock_actual <= 0 ? 'disabled' : ''}`}
-                onClick={() => p.stock_actual > 0 && addToCart(p)}
-                disabled={p.stock_actual <= 0}
-              >
-                <div className="muted tiny uppercase">#{p.codigo}</div>
-                <div className="title-sm">{p.nombre}</div>
-                <div className="muted tiny">Stock: {p.stock_actual}</div>
-                <div className="title-lg">{formatARS(p.precio_venta)}</div>
-              </button>
-            ))
-          )}
-
-          {!loading && !pageProducts.length && (
-            <div className="empty-state">
-              <PackageX size={46} className="muted" />
-              <p>No se encontraron productos</p>
-            </div>
-          )}
+        <div className="muted small mb-2">Catálogo (Más Vendidos)</div>
+        <div className="flex flex-col gap-0 border border-slate-200 rounded-lg overflow-hidden bg-white">
+          <div className="table-container" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+            <table className="styled-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '80px' }}>Código</th>
+                  <th>Producto</th>
+                  <th className="text-center" style={{ width: '80px', textAlign: 'center' }}>Stock</th>
+                  <th className="text-right" style={{ width: '120px', textAlign: 'right' }}>Precio</th>
+                  <th style={{ width: '50px' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan="5">
+                        <Skeleton height={20} />
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  pageProducts.map((p) => (
+                    <tr
+                      key={p.id}
+                      onClick={() => p.stock_actual > 0 && addToCart(p)}
+                      style={{
+                        cursor: p.stock_actual > 0 ? 'pointer' : 'not-allowed',
+                        opacity: p.stock_actual <= 0 ? 0.6 : 1,
+                        backgroundColor: p.stock_actual <= 0 ? '#f8f9fa' : undefined
+                      }}
+                      onMouseEnter={(e) => { if (p.stock_actual > 0) e.currentTarget.style.backgroundColor = 'var(--primary-50)'; }}
+                      onMouseLeave={(e) => { if (p.stock_actual > 0) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      <td>
+                        <span className="badge badge-neutral" style={{ fontSize: '0.75rem' }}>{p.codigo}</span>
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: 'var(--slate-700)' }}>{p.nombre}</div>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`badge ${p.stock_actual > 5 ? 'badge-success' : p.stock_actual > 0 ? 'badge-warning' : 'badge-danger'}`}>
+                          {p.stock_actual}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                        {formatARS(p.precio_venta)}
+                      </td>
+                      <td style={{ textAlign: 'center', color: 'var(--primary-600)' }}>
+                        {p.stock_actual > 0 && <span>+</span>}
+                      </td>
+                    </tr>
+                  ))
+                )}
+                {!loading && !pageProducts.length && (
+                  <tr>
+                    <td colSpan="5" className="text-center" style={{ padding: '40px 0', color: 'var(--slate-500)' }}>
+                      <PackageX size={48} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
+                      <p>No se encontraron productos</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
         {totalPages > 1 && (
           <div className="pagination">
@@ -271,6 +430,7 @@ const NewSale = () => {
         </div>
       </div>
 
+      {/* Service Modal */}
       {showServiceModal && (
         <Modal
           title="Agregar servicio"
@@ -295,6 +455,37 @@ const NewSale = () => {
             onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
             placeholder="0.00"
           />
+        </Modal>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <Modal
+          title="¡Venta Exitosa!"
+          onClose={() => setShowSuccessModal(false)}
+          size="sm"
+          footer={(
+            <Button variant="primary" fullWidth onClick={() => setShowSuccessModal(false)}>
+              Nueva Venta
+            </Button>
+          )}
+        >
+          <div className="flex flex-col items-center justify-center p-4 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600">
+              <CreditCard size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Venta #{lastSale?.id}</h3>
+            <p className="text-slate-500 mb-6">La transacción se ha registrado correctamente.</p>
+
+            <Button
+              variant="secondary"
+              fullWidth
+              icon={<span style={{ fontSize: 18 }}>🖨️</span>} // Using emoji as simple icon fallback or lucide Printer
+              onClick={handlePrintTicket}
+            >
+              Imprimir Ticket
+            </Button>
+          </div>
         </Modal>
       )}
     </div>

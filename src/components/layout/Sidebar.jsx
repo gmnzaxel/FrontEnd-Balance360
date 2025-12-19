@@ -40,12 +40,26 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
     return () => window.removeEventListener('keydown', handleEsc);
   }, [mobileOpen, onCloseMobile]);
 
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.classList.add('no-scroll');
+    } else {
+      document.body.classList.remove('no-scroll');
+    }
+    return () => document.body.classList.remove('no-scroll');
+  }, [mobileOpen]);
+
   const roleLabel = useMemo(
     () => (user?.role === 'ADMIN' ? 'Administrador' : 'Vendedor'),
     [user?.role]
   );
 
   const showLabels = (hovering && !isMobile) || isMobile;
+
+  const handleNavClick = (path) => {
+    onNavigate(path);
+    if (isMobile) onCloseMobile();
+  };
 
   return (
     <>
@@ -56,7 +70,6 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
         onMouseEnter={() => !isMobile && setHovering(true)}
         onMouseLeave={() => !isMobile && setHovering(false)}
       >
-        {/* ✅ ESTA ES LA LÍNEA CLAVE: antes era "sidebar-visual" */}
         <div className="sidebar-inner">
           <div
             className="sidebar-brand"
@@ -85,7 +98,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
               <button
                 key={item.path}
                 className={`nav-link ${activePath === item.path ? 'active' : ''}`}
-                onClick={() => onNavigate(item.path)}
+                onClick={() => handleNavClick(item.path)}
                 title={item.label}
               >
                 <span className="nav-icon">{ICONS[item.path] || ICONS['/']}</span>

@@ -43,9 +43,6 @@ const UserMenu = ({ user, onLogout, onNavigate }) => {
           <button className="dropdown-item" onClick={() => handleNavigate('/mi-perfil')}>
             <User size={16} /> Mi perfil
           </button>
-          <button className="dropdown-item" onClick={() => handleNavigate('/mi-perfil?tab=seguridad')}>
-            <ShieldCheck size={16} /> Cambiar contraseña
-          </button>
           {user?.role === 'ADMIN' && (
             <button className="dropdown-item" onClick={() => handleNavigate('/configuracion')}>
               <Settings size={16} /> Configuración

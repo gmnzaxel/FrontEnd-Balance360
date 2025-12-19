@@ -3,6 +3,7 @@ import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
 import { Trash2, Edit, Plus, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { getErrorMessage } from '../utils/errorUtils';
 
 const Users = () => {
     const { user: currentUser } = useContext(AuthContext);
@@ -24,12 +25,13 @@ const Users = () => {
 
     const fetchUsers = async () => {
         try {
-            const response = await api.get('users/users/');
-            setUsers(response.data);
+            const response = await api.get('users/');
+            const list = response.data.results || response.data;
+            setUsers(Array.isArray(list) ? list : []);
             setLoading(false);
         } catch (error) {
             console.error(error);
-            toast.error("Error al cargar usuarios");
+            toast.error(getErrorMessage(error));
             setLoading(false);
         }
     };
@@ -47,10 +49,10 @@ const Users = () => {
         e.preventDefault();
         try {
             if (editingUser) {
-                await api.patch(`users/users/${editingUser.id}/`, formData);
+                await api.patch(`users/${editingUser.id}/`, formData);
                 toast.success("Usuario actualizado");
             } else {
-                await api.post('users/users/', formData);
+                await api.post('users/', formData);
                 toast.success("Usuario creado");
             }
             setShowModal(false);
@@ -59,19 +61,34 @@ const Users = () => {
             resetForm();
         } catch (error) {
             console.error(error);
-            toast.error("Error al guardar usuario");
+            toast.error(getErrorMessage(error));
+        }
+    };
+
+    const handleToggleStatus = async (user) => {
+        const newStatus = !user.is_active;
+        try {
+            // Update UI optimistically
+            setUsers(users.map(u => u.id === user.id ? { ...u, is_active: newStatus } : u));
+            await api.patch(`users/${user.id}/`, { is_active: newStatus });
+            toast.success(`Usuario ${newStatus ? 'activado' : 'desactivado'}`);
+        } catch (error) {
+            console.error(error);
+            toast.error(getErrorMessage(error));
+            // Revert on error
+            setUsers(users.map(u => u.id === user.id ? { ...u, is_active: user.is_active } : u));
         }
     };
 
     const handleDelete = async (id) => {
         if (window.confirm("¿Seguro que desea eliminar este usuario?")) {
             try {
-                await api.delete(`users/users/${id}/`);
+                await api.delete(`users/${id}/`);
                 toast.success("Usuario eliminado");
                 fetchUsers();
             } catch (error) {
                 console.error(error);
-                toast.error("Error al eliminar");
+                toast.error(getErrorMessage(error));
             }
         }
     };
@@ -112,7 +129,7 @@ const Users = () => {
                             <th>Email</th>
                             <th>Rol</th>
                             <th>Estado</th>
-                            <th style={{ textAlign: 'right' }}>Acciones</th>
+                            <th style={{ textAlign: 'center', width: '100px', verticalAlign: 'middle' }}>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -126,13 +143,17 @@ const Users = () => {
                                     </span>
                                 </td>
                                 <td>
-                                    {u.is_active ?
-                                        <span className="badge badge-success flex items-center gap-1 w-fit"><UserCheck size={12} /> Activo</span> :
-                                        <span className="badge badge-danger flex items-center gap-1 w-fit"><UserX size={12} /> Inactivo</span>
-                                    }
+                                    <label className="toggle-switch transform scale-75 origin-left">
+                                        <input
+                                            type="checkbox"
+                                            checked={u.is_active}
+                                            onChange={() => handleToggleStatus(u)}
+                                        />
+                                        <span className="slider"></span>
+                                    </label>
                                 </td>
-                                <td style={{ textAlign: 'right' }}>
-                                    <div className="flex justify-end gap-1">
+                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                    <div className="flex justify-center gap-1">
                                         <button className="btn-icon" onClick={() => handleEdit(u)} title="Editar">
                                             <Edit size={18} />
                                         </button>
@@ -201,19 +222,8 @@ const Users = () => {
                                     <option value="ADMIN">Administrador</option>
                                 </select>
                             </div>
-                            <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', marginTop: '1rem' }}>
-                                <div className="checkbox-wrapper">
-                                    <input
-                                        type="checkbox"
-                                        name="is_active"
-                                        checked={formData.is_active}
-                                        onChange={handleChange}
-                                        id="active-check"
-                                    />
-                                    <label htmlFor="active-check" style={{ marginBottom: 0, cursor: 'pointer' }}>Usuario Activo</label>
-                                </div>
-                            </div>
-                            <div className="modal-actions">
+
+                            <div className="modal-actions mt-6">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary">Guardar Usuario</button>
                             </div>
