@@ -1,8 +1,29 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
-const rawApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/';
-export const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl : `${rawApiUrl}/`;
+const rawApiUrl = import.meta.env.VITE_API_URL
+  || import.meta.env.VITE_API_BASE_URL
+  || 'http://localhost:8000/api/';
+
+const normalizeApiUrl = (value) => {
+  const trimmed = String(value || '').trim();
+  if (trimmed.endsWith('/api/')) return trimmed;
+  if (trimmed.endsWith('/api')) return `${trimmed}/`;
+  if (trimmed.endsWith('/')) return `${trimmed}api/`;
+  return `${trimmed}/api/`;
+};
+
+export const API_BASE_URL = normalizeApiUrl(rawApiUrl);
+
+if (import.meta.env.MODE === 'production' || import.meta.env.VITE_APP_ENV === 'production') {
+  if (!API_BASE_URL.endsWith('/api/')) {
+    throw new Error('Invalid VITE_API_URL. It must point to the API root ending with /api/');
+  }
+}
+
+if (import.meta.env.MODE !== 'production') {
+  console.info('API_BASE_URL:', API_BASE_URL);
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
