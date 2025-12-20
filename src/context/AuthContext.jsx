@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import api, { clearStoredTokens, API_BASE_URL } from '../api/axios';
+import api, { clearStoredTokens } from '../api/axios';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await api.post(`${API_BASE_URL}token/refresh/`, { refresh });
+      const response = await api.post('token/refresh/', { refresh });
       const newAccess = response.data.access;
       if (newAccess) {
         localStorage.setItem('access_token', newAccess);
