@@ -38,3 +38,14 @@ Frontend en React + Vite para el sistema de gestión Balance360.
 - **Rutas Protegidas**: Redirección al login si no hay sesión.
 - **UI Limpia**: Diseño minimalista con CSS puro y Lucide Icons.
 - **Feedback**: Notificaciones toast para acciones (éxito/error).
+
+## Deployment (Netlify)
+
+1. **Push to GitHub**.
+2. **Connect Repository** in Netlify.
+3. **Build settings**:
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+4. **Environment Variables**:
+   - `VITE_API_URL`: `https://<tu-backend>.railway.app/api/`
+   - `VITE_APP_ENV`: `production`

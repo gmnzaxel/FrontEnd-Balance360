@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Balance360">
+  <rect width="64" height="64" rx="14" fill="#0f1524"/>
+  <path d="M20 14h24l-1 17c-0.7 11-7.9 18-11 19-3.1-1-10.3-8-11-19l-1-17z" fill="#6366f1"/>
+  <path d="M26 32l5 5 9-11" fill="none" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
