@@ -1,0 +1,61 @@
+.sales-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sales-toolbar {
+  overflow: visible;
+}
+
+.sales-search {
+  position: relative;
+  min-width: 260px;
+  max-width: 360px;
+  flex: 1;
+}
+
+.sales-search-icon {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  color: var(--text-secondary);
+}
+
+.sales-search-input {
+  padding-left: 2.4rem;
+}
+
+.sales-actions {
+  gap: 8px;
+}
+
+.sales-filter {
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .sales-search {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .sales-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 390px) {
+  .sales-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .sales-actions .ui-btn,
+  .sales-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

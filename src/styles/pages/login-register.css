@@ -1,0 +1,94 @@
+.auth-shell {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-shell::before,
+.auth-shell::after {
+  content: '';
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.18), transparent 70%);
+  filter: blur(0px);
+  opacity: 0.8;
+  z-index: 0;
+}
+
+.auth-shell::before {
+  top: -120px;
+  left: -120px;
+}
+
+.auth-shell::after {
+  bottom: -140px;
+  right: -140px;
+}
+
+.auth-panel .ui-card {
+  position: relative;
+  z-index: 1;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+.auth-panel .card-head h3 {
+  font-size: 1.2rem;
+}
+
+.auth-panel .card-head p {
+  color: var(--text-secondary);
+}
+
+.auth-shell .brand-chip {
+  margin-bottom: 20px;
+}
+
+.auth-mobile-brand {
+  display: none;
+}
+
+.auth-shell .brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--primary-300);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.3);
+}
+
+.auth-shell .ui-btn {
+  height: 44px;
+}
+
+.auth-shell .ui-field input {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.auth-shell .section-title h4 {
+  margin-bottom: 2px;
+}
+
+.auth-shell .section-title p {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+@media (max-width: 640px) {
+  .auth-panel .card-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .auth-panel .card-head h3 {
+    font-size: 1.1rem;
+  }
+
+  .auth-mobile-brand {
+    display: flex;
+  }
+}

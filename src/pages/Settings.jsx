@@ -36,7 +36,7 @@ const Settings = () => {
         setSaving(true);
         try {
             await api.patch('settings/', settings);
-            toast.success("Configuración guardada");
+            toast.success("Configuración guardada.");
         } catch (error) {
             console.error(error);
             toast.error("Error al guardar");
@@ -45,36 +45,39 @@ const Settings = () => {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-muted">Cargando configuración...</div>;
+    if (loading) return <div className="p-8 text-center text-muted">Cargando configuración…</div>;
 
     return (
-        <div className="settings-page max-w-4xl mx-auto pb-12 relative">
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-900">Configuración</h2>
-                    <p className="text-slate-500">Personaliza la experiencia de tu punto de venta.</p>
+        <div className="settings-page page page-container">
+            <div className="page-header">
+                <div className="page-header-title">
+                    <p className="eyebrow">Sistema</p>
+                    <h2 className="page-heading">Configuración</h2>
+                    <p className="page-subtitle">Ajustes generales del negocio y del ticket.</p>
                 </div>
-                <button
-                    onClick={handleSave}
-                    className="btn btn-primary lg flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
-                    disabled={saving}
-                >
-                    <Save size={18} /> {saving ? 'Guardando...' : 'Guardar Cambios'}
-                </button>
+                <div className="page-header-actions">
+                    <button
+                        onClick={handleSave}
+                        className="btn btn-primary"
+                        disabled={saving}
+                    >
+                        <Save size={18} /> {saving ? 'Guardando…' : 'Guardar cambios'}
+                    </button>
+                </div>
             </div>
 
-            <form onSubmit={handleSave} className="flex flex-col gap-6">
+            <form onSubmit={handleSave} className="settings-form page-section">
 
                 {/* Card 1: Branch & Inventory */}
-                <div className="card shadow-sm border border-slate-200">
-                    <div className="card-header border-b border-slate-100 pb-4 mb-6">
+                <div className="card settings-card">
+                    <div className="card-header settings-card-header">
                         <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                             <Store size={20} className="text-primary-600" />
-                            Datos del Negocio
+                            Datos del negocio
                         </h3>
                     </div>
 
-                    <div className="flex flex-col gap-6">
+                    <div className="settings-section">
                         <div className="form-group">
                             <label className="font-semibold text-slate-700 mb-2 block">Nombre de la Sucursal</label>
                             <input
@@ -88,14 +91,14 @@ const Settings = () => {
                             <p className="text-xs text-slate-500 mt-2">Se mostrará en el encabezado de tus comprobantes.</p>
                         </div>
 
-                        <div className="border-t border-slate-50 pt-4">
-                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1 text-amber-600">
+                        <div className="settings-divider">
+                            <div className="settings-row">
+                                <div className="settings-row-content">
+                                    <div className="settings-row-icon">
                                         <AlertOctagon size={18} />
                                     </div>
                                     <div>
-                                        <span className="block font-semibold text-slate-800 text-sm mb-1">Stock Mínimo por Distribuidor</span>
+                                <span className="block font-semibold text-slate-800 text-sm mb-1">Stock mínimo por distribuidor</span>
                                         <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
                                             Activa alertas de reabastecimiento personalizadas para cada proveedor en tu inventario.
                                         </p>
@@ -115,25 +118,25 @@ const Settings = () => {
                 </div>
 
                 {/* Card 2: Ticket Customization */}
-                <div className="card shadow-sm border border-slate-200">
-                    <div className="card-header border-b border-slate-100 pb-4 mb-6 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                <div className="card settings-card">
+                    <div className="card-header settings-card-header settings-card-header-split">
+                        <div className="settings-ticket-head">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                                 <span className="text-xl">🧾</span>
-                                Diseño del Ticket
+                                Diseño del ticket
                             </h3>
-                            <p className="text-sm text-slate-500 mt-1 ml-4 hidden sm:block">Edita el texto del comprobante.</p>
+                            <p className="text-sm text-slate-500 settings-ticket-subtitle">Edita el texto del comprobante.</p>
                         </div>
                         <button
                             type="button"
                             onClick={() => setShowPreview(true)}
-                            className="btn btn-secondary sm flex items-center gap-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50"
+                            className="btn btn-secondary settings-preview-btn"
                         >
-                            <Eye size={18} /> Vista Previa
+                            <Eye size={18} /> Vista previa
                         </button>
                     </div>
 
-                    <div className="flex flex-col gap-6">
+                    <div className="settings-section">
                         <div className="form-group">
                             <label className="font-semibold text-slate-700 mb-2 block">Encabezado</label>
                             <textarea
@@ -141,7 +144,7 @@ const Settings = () => {
                                 rows={4}
                                 value={settings.ticket_header || ''}
                                 onChange={(e) => setSettings({ ...settings, ticket_header: e.target.value })}
-                                placeholder="Nombre Empresa&#10;Dirección&#10;Teléfono"
+                                placeholder="Nombre de la empresa&#10;Dirección&#10;Teléfono"
                                 style={{ resize: 'vertical', minHeight: '100px' }}
                             />
                         </div>
@@ -164,12 +167,12 @@ const Settings = () => {
             {/* Ticket Preview Modal */}
             {showPreview && (
                 <Modal
-                    title="VISTA PREVIA DEL TICKET"
+                    title="Vista previa del ticket"
                     onClose={() => setShowPreview(false)}
                     size="md"
                 >
-                    <div className="flex justify-center bg-slate-50 p-6 rounded-lg border border-slate-200">
-                        <div className="bg-white p-6 shadow-md font-mono text-xs text-slate-600 leading-relaxed w-full max-w-[300px] border border-slate-100">
+                    <div className="settings-preview-wrap">
+                        <div className="settings-preview-ticket">
                             {/* Paper Texture Content */}
                             <div className="text-center mb-6">
                                 <h4 className="font-bold text-slate-900 text-lg mb-2 uppercase break-words border-b-2 border-slate-900 pb-2 inline-block">
@@ -204,7 +207,7 @@ const Settings = () => {
                                 <div className="whitespace-pre-wrap mb-4 italic text-slate-400">
                                     {settings.ticket_footer || '¡Gracias por su compra!'}
                                 </div>
-                                <div className="text-[10px] text-slate-300 flex flex-col gap-1 items-center">
+                                <div className="text-xxs text-slate-300 flex flex-col gap-1 items-center">
                                     <span>*** COPIA CLIENTE ***</span>
                                     <span>{new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</span>
                                 </div>

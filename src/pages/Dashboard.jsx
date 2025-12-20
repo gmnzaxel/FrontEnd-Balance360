@@ -80,9 +80,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const kpis = [
   { key: 'total_sold', label: 'Ventas del mes', icon: <DollarSign size={22} />, tone: 'primary', formatter: formatARS },
-  { key: 'sales_count', label: 'Transacciones', icon: <ShoppingBag size={22} />, tone: 'success' },
+  { key: 'sales_count', label: 'Operaciones', icon: <ShoppingBag size={22} />, tone: 'success' },
   { key: 'margin', label: 'Margen estimado', icon: <TrendingUp size={22} />, tone: 'warning', formatter: formatARS },
-  { key: 'stockouts', label: 'Bajo Stock', icon: <AlertTriangle size={22} />, tone: 'danger' }, // Changed label
+  { key: 'stockouts', label: 'Stock bajo', icon: <AlertTriangle size={22} />, tone: 'danger' },
 ];
 
 const Dashboard = () => {
@@ -121,7 +121,16 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="grid-layout">
+    <div className="dashboard-page page">
+      <div className="page-header">
+        <div className="page-header-title">
+          <p className="eyebrow">Resumen ejecutivo</p>
+          <h2 className="page-heading">Dashboard</h2>
+          <p className="page-subtitle">Resumen de ventas, inventario y actividad reciente.</p>
+        </div>
+      </div>
+
+      <div className="grid-layout">
       {/* ... existing KPI grid ... */}
       {loading ? (
         <div className="kpi-grid">
@@ -149,7 +158,7 @@ const Dashboard = () => {
 
       <div className="charts-grid">
         {/* ... AreaChart Card ... */}
-        <Card title="Evolución de Ventas" description="Tendencia de los últimos 30 días">
+        <Card title="Evolución de ventas" description="Tendencia de los últimos 30 días.">
           <div style={{ height: 320, marginTop: 10 }}>
             {loading ? <Skeleton height="100%" /> : (
               <ResponsiveContainer width="100%" height="100%">
@@ -192,7 +201,7 @@ const Dashboard = () => {
         </Card>
 
         {/* Top Products Card (Restored to original position) */}
-        <Card title="Top Productos" description="Rendimiento por volumen">
+        <Card title="Top productos" description="Rendimiento por volumen.">
           {loading ? <Skeleton height={240} /> : (
             <div className="table-container compact" style={{ border: 'none', boxShadow: 'none' }}>
               {!stats?.top_products?.length ? (
@@ -205,8 +214,8 @@ const Dashboard = () => {
                   }}>
                     <PackageOpen size={24} />
                   </div>
-                  <p style={{ fontWeight: 600, color: 'var(--slate-700)', margin: 0 }}>Sin movimientos</p>
-                  <p className="text-sm text-muted">No hay ventas registradas aún</p>
+                  <p style={{ fontWeight: 600, color: 'var(--slate-700)', margin: 0 }}>Todavía no hay ventas registradas.</p>
+                  <p className="text-sm text-muted">El ranking aparecerá cuando haya ventas.</p>
                 </div>
               ) : (
                 <table className="styled-table">
@@ -219,10 +228,10 @@ const Dashboard = () => {
                   <tbody>
                     {stats.top_products.map((p, idx) => (
                       <tr key={idx} style={{ background: 'transparent' }}>
-                        <td style={{ borderBottomColor: 'rgba(226, 232, 240, 0.6)' }}>
+                        <td style={{ borderBottomColor: 'rgba(226, 232, 240, 0.6)' }} data-label="Producto">
                           <span style={{ fontWeight: 500 }}>{p.product__nombre}</span>
                         </td>
-                        <td style={{ textAlign: 'right', borderBottomColor: 'rgba(226, 232, 240, 0.6)' }}>
+                        <td style={{ textAlign: 'right', borderBottomColor: 'rgba(226, 232, 240, 0.6)' }} data-label="Cant.">
                           <span className="badge badge-neutral" style={{ fontWeight: 700 }}>
                             {p.qty}
                           </span>
@@ -239,17 +248,17 @@ const Dashboard = () => {
 
       {/* Low Stock Table Card (New Section Below) */}
       <div className="mt-6">
-        <Card title="Alertas de Stock" description="Productos por debajo del mínimo">
+        <Card title="Alertas de stock" description="Productos por debajo del mínimo.">
           <div className="flex justify-end mb-4">
             <Button variant="secondary" size="sm" icon={<Filter size={16} />} onClick={() => setShowSupplierModal(true)}>
-              Filtrar por Proveedor
+              Filtrar por proveedor
             </Button>
           </div>
           {loading ? <Skeleton height={200} /> : (
             <div className="table-container compact" style={{ maxHeight: '300px', overflowY: 'auto' }}>
               {!stats?.low_stock_products?.length ? (
                 <div className="empty-state py-8">
-                  <p>Todo en orden. No hay productos con stock bajo.</p>
+                  <p>No hay productos con stock bajo.</p>
                 </div>
               ) : (
                 <table className="styled-table">
@@ -264,12 +273,12 @@ const Dashboard = () => {
                   <tbody>
                     {stats.low_stock_products.map((p) => (
                       <tr key={p.id}>
-                        <td className="font-medium text-slate-700">{p.nombre}</td>
-                        <td className="text-sm text-slate-500">{p.supplier_name || '-'}</td>
-                        <td className="text-center">
+                        <td className="font-medium text-slate-700" data-label="Producto">{p.nombre}</td>
+                        <td className="text-sm text-slate-500" data-label="Proveedor">{p.supplier_name || '-'}</td>
+                        <td className="text-center" data-label="Min">
                           <span className="badge badge-neutral">{p.stock_minimo}</span>
                         </td>
-                        <td className="text-center">
+                        <td className="text-center" data-label="Actual">
                           <span className="badge badge-danger">{p.stock_actual}</span>
                         </td>
                       </tr>
@@ -285,12 +294,12 @@ const Dashboard = () => {
       {/* Supplier Filter Modal */}
       {
         showSupplierModal && (
-          <Modal title="Generar Pedido a Proveedor" onClose={() => setShowSupplierModal(false)} size="lg">
+          <Modal title="Generar pedido a proveedor" onClose={() => setShowSupplierModal(false)} size="lg">
             <div className="flex flex-col gap-4">
               <div className="flex items-end gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex-1">
                   <Select
-                    label="Seleccionar Proveedor"
+                    label="Proveedor"
                     value={selectedSupplier}
                     onChange={(e) => setSelectedSupplier(e.target.value)}
                   >
@@ -323,18 +332,18 @@ const Dashboard = () => {
                   </thead>
                   <tbody>
                     {filteredStock.length === 0 ? (
-                      <tr><td colSpan="5" className="text-center py-8 text-slate-500">No hay productos que coincidan.</td></tr>
+                      <tr><td colSpan="5" className="text-center py-8 text-slate-500">No hay productos para este proveedor.</td></tr>
                     ) : (
                       filteredStock.map(p => {
                         const deficit = Math.max(0, p.stock_minimo - p.stock_actual);
                         const suggestedOrder = deficit + Math.ceil(p.stock_minimo * 0.2); // Suggest +20% buffer
                         return (
                           <tr key={p.id}>
-                            <td className="text-xs font-mono text-slate-500">{p.codigo}</td>
-                            <td className="font-medium">{p.nombre}</td>
-                            <td className="text-center text-slate-500">{p.stock_minimo}</td>
-                            <td className="text-center font-bold text-red-600">{p.stock_actual}</td>
-                            <td className="text-center">
+                            <td className="text-xs font-mono text-slate-500" data-label="Código">{p.codigo}</td>
+                            <td className="font-medium" data-label="Producto">{p.nombre}</td>
+                            <td className="text-center text-slate-500" data-label="Stock Mínimo">{p.stock_minimo}</td>
+                            <td className="text-center font-bold text-red-600" data-label="Stock Actual">{p.stock_actual}</td>
+                            <td className="text-center" data-label="A Reponer">
                               <span className="badge badge-primary">{suggestedOrder} u.</span>
                             </td>
                           </tr>
@@ -349,6 +358,7 @@ const Dashboard = () => {
         )
       }
 
+      </div>
     </div >
   );
 };

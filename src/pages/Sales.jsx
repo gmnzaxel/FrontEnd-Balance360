@@ -90,112 +90,117 @@ const Sales = () => {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-muted">Cargando ventas...</div>;
+    if (loading) return <div className="p-8 text-center text-muted">Cargando ventas…</div>;
 
     const isAdmin = user?.role === 'ADMIN';
 
     return (
-        <div className="sales-page">
+        <div className="sales-page page">
+            <div className="page-header">
+                <div className="page-header-title">
+                    <p className="eyebrow">Ventas</p>
+                    <h2 className="page-heading">Ventas</h2>
+                    <p className="page-subtitle">Registrá, revisá y administrá las operaciones del negocio.</p>
+                </div>
+            </div>
+
             {/* Header / Toolbar */}
-            <div className="card mb-6" style={{ marginBottom: '1.5rem', overflow: 'visible' }}>
-                <div className="flex-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
-                    <div style={{ position: 'relative', width: '300px' }}>
-                        <Search size={18} style={{ position: 'absolute', top: '10px', left: '10px', color: 'var(--slate-400)' }} />
+            <div className="card page-toolbar sales-toolbar">
+                <div className="toolbar-group sales-search">
+                    <Search size={18} className="sales-search-icon" />
+                    <input
+                        className="input-control sales-search-input"
+                        placeholder="Buscar por ID o vendedor…"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="toolbar-group sales-actions">
+                    {/* Date Picker using showPicker API */}
+                    <div className="sales-filter">
                         <input
-                            className="input-control"
-                            style={{ paddingLeft: '2.2rem' }}
-                            placeholder="Buscar por ID o vendedor..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            ref={dateInputRef}
+                            type="date"
+                            style={{
+                                position: 'absolute',
+                                visibility: 'hidden', // Completely hide it but keep it in DOM
+                                width: 0,
+                                height: 0,
+                                bottom: 0,
+                                left: 0
+                            }}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            value={dateFilter}
                         />
-                    </div>
-                    <div className="actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        {/* Date Picker using showPicker API */}
-                        <div style={{ position: 'relative' }}>
-                            <input
-                                ref={dateInputRef}
-                                type="date"
-                                style={{
-                                    position: 'absolute',
-                                    visibility: 'hidden', // Completely hide it but keep it in DOM
-                                    width: 0,
-                                    height: 0,
-                                    bottom: 0,
-                                    left: 0
-                                }}
-                                onChange={(e) => setDateFilter(e.target.value)}
-                                value={dateFilter}
-                            />
-                            <button
-                                className={`ui-btn ${dateFilter ? 'ui-btn-primary' : 'ui-btn-secondary'}`}
-                                onClick={() => {
-                                    if (dateInputRef.current) {
-                                        try {
-                                            dateInputRef.current.showPicker();
-                                        } catch (err) {
-                                            // Fallback for browsers not supporting showPicker
-                                            dateInputRef.current.style.visibility = 'visible';
-                                            dateInputRef.current.focus();
-                                            dateInputRef.current.click();
-                                            setTimeout(() => { dateInputRef.current.style.visibility = 'hidden'; }, 100);
-                                        }
+                        <button
+                            className={`ui-btn ${dateFilter ? 'ui-btn-primary' : 'ui-btn-secondary'}`}
+                            onClick={() => {
+                                if (dateInputRef.current) {
+                                    try {
+                                        dateInputRef.current.showPicker();
+                                    } catch (err) {
+                                        // Fallback for browsers not supporting showPicker
+                                        dateInputRef.current.style.visibility = 'visible';
+                                        dateInputRef.current.focus();
+                                        dateInputRef.current.click();
+                                        setTimeout(() => { dateInputRef.current.style.visibility = 'hidden'; }, 100);
                                     }
-                                }}
-                            >
-                                <Calendar size={16} />
-                                {dateFilter ? formatDate(dateFilter) : 'Fecha'}
-                                {dateFilter && (
-                                    <div
-                                        style={{ marginLeft: 8 }}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDateFilter('');
-                                        }}
-                                    >
-                                        <X size={14} />
-                                    </div>
-                                )}
-                            </button>
-                        </div>
-
-                        {/* Status Filter Dropdown */}
-                        <div style={{ position: 'relative' }}>
-                            <button
-                                className={`ui-btn ${statusFilter !== 'ALL' ? 'ui-btn-primary' : 'ui-btn-secondary'}`}
-                                onClick={() => setShowFilterMenu(!showFilterMenu)}
-                            >
-                                <Filter size={16} />
-                                {statusFilter === 'ALL' ? 'Filtrar' :
-                                    statusFilter === 'COMPLETED' ? 'Completas' :
-                                        statusFilter === 'VOIDED' ? 'Anuladas' : 'Reembolsadas'}
-                            </button>
-
-                            {showFilterMenu && (
-                                <div className="user-dropdown" style={{ top: '110%', right: 0, minWidth: '160px', zIndex: 50 }}>
-                                    <button className={`dropdown-item ${statusFilter === 'ALL' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('ALL'); setShowFilterMenu(false); }}>
-                                        Todas
-                                    </button>
-                                    <button className={`dropdown-item ${statusFilter === 'COMPLETED' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('COMPLETED'); setShowFilterMenu(false); }}>
-                                        <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Completadas
-                                    </button>
-                                    <button className={`dropdown-item ${statusFilter === 'VOIDED' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('VOIDED'); setShowFilterMenu(false); }}>
-                                        <span className="w-2 h-2 rounded-full bg-red-500 mr-2"></span> Anuladas
-                                    </button>
-                                    <button className={`dropdown-item ${statusFilter === 'REFUNDED' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('REFUNDED'); setShowFilterMenu(false); }}>
-                                        <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></span> Reembolsadas
-                                    </button>
+                                }
+                            }}
+                        >
+                            <Calendar size={16} />
+                            {dateFilter ? formatDate(dateFilter) : 'Fecha'}
+                            {dateFilter && (
+                                <div
+                                    style={{ marginLeft: 8 }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDateFilter('');
+                                    }}
+                                >
+                                    <X size={14} />
                                 </div>
                             )}
+                        </button>
+                    </div>
 
-                            {/* Click outside closer helper could go here or generic window listener, 
-                                but for simplicity we assume user clicks option or toggles. */}
-                            {showFilterMenu && (
-                                <div
-                                    style={{ position: 'fixed', inset: 0, zIndex: 40 }}
-                                    onClick={() => setShowFilterMenu(false)}
-                                />
-                            )}
-                        </div>
+                    {/* Status Filter Dropdown */}
+                    <div className="sales-filter">
+                        <button
+                            className={`ui-btn ${statusFilter !== 'ALL' ? 'ui-btn-primary' : 'ui-btn-secondary'}`}
+                            onClick={() => setShowFilterMenu(!showFilterMenu)}
+                        >
+                            <Filter size={16} />
+                            {statusFilter === 'ALL' ? 'Filtrar' :
+                                statusFilter === 'COMPLETED' ? 'Completas' :
+                                    statusFilter === 'VOIDED' ? 'Anuladas' : 'Reembolsadas'}
+                        </button>
+
+                        {showFilterMenu && (
+                            <div className="user-dropdown" style={{ top: '110%', right: 0, minWidth: '160px', zIndex: 50 }}>
+                                <button className={`dropdown-item ${statusFilter === 'ALL' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('ALL'); setShowFilterMenu(false); }}>
+                                    Todas
+                                </button>
+                                <button className={`dropdown-item ${statusFilter === 'COMPLETED' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('COMPLETED'); setShowFilterMenu(false); }}>
+                                    <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Completadas
+                                </button>
+                                <button className={`dropdown-item ${statusFilter === 'VOIDED' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('VOIDED'); setShowFilterMenu(false); }}>
+                                    <span className="w-2 h-2 rounded-full bg-red-500 mr-2"></span> Anuladas
+                                </button>
+                                <button className={`dropdown-item ${statusFilter === 'REFUNDED' ? 'font-bold' : ''}`} onClick={() => { setStatusFilter('REFUNDED'); setShowFilterMenu(false); }}>
+                                    <span className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></span> Reembolsadas
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Click outside closer helper could go here or generic window listener,
+                            but for simplicity we assume user clicks option or toggles. */}
+                        {showFilterMenu && (
+                            <div
+                                style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+                                onClick={() => setShowFilterMenu(false)}
+                            />
+                        )}
                     </div>
                 </div>
             </div>
@@ -214,11 +219,11 @@ const Sales = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredSales.map(sale => (
+                        {filteredSales.map((sale) => (
                             <tr key={sale.id} className={sale.is_voided || sale.is_refunded ? 'row-muted opacity-60' : ''}>
-                                <td className="font-bold text-muted">#{sale.id}</td>
-                                <td>{formatDate(sale.date)}</td>
-                                <td>
+                                <td className="font-bold text-muted" data-label="ID">#{sale.id}</td>
+                                <td data-label="Fecha">{formatDate(sale.date)}</td>
+                                <td data-label="Vendedor">
                                     <div className="flex items-center gap-1">
                                         <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold">
                                             {sale.user_name?.charAt(0).toUpperCase()}
@@ -226,9 +231,9 @@ const Sales = () => {
                                         <span className="text-sm font-medium">{sale.user_name}</span>
                                     </div>
                                 </td>
-                                <td>{sale.payment_method}</td>
-                                <td className="font-bold text-slate-800">{formatCurrency(sale.total)}</td>
-                                <td>
+                                <td data-label="Método">{sale.payment_method}</td>
+                                <td className="font-bold text-slate-800" data-label="Total">{formatCurrency(sale.total)}</td>
+                                <td data-label="Estado">
                                     {sale.is_voided ? (
                                         <span className="badge badge-danger">ANULADA</span>
                                     ) : sale.is_refunded ? (
@@ -237,15 +242,17 @@ const Sales = () => {
                                         <span className="badge badge-success">COMPLETA</span>
                                     )}
                                 </td>
-                                <td style={{ textAlign: 'right' }}>
-                                    <button className="btn-icon" onClick={() => setSelectedSale(sale)} title="Ver Detalle">
+                                <td style={{ textAlign: 'right' }} data-label="Acciones">
+                                    <button className="btn-icon" onClick={() => setSelectedSale(sale)} title="Ver detalle">
                                         <Eye size={18} />
                                     </button>
                                 </td>
                             </tr>
                         ))}
                         {filteredSales.length === 0 && (
-                            <tr><td colSpan="7" className="text-center p-8 text-muted">No se encontraron ventas</td></tr>
+                            <tr>
+                                <td colSpan="7" className="text-center p-8 text-muted">Todavía no hay ventas para los filtros aplicados.</td>
+                            </tr>
                         )}
                     </tbody>
                 </table>
@@ -254,7 +261,7 @@ const Sales = () => {
             {/* Sale Detail Modal */}
             {selectedSale && !showActionModal && (
                 <Modal
-                    title={`Detalle Venta #${selectedSale.id}`}
+                    title={`Detalle de venta #${selectedSale.id}`}
                     onClose={() => setSelectedSale(null)}
                     size="lg"
                     footer={(
@@ -265,13 +272,13 @@ const Sales = () => {
                                         onClick={() => setShowActionModal('reembolsar')}
                                         className="ui-btn ui-btn-secondary text-warning"
                                     >
-                                        <RotateCcw size={16} /> Reembolsar
+                                        <RotateCcw size={16} /> Reembolsar venta
                                     </button>
                                     <button
                                         onClick={() => setShowActionModal('anular')}
                                         className="ui-btn ui-btn-danger"
                                     >
-                                        <Trash2 size={16} /> Anular
+                                        <Trash2 size={16} /> Anular venta
                                     </button>
                                 </div>
                             )}
@@ -325,10 +332,10 @@ const Sales = () => {
                                 <tbody>
                                     {selectedSale.items.map(item => (
                                         <tr key={item.id}>
-                                            <td>{item.producto_nombre}</td>
-                                            <td style={{ textAlign: 'right' }}>{item.quantity}</td>
-                                            <td style={{ textAlign: 'right' }}>{formatCurrency(item.price)}</td>
-                                            <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(item.quantity * item.price)}</td>
+                                            <td data-label="Producto">{item.producto_nombre}</td>
+                                            <td style={{ textAlign: 'right' }} data-label="Cant.">{item.quantity}</td>
+                                            <td style={{ textAlign: 'right' }} data-label="Precio">{formatCurrency(item.price)}</td>
+                                            <td style={{ textAlign: 'right', fontWeight: 600 }} data-label="Total">{formatCurrency(item.quantity * item.price)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -358,12 +365,12 @@ const Sales = () => {
                     <div className="modal">
                         <div className="modal-header">
                             <h3 className={`text-lg font-bold mb-0 ${showActionModal === 'anular' ? 'text-red-600' : 'text-yellow-600'}`}>
-                                {showActionModal === 'anular' ? 'Anular Venta' : 'Reembolsar Venta'}
+                                {showActionModal === 'anular' ? 'Anular venta' : 'Reembolsar venta'}
                             </h3>
                         </div>
                         <form onSubmit={handleAction}>
                             <p className="text-sm text-slate-600 mb-4">
-                                Para confirmar esta acción irreversible, por favor escriba <strong>{showActionModal === 'anular' ? 'borrar' : 'reembolsar'}</strong> en el campo de abajo.
+                                Para confirmar esta acción irreversible, escribí <strong>{showActionModal === 'anular' ? 'borrar' : 'reembolsar'}</strong> en el campo de abajo.
                             </p>
                             <div className="form-group mb-4">
                                 <input
@@ -377,12 +384,12 @@ const Sales = () => {
                                 />
                             </div>
                             <div className="form-group mb-4">
-                                <label className="text-sm font-medium mb-1 block">Motivo (Opcional)</label>
+                                <label className="text-sm font-medium mb-1 block">Motivo (opcional)</label>
                                 <textarea
                                     className="input-control w-full"
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
-                                    placeholder="Escriba el motivo aquí..."
+                                    placeholder="Escribí el motivo (opcional)…"
                                     rows={3}
                                 />
                             </div>
@@ -397,11 +404,11 @@ const Sales = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className={`btn ${showActionModal === 'anular' ? 'btn-icon danger bg-red-600 text-white hover:bg-red-700' : 'btn-primary bg-yellow-600 border-yellow-600 hover:bg-yellow-700'}`}
+                                    className={`btn confirm-action ${showActionModal === 'anular' ? 'confirm-danger' : 'confirm-warning'}`}
                                     style={{ width: 'auto', paddingLeft: '1rem', paddingRight: '1rem' }}
                                     disabled={actionLoading}
                                 >
-                                    {actionLoading ? 'Procesando...' : (showActionModal === 'anular' ? 'Confirmar Anulación' : 'Confirmar Reembolso')}
+                                    {actionLoading ? 'Procesando…' : (showActionModal === 'anular' ? 'Anular venta' : 'Reembolsar venta')}
                                 </button>
                             </div>
                         </form>

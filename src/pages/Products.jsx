@@ -184,41 +184,42 @@ const Products = () => {
   };
 
   return (
-    <div className="stack gap-lg">
-      <Card
-        title="Gestión de Inventario"
-        description="Control de existencias y catálogo de productos."
-      >
-        <div className="flex-row between wrap gap-md">
-          <Input
-            placeholder="Buscar por código, nombre..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            icon={<Search size={16} />}
-            className="w-full"
-            style={{ maxWidth: 400, margin: 0 }}
-          />
-
-          <div className="flex-row gap-sm">
-            <label className={`ui-btn ui-btn-secondary ${submitting ? 'disabled' : ''}`} style={{ cursor: submitting ? 'not-allowed' : 'pointer' }}>
-              <Upload size={16} /> Importar
-              <input type="file" hidden onChange={handleImport} accept=".csv, .xlsx" disabled={submitting} />
-            </label>
-            <Button variant="secondary" icon={<Users size={16} />} onClick={() => setShowSupplierModal(true)}>
-              Proveedores
-            </Button>
-            <Button variant="primary" icon={<Plus size={16} />} onClick={handleCreate}>
-              Nuevo Producto
-            </Button>
-          </div>
+    <div className="products-page page">
+      <div className="page-header">
+        <div className="page-header-title">
+          <p className="eyebrow">Inventario</p>
+          <h2 className="page-heading">Productos</h2>
+          <p className="page-subtitle">Administrá el inventario y el catálogo de productos.</p>
         </div>
+        <div className="page-header-actions">
+          <label className={`ui-btn ui-btn-secondary ${submitting ? 'disabled' : ''}`} style={{ cursor: submitting ? 'not-allowed' : 'pointer' }}>
+            <Upload size={16} /> Importar
+            <input type="file" hidden onChange={handleImport} accept=".csv, .xlsx" disabled={submitting} />
+          </label>
+          <Button variant="secondary" icon={<Users size={16} />} onClick={() => setShowSupplierModal(true)}>
+            Proveedores
+          </Button>
+          <Button variant="primary" icon={<Plus size={16} />} onClick={handleCreate}>
+            Nuevo producto
+          </Button>
+        </div>
+      </div>
+
+      <Card className="page-toolbar">
+        <Input
+          placeholder="Buscar por código o nombre…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          icon={<Search size={16} />}
+          className="products-search"
+        />
       </Card>
 
       {/* Alertas de Stock */}
       {lowStockData.results.length > 0 && (
         <Card
-          title="Alertas Críticas"
-          description="Productos por debajo del stock mínimo"
+          title="Alertas de stock"
+          description="Productos por debajo del stock mínimo."
           className="alert-card"
           headerSlot={<AlertTriangle size={20} className="text-danger-600" />}
         >
@@ -284,22 +285,22 @@ const Products = () => {
             ) : filteredProducts.length > 0 ? (
               filteredProducts.map((p) => (
                 <tr key={p.id}>
-                  <td className="muted font-mono">{p.codigo}</td>
-                  <td>
+                  <td className="muted font-mono" data-label="Código">{p.codigo}</td>
+                  <td data-label="Producto / Proveedor">
                     <div className="font-medium">{p.nombre}</div>
                     <div className="muted tiny flex-row gap-xs items-center mt-1">
                       <Store size={12} /> {p.supplier_name || 'Sin proveedor asignado'}
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Stock">
                     {p.bajo_stock
                       ? <Badge tone="danger">Bajo ({p.stock_actual})</Badge>
                       : <Badge tone="success">{p.stock_actual} un.</Badge>}
                   </td>
-                  <td className="text-slate-500">{p.stock_minimo}</td>
-                  <td className="text-slate-500">{formatARS(p.costo_compra)}</td>
-                  <td className="font-bold text-slate-700">{formatARS(p.precio_venta)}</td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td className="text-slate-500" data-label="Min">{p.stock_minimo}</td>
+                  <td className="text-slate-500" data-label="Costo">{formatARS(p.costo_compra)}</td>
+                  <td className="font-bold text-slate-700" data-label="Precio Venta">{formatARS(p.precio_venta)}</td>
+                  <td style={{ textAlign: 'right' }} data-label="Acciones">
                     <div className="flex-row gap-xs justify-end">
                       <button
                         className="btn-icon"
@@ -324,8 +325,8 @@ const Products = () => {
                 <td colSpan="7">
                   <div className="empty-state">
                     <Package size={48} strokeWidth={1.5} className="text-slate-300 mb-2" />
-                    <p className="font-medium text-slate-600">No se encontraron productos</p>
-                    <p className="text-sm text-slate-400">Intenta con otro término de búsqueda o crea un nuevo producto.</p>
+                    <p className="font-medium text-slate-600">No se encontraron productos.</p>
+                    <p className="text-sm text-slate-400">Probá con otra búsqueda o creá un producto.</p>
                   </div>
                 </td>
               </tr>
@@ -338,13 +339,13 @@ const Products = () => {
       {showModal && (
         <Modal
           persist={true}
-          title={editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
+          title={editingProduct ? 'Editar producto' : 'Nuevo producto'}
           onClose={() => !submitting && setShowModal(false)}
           footer={(
             <>
               <Button variant="ghost" onClick={() => setShowModal(false)} disabled={submitting}>Cancelar</Button>
               <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Guardando...' : 'Guardar'}
+                {submitting ? 'Guardando…' : 'Guardar'}
               </Button>
             </>
           )}
@@ -369,7 +370,7 @@ const Products = () => {
             </div>
 
             <Input
-              label="Nombre del Producto *"
+                label="Nombre del producto *"
               value={formData.nombre}
               onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
               required
@@ -435,10 +436,10 @@ const Products = () => {
             <div className="flex-row gap-sm items-end">
               <div style={{ flex: 1 }}>
                 <Input
-                  label="Nuevo Proveedor"
+                  label="Nuevo proveedor"
                   value={supplierForm.name}
                   onChange={(e) => setSupplierForm({ ...supplierForm, name: e.target.value })}
-                  placeholder="Nombre de la empresa"
+                  placeholder="Nombre del proveedor"
                 />
               </div>
               <Button
@@ -454,10 +455,10 @@ const Products = () => {
 
             <div className="table-container compact" style={{ maxHeight: 200, overflowY: 'auto', marginTop: 10 }}>
               <table className="styled-table">
-                <thead><tr><th>Empresa registrada</th></tr></thead>
+                <thead><tr><th>Proveedores Registrados</th></tr></thead>
                 <tbody>
-                  {suppliers.map((s) => <tr key={s.id}><td>{s.name}</td></tr>)}
-                  {suppliers.length === 0 && <tr><td className="muted text-sm">No hay proveedores.</td></tr>}
+                  {suppliers.map((s) => <tr key={s.id}><td data-label="Proveedores Registrados">{s.name}</td></tr>)}
+                  {suppliers.length === 0 && <tr><td className="muted text-sm" data-label="Proveedores Registrados">Todavía no hay proveedores.</td></tr>}
                 </tbody>
               </table>
             </div>

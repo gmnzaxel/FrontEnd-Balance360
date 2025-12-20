@@ -1,0 +1,87 @@
+:root {
+  --primary-50: #eef2ff;
+  --primary-100: #e0e7ff;
+  --primary-200: #c7d2fe;
+  --primary-300: #a5b4fc;
+  --primary-400: #818cf8;
+  --primary-500: #6366f1;
+  --primary-600: #4f46e5;
+  --primary-700: #4338ca;
+  --primary-800: #3730a3;
+
+  --slate-50: #0b0f1a;
+  --slate-100: #0f1524;
+  --slate-200: #141c2f;
+  --slate-300: #1b2538;
+  --slate-400: #2b364f;
+  --slate-500: #475569;
+  --slate-600: #64748b;
+  --slate-700: #94a3b8;
+  --slate-800: #cbd5e1;
+  --slate-900: #e2e8f0;
+
+  --success-bg: rgba(22, 163, 74, 0.2);
+  --success-text: #4ade80;
+  --warning-bg: rgba(217, 119, 6, 0.2);
+  --warning-text: #fbbf24;
+  --danger-bg: rgba(220, 38, 38, 0.2);
+  --danger-text: #f87171;
+
+  --bg-app: #0b0f1a;
+  --surface-0: #0f1524;
+  --surface-1: #131b2e;
+  --surface-2: rgba(19, 27, 46, 0.85);
+  --surface-glass: rgba(19, 27, 46, 0.7);
+  --surface-elevated: rgba(19, 27, 46, 0.92);
+  --surface-muted: #0d1424;
+
+  --border-subtle: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(148, 163, 184, 0.3);
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius: var(--radius-md);
+
+  --shadow-xs: 0 8px 20px rgba(2, 6, 23, 0.35);
+  --shadow-sm: 0 10px 30px rgba(2, 6, 23, 0.45);
+  --shadow-md: 0 18px 40px rgba(2, 6, 23, 0.55);
+  --shadow: 0 20px 60px rgba(2, 6, 23, 0.6);
+
+  --blur-sm: 6px;
+  --blur-md: 12px;
+  --blur-lg: 18px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+
+  --font-sans: 'Inter', 'Manrope', system-ui, -apple-system, sans-serif;
+
+  --duration-fast: 150ms;
+  --duration-md: 200ms;
+  --duration-slow: 280ms;
+  --ease-smooth: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  --sidebar-collapsed: 78px;
+  --sidebar-expanded: 260px;
+  --header-height: 72px;
+
+  --z-base: 1;
+  --z-header: 60;
+  --z-overlay: 70;
+  --z-drawer: 75;
+  --z-dropdown: 80;
+  --z-modal: 100;
+  --z-toast: 110;
+  --z-tooltip: 120;
+}

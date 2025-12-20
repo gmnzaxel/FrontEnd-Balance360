@@ -259,7 +259,7 @@ const NewSale = () => {
       <div className="catalog-panel">
         <div className="flex-row between">
           <Input
-            placeholder="Buscar producto..."
+            placeholder="Buscar producto…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             icon={<Search size={18} />}
@@ -303,21 +303,21 @@ const NewSale = () => {
                       onMouseEnter={(e) => { if (p.stock_actual > 0) e.currentTarget.style.backgroundColor = 'var(--primary-50)'; }}
                       onMouseLeave={(e) => { if (p.stock_actual > 0) e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
-                      <td>
+                      <td data-label="Código">
                         <span className="badge badge-neutral" style={{ fontSize: '0.75rem' }}>{p.codigo}</span>
                       </td>
-                      <td>
+                      <td data-label="Producto">
                         <div style={{ fontWeight: 600, color: 'var(--slate-700)' }}>{p.nombre}</div>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td style={{ textAlign: 'center' }} data-label="Stock">
                         <span className={`badge ${p.stock_actual > 5 ? 'badge-success' : p.stock_actual > 0 ? 'badge-warning' : 'badge-danger'}`}>
                           {p.stock_actual}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                      <td style={{ textAlign: 'right', fontWeight: 'bold' }} data-label="Precio">
                         {formatARS(p.precio_venta)}
                       </td>
-                      <td style={{ textAlign: 'center', color: 'var(--primary-600)' }}>
+                      <td style={{ textAlign: 'center', color: 'var(--primary-600)' }} data-label="Acción">
                         {p.stock_actual > 0 && <span>+</span>}
                       </td>
                     </tr>
@@ -325,9 +325,11 @@ const NewSale = () => {
                 )}
                 {!loading && !pageProducts.length && (
                   <tr>
-                    <td colSpan="5" className="text-center" style={{ padding: '40px 0', color: 'var(--slate-500)' }}>
-                      <PackageX size={48} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
-                      <p>No se encontraron productos</p>
+                    <td colSpan="5" className="pos-empty-cell">
+                      <div className="pos-empty">
+                        <PackageX size={48} />
+                        <p>No se encontraron productos</p>
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -359,7 +361,7 @@ const NewSale = () => {
           {!cart.length && (
             <div className="empty-state">
               <ShoppingCart size={42} className="muted" />
-              <p>Agrega productos o servicios</p>
+              <p>Agregá productos o servicios</p>
             </div>
           )}
           {cart.map((item) => (
@@ -461,12 +463,12 @@ const NewSale = () => {
       {/* Success Modal */}
       {showSuccessModal && (
         <Modal
-          title="¡Venta Exitosa!"
+          title="Venta registrada"
           onClose={() => setShowSuccessModal(false)}
           size="sm"
           footer={(
             <Button variant="primary" fullWidth onClick={() => setShowSuccessModal(false)}>
-              Nueva Venta
+              Nueva venta
             </Button>
           )}
         >
@@ -475,7 +477,7 @@ const NewSale = () => {
               <CreditCard size={32} />
             </div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">Venta #{lastSale?.id}</h3>
-            <p className="text-slate-500 mb-6">La transacción se ha registrado correctamente.</p>
+            <p className="text-slate-500 mb-6">La venta se registró correctamente.</p>
 
             <Button
               variant="secondary"

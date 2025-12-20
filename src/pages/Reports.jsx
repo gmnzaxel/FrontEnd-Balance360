@@ -45,36 +45,35 @@ const Reports = () => {
         }
     };
 
-    const KPICard = ({ title, value, icon: Icon, color, subvalue }) => (
-        <div className="card p-4 border-l-4" style={{ borderLeftColor: color }}>
-            <div className="flex justify-between items-start mb-2">
+    const KPICard = ({ title, value, icon: Icon, tone, subvalue }) => (
+        <div className={`card reports-kpi tone-${tone}`}>
+            <div className="reports-kpi-head">
                 <div>
-                    <p className="text-slate-500 text-sm font-medium uppercase tracking-wide">{title}</p>
-                    <h3 className="text-2xl font-bold text-slate-800 mt-1">{value}</h3>
+                    <p className="reports-kpi-label">{title}</p>
+                    <h3 className="reports-kpi-value">{value}</h3>
                 </div>
-                <div className="p-2 rounded-lg bg-slate-50 text-slate-600">
+                <div className="reports-kpi-icon">
                     <Icon size={20} />
                 </div>
             </div>
-            {subvalue && <p className="text-xs text-slate-400 mt-1">{subvalue}</p>}
+            {subvalue && <p className="reports-kpi-subvalue">{subvalue}</p>}
         </div>
     );
 
     return (
-        <div className="reports-page max-w-7xl mx-auto pb-10">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-900">Panel de Reportes</h2>
-                    <p className="text-slate-500">Métricas clave y rendimiento del negocio (Mes Actual).</p>
+        <div className="reports-page page page-container">
+            <div className="page-header">
+                <div className="page-header-title">
+                    <p className="eyebrow">Analítica</p>
+                    <h2 className="page-heading">Reportes</h2>
+                    <p className="page-subtitle">Métricas clave y rendimiento del negocio.</p>
                 </div>
-
-                <div className="flex gap-3">
-                    <div className="flex items-center gap-2 bg-white px-3 py-2 border border-slate-200 rounded-lg shadow-sm">
+                <div className="page-header-actions reports-actions">
+                    <div className="reports-period">
                         <Calendar size={18} className="text-slate-400" />
-                        <span className="text-sm font-medium text-slate-600">Histórico:</span>
+                        <span className="reports-period-label">Histórico:</span>
                         <select
-                            className="bg-transparent border-none text-sm font-semibold text-slate-900 focus:outline-none cursor-pointer"
+                            className="reports-period-select"
                             value={months}
                             onChange={e => setMonths(e.target.value)}
                         >
@@ -90,45 +89,45 @@ const Reports = () => {
             </div>
 
             {loading && !stats ? (
-                <div className="p-12 text-center text-slate-400">Cargando métricas...</div>
+                <div className="p-12 text-center text-slate-400">Cargando reportes…</div>
             ) : stats && (
-                <div className="stack gap-lg">
+                <div className="stack gap-lg page-section">
                     {/* KPIs Row */}
-                    <div className="grid four-cols gap-md">
+                    <div className="grid four-cols gap-md reports-kpi-grid">
                         <KPICard
-                            title="Ventas del Mes"
+                            title="Ventas del mes"
                             value={formatCurrency(stats.total_sold)}
                             icon={DollarSign}
-                            color="#3b82f6"
+                            tone="primary"
                             subvalue={`${stats.sales_count} transacciones`}
                         />
                         <KPICard
-                            title="Margen Bruto"
+                            title="Margen bruto"
                             value={formatCurrency(stats.margin)}
                             icon={TrendingUp}
-                            color="#10b981"
+                            tone="success"
                             subvalue="Ganancia estimada"
                         />
                         <KPICard
-                            title="Valor Inventario"
+                            title="Valor de inventario"
                             value={formatCurrency(stats.stock_valorized)}
                             icon={Package}
-                            color="#8b5cf6"
+                            tone="violet"
                             subvalue="Costo total stock"
                         />
                         <KPICard
-                            title="Ticket Promedio"
+                            title="Ticket promedio"
                             value={formatCurrency(stats.sales_count ? stats.total_sold / stats.sales_count : 0)}
                             icon={CreditCard}
-                            color="#f59e0b"
+                            tone="warning"
                             subvalue="Por venta"
                         />
                     </div>
 
                     {/* Stock Alert Banner */}
                     {stats.stockouts > 0 && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-4 text-red-700">
-                            <AlertTriangle className="text-red-500" />
+                        <div className="reports-alert">
+                            <AlertTriangle className="reports-alert-icon" />
                             <div>
                                 <span className="font-bold">¡Atención!</span> Tienes {stats.stockouts} productos con stock agotado.
                             </div>
@@ -136,13 +135,13 @@ const Reports = () => {
                     )}
 
                     {/* Charts Grid */}
-                    <div className="grid two-cols gap-lg" style={{ gridTemplateColumns: '2fr 1fr' }}>
+                    <div className="reports-charts">
                         {/* Main Evolution Chart */}
-                        <div className="card" style={{ minHeight: '400px' }}>
-                            <div className="card-header border-b border-slate-100 pb-4 mb-4">
-                                <h3 className="text-lg font-bold text-slate-800">Evolución de Ingresos</h3>
+                        <div className="card reports-chart-card">
+                            <div className="card-header reports-card-header">
+                                <h3 className="text-lg font-bold text-slate-800">Evolución de ingresos</h3>
                             </div>
-                            <div style={{ width: '100%', height: '300px' }}>
+                            <div className="reports-chart-body">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={series} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -150,28 +149,28 @@ const Reports = () => {
                                         <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} />
                                         <Tooltip
                                             cursor={{ fill: '#f1f5f9' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                            contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 12px 30px rgba(15,23,42,0.12)', backdropFilter: 'blur(8px)' }}
                                             formatter={(value) => [formatCurrency(value), "Ventas"]}
                                         />
-                                        <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} name="Ventas" />
+                                        <Bar dataKey="total" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={36} name="Ventas" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
 
                         {/* Top Products List/Chart */}
-                        <div className="card" style={{ minHeight: '400px' }}>
-                            <div className="card-header border-b border-slate-100 pb-4 mb-4 flex-between">
-                                <h3 className="text-lg font-bold text-slate-800">Top Productos</h3>
+                        <div className="card reports-top-card">
+                            <div className="card-header reports-card-header flex-between">
+                                <h3 className="text-lg font-bold text-slate-800">Top productos</h3>
                                 <ShoppingBag size={18} className="text-slate-400" />
                             </div>
-                            <div className="overflow-y-auto" style={{ maxHeight: '300px' }}>
+                            <div className="reports-top-list">
                                 {stats.top_products?.length > 0 ? (
                                     <div className="stack gap-sm">
                                         {stats.top_products.map((p, i) => (
-                                            <div key={i} className="flex-between p-2 hover:bg-slate-50 rounded transition-colors border-b border-slate-50 last:border-0">
-                                                <div className="flex items-center gap-3 overflow-hidden">
-                                                    <div className={`w-6 h-6 rounded-full flex-center text-xs font-bold ${i < 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-500'}`}>
+                                            <div key={i} className="reports-top-item">
+                                                <div className="reports-top-meta">
+                                                    <div className={`reports-rank ${i < 3 ? 'top' : 'base'}`}>
                                                         {i + 1}
                                                     </div>
                                                     <span className="text-sm font-medium text-slate-700 truncate" title={p.product__nombre}>
@@ -186,7 +185,7 @@ const Reports = () => {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 py-8">Sin datos de productos</div>
+                                    <div className="text-center text-slate-400 py-8">Todavía no hay datos de productos.</div>
                                 )}
                             </div>
                         </div>

@@ -110,72 +110,79 @@ const Users = () => {
     };
 
     return (
-        <div className="users-page">
-            <div className="card mb-6 flex-between">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900">Gestión de Usuarios</h2>
-                    <p className="text-sm text-slate-500">Administra el acceso y roles del sistema.</p>
+        <div className="users-page page">
+            <div className="page-header">
+                <div className="page-header-title">
+                    <p className="eyebrow">Administración</p>
+                    <h2 className="page-heading">Usuarios</h2>
+                    <p className="page-subtitle">Administrá el acceso y los roles del sistema.</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => { setEditingUser(null); resetForm(); setShowModal(true); }}>
-                    <Plus size={18} /> Nuevo Usuario
-                </button>
+                <div className="page-header-actions">
+                    <button className="btn btn-primary" onClick={() => { setEditingUser(null); resetForm(); setShowModal(true); }}>
+                    <Plus size={18} /> Nuevo usuario
+                    </button>
+                </div>
             </div>
 
-            <div className="table-container shadow-sm">
-                <table className="styled-table">
-                    <thead>
-                        <tr>
-                            <th>Usuario</th>
-                            <th>Email</th>
-                            <th>Rol</th>
-                            <th>Estado</th>
-                            <th style={{ textAlign: 'center', width: '100px', verticalAlign: 'middle' }}>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.map(u => (
-                            <tr key={u.id}>
-                                <td className="font-medium text-slate-800">{u.username}</td>
-                                <td>{u.email}</td>
-                                <td>
-                                    <span className={`badge ${u.role === 'ADMIN' ? 'badge-primary' : 'badge-neutral'}`}>
-                                        {u.role}
-                                    </span>
-                                </td>
-                                <td>
-                                    <label className="toggle-switch transform scale-75 origin-left">
-                                        <input
-                                            type="checkbox"
-                                            checked={u.is_active}
-                                            onChange={() => handleToggleStatus(u)}
-                                        />
-                                        <span className="slider"></span>
-                                    </label>
-                                </td>
-                                <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                    <div className="flex justify-center gap-1">
-                                        <button className="btn-icon" onClick={() => handleEdit(u)} title="Editar">
-                                            <Edit size={18} />
-                                        </button>
-                                        <button className="btn-icon danger" onClick={() => handleDelete(u.id)} title="Eliminar">
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-                                </td>
+            <div className="card users-table-card">
+                <div className="table-container shadow-sm">
+                    <table className="styled-table">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Email</th>
+                                <th>Rol</th>
+                                <th>Estado</th>
+                                <th style={{ textAlign: 'center', width: '100px', verticalAlign: 'middle' }}>Acciones</th>
                             </tr>
-                        ))}
-                        {users.length === 0 && !loading && (
-                            <tr><td colSpan="5" className="text-center p-8 text-muted">No hay usuarios registrados</td></tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {users.map(u => (
+                                <tr key={u.id}>
+                                    <td className="font-medium text-slate-800" data-label="Usuario">{u.username}</td>
+                                    <td data-label="Email">{u.email}</td>
+                                    <td data-label="Rol">
+                                        <span className={`badge ${u.role === 'ADMIN' ? 'badge-primary' : 'badge-neutral'}`}>
+                                            {u.role}
+                                        </span>
+                                    </td>
+                                    <td className="toggle-cell" data-label="Estado">
+                                        <div className="toggle-wrap">
+                                            <label className="toggle-switch transform scale-75 origin-left">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={u.is_active}
+                                                    onChange={() => handleToggleStatus(u)}
+                                                />
+                                                <span className="slider"></span>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td style={{ textAlign: 'center', verticalAlign: 'middle' }} data-label="Acciones">
+                                        <div className="flex justify-center gap-1">
+                                            <button className="btn-icon" onClick={() => handleEdit(u)} title="Editar">
+                                                <Edit size={18} />
+                                            </button>
+                                            <button className="btn-icon danger" onClick={() => handleDelete(u.id)} title="Eliminar">
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {users.length === 0 && !loading && (
+                                <tr><td colSpan="5" className="text-center p-8 text-muted">Todavía no hay usuarios creados.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {showModal && (
                 <div className="modal-overlay">
                     <div className="modal">
                         <div className="modal-header">
-                            {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+                            {editingUser ? 'Editar usuario' : 'Nuevo usuario'}
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
@@ -187,7 +194,7 @@ const Users = () => {
                                     onChange={handleChange}
                                     required
                                     disabled={!!editingUser}
-                                    placeholder="ej. jperez"
+                                    placeholder="Ej. jperez"
                                 />
                             </div>
                             <div className="form-group">
@@ -198,7 +205,7 @@ const Users = () => {
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    placeholder="ej. juan@empresa.com"
+                                    placeholder="Ej. juan@empresa.com"
                                 />
                             </div>
                             {!editingUser && (
@@ -225,7 +232,7 @@ const Users = () => {
 
                             <div className="modal-actions mt-6">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Guardar Usuario</button>
+                                <button type="submit" className="btn btn-primary">Guardar usuario</button>
                             </div>
                         </form>
                     </div>

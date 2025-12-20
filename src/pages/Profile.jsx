@@ -60,17 +60,17 @@ const Profile = () => {
         }
     };
 
-    if (!profileData) return <div className="p-8 text-center text-muted">Cargando perfil...</div>;
+    if (!profileData) return <div className="p-8 text-center text-muted">Cargando perfil…</div>;
 
     const InfoCard = ({ icon, title, children, innerRef }) => (
-        <div className="card h-full" ref={innerRef}>
-            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
-                <div style={{ padding: '0.5rem', borderRadius: '50%', background: 'var(--primary-50)', color: 'var(--primary-600)' }}>
+        <div className="card profile-card" ref={innerRef}>
+            <div className="profile-card-header">
+                <div className="profile-card-icon">
                     {icon}
                 </div>
                 <h3 className="text-lg font-semibold text-slate-800 m-0">{title}</h3>
             </div>
-            <div className="flex flex-col gap-4">
+            <div className="profile-card-body">
                 {children}
             </div>
         </div>
@@ -88,29 +88,35 @@ const Profile = () => {
     );
 
     return (
-        <div className="profile-page max-w-6xl mx-auto">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">Mi Perfil</h2>
+        <div className="profile-page page page-container">
+            <div className="page-header">
+                <div className="page-header-title">
+                    <p className="eyebrow">Cuenta</p>
+                    <h2 className="page-heading">Mi perfil</h2>
+                    <p className="page-subtitle">Datos personales, empresa y seguridad.</p>
+                </div>
+            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            <div className="profile-grid page-section">
                 {/* User Info Card */}
-                <InfoCard icon={<User size={20} />} title="Información Personal">
-                    <InfoRow label="Nombre de Usuario" value={profileData.username} />
+                <InfoCard icon={<User size={20} />} title="Datos personales">
+                    <InfoRow label="Usuario" value={profileData.username} />
                     <InfoRow label="Email" value={profileData.email || 'No proporcionado'} />
-                    <InfoRow label="Rol de Usuario" value={profileData.role} badge="primary" />
+                    <InfoRow label="Rol" value={profileData.role} badge="primary" />
                 </InfoCard>
 
                 {/* Company Info Card */}
-                <InfoCard icon={<Building size={20} />} title="Detalles de Empresa">
-                    <InfoRow label="Nombre Comercial" value={profileData.company_name} />
-                    <InfoRow label="Sucursal Actual" value={profileData.branch_name} />
-                    <InfoRow label="Moneda Configurada" value={profileData.currency || 'ARS'} />
+                <InfoCard icon={<Building size={20} />} title="Empresa">
+                    <InfoRow label="Nombre comercial" value={profileData.company_name} />
+                    <InfoRow label="Sucursal actual" value={profileData.branch_name} />
+                    <InfoRow label="Moneda" value={profileData.currency || 'ARS'} />
                 </InfoCard>
 
                 {/* Password Change Card */}
                 <InfoCard icon={<ShieldCheck size={20} />} title="Seguridad" innerRef={securityRef}>
                     <form onSubmit={handlePasswordChange}>
                         <div className="form-group">
-                            <label>Contraseña Actual</label>
+                            <label>Contraseña actual</label>
                             <input
                                 className="input-control"
                                 type="password"
@@ -120,18 +126,18 @@ const Profile = () => {
                             />
                         </div>
                         <div className="form-group">
-                            <label>Nueva Contraseña</label>
+                            <label>Nueva contraseña</label>
                             <input
                                 className="input-control"
                                 type="password"
                                 value={passwordData.new_password}
                                 onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
                                 required
-                                placeholder="8+ caracteres"
+                                placeholder="Mínimo 8 caracteres"
                             />
                         </div>
                         <div className="form-group">
-                            <label>Confirmar Nueva</label>
+                            <label>Confirmar nueva contraseña</label>
                             <input
                                 className="input-control"
                                 type="password"
@@ -141,7 +147,7 @@ const Profile = () => {
                             />
                         </div>
                         <button type="submit" className="btn btn-primary w-full mt-2" disabled={loading}>
-                            {loading ? 'Procesando...' : 'Actualizar Contraseña'}
+                            {loading ? 'Procesando…' : 'Actualizar contraseña'}
                         </button>
                     </form>
                 </InfoCard>

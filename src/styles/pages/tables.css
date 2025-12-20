@@ -1,0 +1,66 @@
+/* Responsive stacked tables for mobile */
+@media (max-width: 768px) {
+  .table-container {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .styled-table {
+    min-width: 100%;
+  }
+
+  .styled-table thead {
+    display: none;
+  }
+
+  .styled-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    background: var(--surface-0);
+  }
+
+  .styled-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border: none;
+    font-size: 0.95rem;
+  }
+
+  .styled-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+
+  .styled-table td.text-right {
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .styled-table td[data-label="Acciones"] {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .styled-table td[data-label="Acciones"] > * {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .styled-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.12);
+  }
+}
+
+@media (max-width: 480px) {
+  .table-container {
+    box-shadow: var(--shadow-xs);
+  }
+}
