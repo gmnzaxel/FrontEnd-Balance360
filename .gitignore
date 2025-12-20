@@ -30,6 +30,13 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # Vite
 vite.config.js.timestamp-*
