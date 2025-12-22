@@ -66,6 +66,10 @@ const Users = () => {
     };
 
     const handleToggleStatus = async (user) => {
+        if (user.id === currentUser?.user_id) {
+            toast.error('No puedes desactivarte a ti mismo.');
+            return;
+        }
         const newStatus = !user.is_active;
         try {
             // Update UI optimistically
@@ -152,6 +156,7 @@ const Users = () => {
                                                 <input
                                                     type="checkbox"
                                                     checked={u.is_active}
+                                                    disabled={u.id === currentUser?.user_id}
                                                     onChange={() => handleToggleStatus(u)}
                                                 />
                                                 <span className="slider"></span>
