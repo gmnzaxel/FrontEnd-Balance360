@@ -27,11 +27,11 @@
 }
 
 .auth-shell-register .auth-layout {
-  align-items: start;
+  align-items: center;
 }
 
 .auth-aside-compact {
-  align-self: start;
+  align-self: center;
   padding: 24px;
 }
 
