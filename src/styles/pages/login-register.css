@@ -68,6 +68,12 @@
   color: var(--text-secondary);
 }
 
+.auth-step.is-active {
+  border-color: rgba(99, 102, 241, 0.6);
+  color: var(--text-primary);
+  background: rgba(99, 102, 241, 0.12);
+}
+
 .auth-step-index {
   width: 22px;
   height: 22px;
@@ -142,6 +148,16 @@
   background: rgba(99, 102, 241, 0.08);
   color: var(--text-secondary);
   font-size: 0.85rem;
+}
+
+.auth-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auth-actions.is-single {
+  justify-content: flex-end;
 }
 
 @media (max-width: 640px) {
