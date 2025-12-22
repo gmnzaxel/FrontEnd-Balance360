@@ -54,7 +54,7 @@
   gap: 16px;
   align-items: center;
   margin-bottom: 18px;
-  padding: 4px 4px 0;
+  padding: 4px 4px 10px;
 }
 
 .auth-stepper::before {
@@ -62,7 +62,7 @@
   position: absolute;
   left: 18px;
   right: 18px;
-  top: 18px;
+  bottom: 6px;
   height: 1px;
   background: rgba(148, 163, 184, 0.3);
 }
