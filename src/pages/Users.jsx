@@ -71,6 +71,10 @@ const Users = () => {
             return;
         }
         const newStatus = !user.is_active;
+        if (!newStatus) {
+            const confirmed = window.confirm(`¿Seguro que deseas desactivar a ${user.username}?`);
+            if (!confirmed) return;
+        }
         try {
             // Update UI optimistically
             setUsers(users.map(u => u.id === user.id ? { ...u, is_active: newStatus } : u));
@@ -85,6 +89,10 @@ const Users = () => {
     };
 
     const handleDelete = async (id) => {
+        if (id === currentUser?.user_id) {
+            toast.error('No puedes eliminar tu propio usuario.');
+            return;
+        }
         if (window.confirm("¿Seguro que desea eliminar este usuario?")) {
             try {
                 await api.delete(`users/${id}/`);
@@ -168,13 +176,23 @@ const Users = () => {
                                             <button className="btn-icon" onClick={() => handleEdit(u)} title="Editar">
                                                 <Edit size={18} />
                                             </button>
-                                            <button className="btn-icon danger" onClick={() => handleDelete(u.id)} title="Eliminar">
+                                            <button
+                                                className="btn-icon danger"
+                                                onClick={() => handleDelete(u.id)}
+                                                title="Eliminar"
+                                                disabled={u.id === currentUser?.user_id}
+                                            >
                                                 <Trash2 size={18} />
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                             ))}
+                            {loading && (
+                                <tr>
+                                    <td colSpan="5" className="text-center p-8 text-muted">Cargando usuarios...</td>
+                                </tr>
+                            )}
                             {users.length === 0 && !loading && (
                                 <tr><td colSpan="5" className="text-center p-8 text-muted">Todavía no hay usuarios creados.</td></tr>
                             )}
@@ -229,7 +247,13 @@ const Users = () => {
                             )}
                             <div className="form-group">
                                 <label>Rol de Acceso</label>
-                                <select className="select-control" name="role" value={formData.role} onChange={handleChange}>
+                                <select
+                                    className="select-control"
+                                    name="role"
+                                    value={formData.role}
+                                    onChange={handleChange}
+                                    disabled={editingUser?.id === currentUser?.user_id}
+                                >
                                     <option value="USER">Usuario (Vendedor)</option>
                                     <option value="ADMIN">Administrador</option>
                                 </select>

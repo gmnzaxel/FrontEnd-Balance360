@@ -82,6 +82,16 @@ const Register = () => {
                 <h2>Balance360</h2>
               </div>
             </div>
+            <div className="auth-stepper">
+              <div className="auth-step">
+                <span className="auth-step-index">1</span>
+                <span className="auth-step-label">Empresa</span>
+              </div>
+              <div className="auth-step">
+                <span className="auth-step-index">2</span>
+                <span className="auth-step-label">Administrador</span>
+              </div>
+            </div>
             <form onSubmit={handleSubmit} className="form-stack gap-lg">
               <div className="section-block">
                 <div className="section-title">
@@ -98,6 +108,7 @@ const Register = () => {
                     value={formData.empresa_nombre}
                     onChange={handleChange}
                     placeholder="Ej. Mi Negocio S.A."
+                    helper="Usá el nombre legal o comercial."
                     className="full-span"
                   />
                   <Input
@@ -114,6 +125,7 @@ const Register = () => {
                     value={formData.empresa_telefono}
                     onChange={handleChange}
                     placeholder="+54 ..."
+                    helper="Incluí código de país."
                     icon={<Phone size={16} />}
                   />
                   <Input
@@ -143,6 +155,7 @@ const Register = () => {
                     value={formData.username}
                     onChange={handleChange}
                     placeholder="admin"
+                    helper="Solo letras y números, sin espacios."
                     className="full-span"
                   />
                   <Input
@@ -153,6 +166,7 @@ const Register = () => {
                     onChange={handleChange}
                     placeholder="••••••••"
                     icon={<Lock size={16} />}
+                    helper="Mínimo 8 caracteres y 1 número."
                   />
                   <Input
                     label="Confirmar contraseña"
@@ -164,6 +178,11 @@ const Register = () => {
                     icon={<Lock size={16} />}
                   />
                 </div>
+              </div>
+
+              <div className="auth-note">
+                <ShieldCheck size={16} />
+                Tus datos se almacenan cifrados y no se comparten con terceros.
               </div>
 
               <Button type="submit" variant="primary" fullWidth icon={<ArrowRight size={18} />} loading={loading}>
