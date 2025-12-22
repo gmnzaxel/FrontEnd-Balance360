@@ -26,6 +26,19 @@
   right: -140px;
 }
 
+.auth-shell-register .auth-layout {
+  align-items: start;
+}
+
+.auth-aside-compact {
+  align-self: start;
+  padding: 24px;
+}
+
+.auth-aside-compact .auth-trust {
+  margin-top: 16px;
+}
+
 .auth-panel .ui-card {
   position: relative;
   z-index: 1;

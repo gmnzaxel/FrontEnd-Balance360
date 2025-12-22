@@ -43,6 +43,10 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (step === 1) {
+      handleNext();
+      return;
+    }
     const requiredFields = [
       'username',
       'password',
@@ -70,9 +74,9 @@ const Register = () => {
   };
 
   return (
-    <div className="auth-shell">
+    <div className="auth-shell auth-shell-register">
       <div className="auth-layout">
-        <aside className="auth-aside">
+        <aside className="auth-aside auth-aside-compact">
           <div className="auth-brand">
             <div className="brand-icon"><ShieldCheck size={26} /></div>
             <div className="brand-text">
