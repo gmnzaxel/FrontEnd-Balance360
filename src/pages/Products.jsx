@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useContext } from 'react';
-import { Edit, Trash2, Plus, Upload, Users, AlertTriangle, Search, Store, Package, RotateCcw } from 'lucide-react';
+import { Edit, Trash2, Plus, Upload, Users, AlertTriangle, Search, Store, Package, RotateCcw, Archive } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 import { formatARS } from '../utils/format';
@@ -90,7 +90,7 @@ const Products = () => {
   }, [products, searchTerm]);
 
   // --- Acciones de Producto ---
-  const handleDelete = async (id) => {
+  const handleArchive = async (id) => {
     if (!isAdmin) {
       toast.error('Solo los administradores pueden archivar productos');
       return;
@@ -312,13 +312,15 @@ const Products = () => {
           icon={<Search size={16} />}
           className="products-search"
         />
-        <label className="inline-flex items-center gap-sm text-sm text-slate-600">
+        <label className="archive-toggle">
           <input
             type="checkbox"
+            className="archive-toggle-input"
             checked={showArchivedProducts}
             onChange={(e) => setShowArchivedProducts(e.target.checked)}
           />
-          Mostrar archivados
+          <span className="archive-toggle-control" aria-hidden="true" />
+          <span className="archive-toggle-label">Mostrar archivados</span>
         </label>
       </Card>
 
@@ -415,41 +417,20 @@ const Products = () => {
                   <td style={{ textAlign: 'right' }} data-label="Acciones">
                     {isAdmin && (
                       <div className="flex-row gap-xs justify-end">
-                        {!p.is_archived ? (
-                          <>
-                            <button
-                              className="btn-icon"
-                              title="Editar"
-                              onClick={() => handleEdit(p)}
-                            >
-                              <Edit size={18} />
-                            </button>
-                            <button
-                              className="btn-icon text-danger-600"
-                              title="Archivar"
-                              onClick={() => handleDelete(p.id)}
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              className="btn-icon"
-                              title="Restaurar"
-                              onClick={() => handleRestore(p.id)}
-                            >
-                              <RotateCcw size={18} />
-                            </button>
-                            <button
-                              className="btn-icon text-danger-600"
-                              title="Eliminar definitivamente"
-                              onClick={() => handleHardDelete(p)}
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </>
-                        )}
+                        <button
+                          className="btn-icon"
+                          title={p.is_archived ? 'Desarchivar' : 'Archivar'}
+                          onClick={() => (p.is_archived ? handleRestore(p.id) : handleArchive(p.id))}
+                        >
+                          {p.is_archived ? <RotateCcw size={18} /> : <Archive size={18} />}
+                        </button>
+                        <button
+                          className="btn-icon text-danger-600"
+                          title="Eliminar definitivamente"
+                          onClick={() => handleHardDelete(p)}
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       </div>
                     )}
                   </td>
@@ -597,13 +578,15 @@ const Products = () => {
               </Button>
             </div>
 
-            <label className="inline-flex items-center gap-sm text-sm text-slate-600">
+            <label className="archive-toggle">
               <input
                 type="checkbox"
+                className="archive-toggle-input"
                 checked={showArchivedSuppliers}
                 onChange={(e) => setShowArchivedSuppliers(e.target.checked)}
               />
-              Mostrar archivados
+              <span className="archive-toggle-control" aria-hidden="true" />
+              <span className="archive-toggle-label">Mostrar archivados</span>
             </label>
 
             <div className="table-container compact" style={{ maxHeight: 200, overflowY: 'auto', marginTop: 10 }}>

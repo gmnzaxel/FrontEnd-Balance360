@@ -8,6 +8,60 @@
   max-width: 420px;
 }
 
+.archive-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-0);
+  box-shadow: var(--shadow-xs);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.archive-toggle-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.archive-toggle-control {
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+  position: relative;
+  transition: background var(--duration-fast) var(--ease-smooth);
+}
+
+.archive-toggle-control::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+  transition: transform var(--duration-fast) var(--ease-smooth);
+}
+
+.archive-toggle-input:checked + .archive-toggle-control {
+  background: var(--primary-500);
+}
+
+.archive-toggle-input:checked + .archive-toggle-control::after {
+  transform: translateX(16px);
+}
+
+.archive-toggle-label {
+  white-space: nowrap;
+}
+
 .products-page .alert-card {
   border-left-color: var(--danger-text);
 }
