@@ -34,7 +34,7 @@ const Products = () => {
   // --- Estados de Formularios ---
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
-    codigo: '', nombre: '', stock_actual: 0, stock_minimo: 5, costo_compra: 0, precio_venta: 0, supplier_name: '',
+    codigo: '', nombre: '', stock_actual: 0, stock_minimo: 5, stock_maximo: 0, costo_compra: 0, precio_venta: 0, supplier_name: '',
   });
   const [supplierForm, setSupplierForm] = useState({ name: '', contact_phone: '' });
 
@@ -130,7 +130,7 @@ const Products = () => {
   const handleCreate = () => {
     setEditingProduct(null);
     setFormData({
-      codigo: '', nombre: '', stock_actual: 0, stock_minimo: 5, costo_compra: 0, precio_venta: 0, supplier_name: '',
+      codigo: '', nombre: '', stock_actual: 0, stock_minimo: 5, stock_maximo: 0, costo_compra: 0, precio_venta: 0, supplier_name: '',
     });
     setShowModal(true);
   };
@@ -348,6 +348,7 @@ const Products = () => {
               <th>Producto / Proveedor</th>
               <th>Stock</th>
               <th>Min</th>
+              <th>Max</th>
               <th>Costo</th>
               <th>Precio Venta</th>
               <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -355,7 +356,7 @@ const Products = () => {
           </thead>
           <tbody>
             {loading ? (
-              [1, 2, 3].map(i => <tr key={i}><td colSpan="7"><Skeleton height={48} /></td></tr>)
+              [1, 2, 3].map(i => <tr key={i}><td colSpan="8"><Skeleton height={48} /></td></tr>)
             ) : filteredProducts.length > 0 ? (
               filteredProducts.map((p) => (
                 <tr key={p.id} className={p.is_archived ? 'row-muted opacity-60' : ''}>
@@ -375,6 +376,7 @@ const Products = () => {
                       : <Badge tone="success">{p.stock_actual} un.</Badge>}
                   </td>
                   <td className="text-slate-500" data-label="Min">{p.stock_minimo}</td>
+                  <td className="text-slate-500" data-label="Max">{p.stock_maximo || '-'}</td>
                   <td className="text-slate-500" data-label="Costo">{formatARS(p.costo_compra)}</td>
                   <td className="font-bold text-slate-700" data-label="Precio Venta">{formatARS(p.precio_venta)}</td>
                   <td style={{ textAlign: 'right' }} data-label="Acciones">
@@ -413,7 +415,7 @@ const Products = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="7">
+                <td colSpan="8">
                   <div className="empty-state">
                     <Package size={48} strokeWidth={1.5} className="text-slate-300 mb-2" />
                     <p className="font-medium text-slate-600">No se encontraron productos.</p>
@@ -486,6 +488,15 @@ const Products = () => {
                 required
               />
             </div>
+
+            <Input
+              label="Stock Máximo"
+              type="number"
+              min="0"
+              value={formData.stock_maximo}
+              onChange={(e) => setFormData({ ...formData, stock_maximo: e.target.value })}
+              helper="Si se informa, el pedido sugerido repone hasta este valor."
+            />
 
             <div className="grid two-cols">
               <Input

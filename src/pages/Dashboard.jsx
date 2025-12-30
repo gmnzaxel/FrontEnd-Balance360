@@ -344,8 +344,8 @@ const Dashboard = () => {
                       <tr><td colSpan="6" className="text-center py-8 text-slate-500">No hay productos para este proveedor.</td></tr>
                     ) : (
                       filteredStock.map(p => {
-                        const deficit = Math.max(0, p.stock_minimo - p.stock_actual);
-                        const suggestedOrder = deficit + Math.ceil(p.stock_minimo * 0.2); // Suggest +20% buffer
+                        const target = p.stock_maximo > 0 ? p.stock_maximo : p.stock_minimo;
+                        const suggestedOrder = Math.max(0, target - p.stock_actual);
                         return (
                           <tr key={p.id}>
                             <td className="text-center" data-label="Incluir">
