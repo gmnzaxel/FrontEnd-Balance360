@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useContext } from 'react';
-import { Edit, Trash2, Plus, Upload, Users, AlertTriangle, Search, Store, Package, RotateCcw, Archive } from 'lucide-react';
+import { Edit, Trash2, Plus, Upload, Users, AlertTriangle, Search, Store, Package, RotateCcw, Archive, FileDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 import { formatARS } from '../utils/format';
@@ -134,6 +134,39 @@ const Products = () => {
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = [
+      'codigo',
+      'nombre',
+      'stock_actual',
+      'stock_minimo',
+      'stock_maximo',
+      'costo_compra',
+      'precio_venta',
+      'supplier_name'
+    ];
+    const sample = [
+      'A001',
+      'Shampoo 500ml',
+      '10',
+      '5',
+      '30',
+      '1200.50',
+      '2100.00',
+      'Distribuidora Sur'
+    ];
+    const csv = `${headers.join(',')}\n${sample.join(',')}\n`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'plantilla_productos.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const handleEdit = (product) => {
@@ -291,6 +324,9 @@ const Products = () => {
           <p className="page-subtitle">Administrá el inventario y el catálogo de productos.</p>
         </div>
         <div className="page-header-actions">
+          <Button variant="secondary" icon={<FileDown size={16} />} onClick={handleDownloadTemplate}>
+            Plantilla
+          </Button>
           <label className={`ui-btn ui-btn-secondary ${submitting || !isAdmin ? 'disabled' : ''}`} style={{ cursor: submitting || !isAdmin ? 'not-allowed' : 'pointer' }}>
             <Upload size={16} /> Importar
             <input type="file" hidden onChange={handleImport} accept=".csv, .xlsx" disabled={submitting || !isAdmin} />
