@@ -110,7 +110,7 @@ const Reports = () => {
                             icon={DollarSign}
                             tone="primary"
                             subvalue={`${stats.sales_count} transacciones`}
-                            tooltip="Todo lo vendido en el mes, sin contar anulaciones ni reembolsos."
+                            tooltip="Importe total vendido en el mes. No incluye ventas anuladas ni reembolsadas."
                         />
                         <KPICard
                             title="Margen bruto"
@@ -118,7 +118,7 @@ const Reports = () => {
                             icon={TrendingUp}
                             tone="success"
                             subvalue="Ganancia estimada"
-                            tooltip="Lo que ganaste aprox: ventas menos costo de los productos."
+                            tooltip="Ganancia estimada: ventas menos costo de los productos vendidos."
                         />
                         <KPICard
                             title="Valor de inventario"
@@ -126,7 +126,7 @@ const Reports = () => {
                             icon={Package}
                             tone="violet"
                             subvalue="Costo total stock"
-                            tooltip="Lo que vale tu stock hoy según el costo de compra."
+                            tooltip="Valor del stock actual calculado al costo de compra."
                         />
                         <KPICard
                             title="Ticket promedio"
@@ -134,7 +134,7 @@ const Reports = () => {
                             icon={CreditCard}
                             tone="warning"
                             subvalue="Por venta"
-                            tooltip="Promedio que paga cada venta."
+                            tooltip="Promedio por venta en el período seleccionado."
                         />
                     </div>
 

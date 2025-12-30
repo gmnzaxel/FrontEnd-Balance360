@@ -48,6 +48,10 @@ export const productService = {
         return response.data;
     },
 
+    deleteSupplier: async (id) => {
+        await api.delete(`inventory/suppliers/${id}/`);
+    },
+
     getLowStock: async () => {
         const response = await api.get('inventory/low-stock/');
         return response.data;

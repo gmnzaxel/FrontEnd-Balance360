@@ -183,6 +183,20 @@ const Products = () => {
     }
   };
 
+  const handleDeleteSupplier = async (supplier) => {
+    if (!window.confirm(`¿Eliminar proveedor "${supplier.name}"?`)) return;
+    setSubmitting(true);
+    try {
+      await productService.deleteSupplier(supplier.id);
+      toast.success('Proveedor eliminado');
+      setSuppliers((prev) => prev.filter((s) => s.id !== supplier.id));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="products-page page">
       <div className="page-header">
@@ -455,10 +469,35 @@ const Products = () => {
 
             <div className="table-container compact" style={{ maxHeight: 200, overflowY: 'auto', marginTop: 10 }}>
               <table className="styled-table">
-                <thead><tr><th>Proveedores Registrados</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Proveedor</th>
+                    <th style={{ textAlign: 'right' }}>Acciones</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {suppliers.map((s) => <tr key={s.id}><td data-label="Proveedores Registrados">{s.name}</td></tr>)}
-                  {suppliers.length === 0 && <tr><td className="muted text-sm" data-label="Proveedores Registrados">Todavía no hay proveedores.</td></tr>}
+                  {suppliers.map((s) => (
+                    <tr key={s.id}>
+                      <td data-label="Proveedor">{s.name}</td>
+                      <td data-label="Acciones" style={{ textAlign: 'right' }}>
+                        <button
+                          className="ghost-icon"
+                          type="button"
+                          onClick={() => handleDeleteSupplier(s)}
+                          disabled={submitting}
+                          aria-label={`Eliminar proveedor ${s.name}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {suppliers.length === 0 && (
+                    <tr>
+                      <td className="muted text-sm" data-label="Proveedor">Todavía no hay proveedores.</td>
+                      <td />
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
