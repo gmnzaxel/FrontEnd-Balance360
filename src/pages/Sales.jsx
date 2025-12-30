@@ -330,14 +330,19 @@ const Sales = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {selectedSale.items.map(item => (
+                                    {selectedSale.items.map(item => {
+                                        const itemLabel = item.item_type === 'SERVICIO'
+                                            ? (item.description || 'Servicio')
+                                            : (item.producto_nombre || 'Producto');
+                                        return (
                                         <tr key={item.id}>
-                                            <td data-label="Producto">{item.producto_nombre}</td>
+                                            <td data-label="Producto">{itemLabel}</td>
                                             <td style={{ textAlign: 'right' }} data-label="Cant.">{item.quantity}</td>
                                             <td style={{ textAlign: 'right' }} data-label="Precio">{formatCurrency(item.price)}</td>
                                             <td style={{ textAlign: 'right', fontWeight: 600 }} data-label="Total">{formatCurrency(item.quantity * item.price)}</td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
