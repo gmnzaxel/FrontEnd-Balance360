@@ -121,6 +121,21 @@ const Products = () => {
     }
   };
 
+  const handleHardDelete = async (product) => {
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden eliminar productos');
+      return;
+    }
+    if (!window.confirm(`Eliminar definitivamente "${product.nombre}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      await productService.hardDelete(product.id);
+      toast.success('Producto eliminado definitivamente');
+      loadData();
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
   const handleEdit = (product) => {
     setEditingProduct(product);
     setFormData(product);
@@ -242,6 +257,24 @@ const Products = () => {
       await productService.restoreSupplier(supplier.id);
       toast.success('Proveedor restaurado');
       setSuppliers((prev) => prev.map((s) => (s.id === supplier.id ? { ...s, is_archived: false } : s)));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleHardDeleteSupplier = async (supplier) => {
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden eliminar proveedores');
+      return;
+    }
+    if (!window.confirm(`Eliminar definitivamente "${supplier.name}"? Esta acción no se puede deshacer.`)) return;
+    setSubmitting(true);
+    try {
+      await productService.hardDeleteSupplier(supplier.id);
+      toast.success('Proveedor eliminado definitivamente');
+      setSuppliers((prev) => prev.filter((s) => s.id !== supplier.id));
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -400,13 +433,22 @@ const Products = () => {
                             </button>
                           </>
                         ) : (
-                          <button
-                            className="btn-icon"
-                            title="Restaurar"
-                            onClick={() => handleRestore(p.id)}
-                          >
-                            <RotateCcw size={18} />
-                          </button>
+                          <>
+                            <button
+                              className="btn-icon"
+                              title="Restaurar"
+                              onClick={() => handleRestore(p.id)}
+                            >
+                              <RotateCcw size={18} />
+                            </button>
+                            <button
+                              className="btn-icon text-danger-600"
+                              title="Eliminar definitivamente"
+                              onClick={() => handleHardDelete(p)}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
                         )}
                       </div>
                     )}
@@ -582,15 +624,26 @@ const Products = () => {
                       <td data-label="Acciones" style={{ textAlign: 'right' }}>
                         {isAdmin && (
                           s.is_archived ? (
-                            <button
-                              className="ghost-icon"
-                              type="button"
-                              onClick={() => handleRestoreSupplier(s)}
-                              disabled={submitting}
-                              aria-label={`Restaurar proveedor ${s.name}`}
-                            >
-                              <RotateCcw size={16} />
-                            </button>
+                            <>
+                              <button
+                                className="ghost-icon"
+                                type="button"
+                                onClick={() => handleRestoreSupplier(s)}
+                                disabled={submitting}
+                                aria-label={`Restaurar proveedor ${s.name}`}
+                              >
+                                <RotateCcw size={16} />
+                              </button>
+                              <button
+                                className="ghost-icon text-danger-600"
+                                type="button"
+                                onClick={() => handleHardDeleteSupplier(s)}
+                                disabled={submitting}
+                                aria-label={`Eliminar proveedor ${s.name}`}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
                           ) : (
                             <button
                               className="ghost-icon"

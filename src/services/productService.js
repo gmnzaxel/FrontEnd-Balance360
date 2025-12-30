@@ -33,6 +33,10 @@ export const productService = {
         return response.data;
     },
 
+    hardDelete: async (id) => {
+        await api.post(`${ENDPOINT}${id}/hard-delete/`);
+    },
+
     importCSV: async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -60,6 +64,10 @@ export const productService = {
     restoreSupplier: async (id) => {
         const response = await api.post(`inventory/suppliers/${id}/restore/`);
         return response.data;
+    },
+
+    hardDeleteSupplier: async (id) => {
+        await api.post(`inventory/suppliers/${id}/hard-delete/`);
     },
 
     getLowStock: async () => {
