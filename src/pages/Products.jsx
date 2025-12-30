@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Edit, Trash2, Plus, Upload, Users, AlertTriangle, Search, Store, Package } from 'lucide-react';
+import React, { useEffect, useMemo, useState, useContext } from 'react';
+import { Edit, Trash2, Plus, Upload, Users, AlertTriangle, Search, Store, Package, RotateCcw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 import { formatARS } from '../utils/format';
@@ -11,12 +11,15 @@ import Modal from '../components/ui/Modal';
 import Select from '../components/ui/Select';
 import Badge from '../components/ui/Badge';
 import Skeleton from '../components/ui/Skeleton';
+import { AuthContext } from '../context/AuthContext';
 
 const Products = () => {
   // --- Estados de Datos ---
   const [products, setProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [lowStockData, setLowStockData] = useState({ mode: 'simple', results: [] });
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.role === 'ADMIN';
 
   // --- Estados de UI ---
   const [loading, setLoading] = useState(true);
@@ -25,6 +28,8 @@ const Products = () => {
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSupplierFilter, setSelectedSupplierFilter] = useState('all');
+  const [showArchivedProducts, setShowArchivedProducts] = useState(false);
+  const [showArchivedSuppliers, setShowArchivedSuppliers] = useState(false);
 
   // --- Estados de Formularios ---
   const [editingProduct, setEditingProduct] = useState(null);
@@ -39,8 +44,8 @@ const Products = () => {
     try {
       // Usamos allSettled para que si falla uno (ej: proveedores por permisos), no rompa todo el dashboard
       const results = await Promise.allSettled([
-        productService.getAll(),
-        productService.getSuppliers(),
+        productService.getAll({ include_archived: showArchivedProducts }),
+        productService.getSuppliers({ include_archived: showArchivedSuppliers }),
         productService.getLowStock()
       ]);
 
@@ -74,7 +79,7 @@ const Products = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [showArchivedProducts, showArchivedSuppliers]);
 
   // --- Filtros ---
   const filteredProducts = useMemo(() => {
@@ -86,14 +91,32 @@ const Products = () => {
 
   // --- Acciones de Producto ---
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Confirma eliminar este producto? Esta acción no se puede deshacer.')) return;
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden archivar productos');
+      return;
+    }
+    if (!window.confirm('¿Archivar este producto? Podrás restaurarlo luego.')) return;
 
     try {
       await productService.delete(id);
-      toast.success('Producto eliminado correctamente');
+      toast.success('Producto archivado correctamente');
       loadData(); // Recarga completa para actualizar lowStock también
     } catch (error) {
       console.error(error); // Log para debug
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleRestore = async (id) => {
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden restaurar productos');
+      return;
+    }
+    try {
+      await productService.restore(id);
+      toast.success('Producto restaurado');
+      loadData();
+    } catch (error) {
       toast.error(getErrorMessage(error));
     }
   };
@@ -114,6 +137,10 @@ const Products = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden guardar productos');
+      return;
+    }
     if (submitting) return;
 
     setSubmitting(true);
@@ -163,6 +190,10 @@ const Products = () => {
   // --- Acciones de Proveedor ---
   const handleSubmitSupplier = async () => {
     if (!supplierForm.name.trim()) return;
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden crear proveedores');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -184,12 +215,33 @@ const Products = () => {
   };
 
   const handleDeleteSupplier = async (supplier) => {
-    if (!window.confirm(`¿Eliminar proveedor "${supplier.name}"?`)) return;
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden archivar proveedores');
+      return;
+    }
+    if (!window.confirm(`¿Archivar proveedor "${supplier.name}"?`)) return;
     setSubmitting(true);
     try {
       await productService.deleteSupplier(supplier.id);
-      toast.success('Proveedor eliminado');
-      setSuppliers((prev) => prev.filter((s) => s.id !== supplier.id));
+      toast.success('Proveedor archivado');
+      setSuppliers((prev) => prev.map((s) => (s.id === supplier.id ? { ...s, is_archived: true } : s)));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRestoreSupplier = async (supplier) => {
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden restaurar proveedores');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await productService.restoreSupplier(supplier.id);
+      toast.success('Proveedor restaurado');
+      setSuppliers((prev) => prev.map((s) => (s.id === supplier.id ? { ...s, is_archived: false } : s)));
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -206,14 +258,14 @@ const Products = () => {
           <p className="page-subtitle">Administrá el inventario y el catálogo de productos.</p>
         </div>
         <div className="page-header-actions">
-          <label className={`ui-btn ui-btn-secondary ${submitting ? 'disabled' : ''}`} style={{ cursor: submitting ? 'not-allowed' : 'pointer' }}>
+          <label className={`ui-btn ui-btn-secondary ${submitting || !isAdmin ? 'disabled' : ''}`} style={{ cursor: submitting || !isAdmin ? 'not-allowed' : 'pointer' }}>
             <Upload size={16} /> Importar
-            <input type="file" hidden onChange={handleImport} accept=".csv, .xlsx" disabled={submitting} />
+            <input type="file" hidden onChange={handleImport} accept=".csv, .xlsx" disabled={submitting || !isAdmin} />
           </label>
           <Button variant="secondary" icon={<Users size={16} />} onClick={() => setShowSupplierModal(true)}>
             Proveedores
           </Button>
-          <Button variant="primary" icon={<Plus size={16} />} onClick={handleCreate}>
+          <Button variant="primary" icon={<Plus size={16} />} onClick={handleCreate} disabled={!isAdmin}>
             Nuevo producto
           </Button>
         </div>
@@ -227,6 +279,14 @@ const Products = () => {
           icon={<Search size={16} />}
           className="products-search"
         />
+        <label className="inline-flex items-center gap-sm text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={showArchivedProducts}
+            onChange={(e) => setShowArchivedProducts(e.target.checked)}
+          />
+          Mostrar archivados
+        </label>
       </Card>
 
       {/* Alertas de Stock */}
@@ -298,13 +358,16 @@ const Products = () => {
               [1, 2, 3].map(i => <tr key={i}><td colSpan="7"><Skeleton height={48} /></td></tr>)
             ) : filteredProducts.length > 0 ? (
               filteredProducts.map((p) => (
-                <tr key={p.id}>
+                <tr key={p.id} className={p.is_archived ? 'row-muted opacity-60' : ''}>
                   <td className="muted font-mono" data-label="Código">{p.codigo}</td>
                   <td data-label="Producto / Proveedor">
                     <div className="font-medium">{p.nombre}</div>
                     <div className="muted tiny flex-row gap-xs items-center mt-1">
                       <Store size={12} /> {p.supplier_name || 'Sin proveedor asignado'}
                     </div>
+                    {p.is_archived && (
+                      <div className="muted tiny mt-1">Archivado</div>
+                    )}
                   </td>
                   <td data-label="Stock">
                     {p.bajo_stock
@@ -315,22 +378,36 @@ const Products = () => {
                   <td className="text-slate-500" data-label="Costo">{formatARS(p.costo_compra)}</td>
                   <td className="font-bold text-slate-700" data-label="Precio Venta">{formatARS(p.precio_venta)}</td>
                   <td style={{ textAlign: 'right' }} data-label="Acciones">
-                    <div className="flex-row gap-xs justify-end">
-                      <button
-                        className="btn-icon"
-                        title="Editar"
-                        onClick={() => handleEdit(p)}
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        className="btn-icon text-danger-600"
-                        title="Eliminar"
-                        onClick={() => handleDelete(p.id)}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="flex-row gap-xs justify-end">
+                        {!p.is_archived ? (
+                          <>
+                            <button
+                              className="btn-icon"
+                              title="Editar"
+                              onClick={() => handleEdit(p)}
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              className="btn-icon text-danger-600"
+                              title="Archivar"
+                              onClick={() => handleDelete(p.id)}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            className="btn-icon"
+                            title="Restaurar"
+                            onClick={() => handleRestore(p.id)}
+                          >
+                            <RotateCcw size={18} />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))
@@ -460,12 +537,21 @@ const Products = () => {
                 type="button" // <--- IMPORTANT: Prevent default submit behavior
                 variant="primary"
                 onClick={handleSubmitSupplier}
-                disabled={submitting || !supplierForm.name.trim()}
+                disabled={submitting || !supplierForm.name.trim() || !isAdmin}
                 style={{ marginBottom: 2 }} // Alinear con input
               >
                 {submitting ? '...' : <Plus size={18} />}
               </Button>
             </div>
+
+            <label className="inline-flex items-center gap-sm text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={showArchivedSuppliers}
+                onChange={(e) => setShowArchivedSuppliers(e.target.checked)}
+              />
+              Mostrar archivados
+            </label>
 
             <div className="table-container compact" style={{ maxHeight: 200, overflowY: 'auto', marginTop: 10 }}>
               <table className="styled-table">
@@ -477,18 +563,35 @@ const Products = () => {
                 </thead>
                 <tbody>
                   {suppliers.map((s) => (
-                    <tr key={s.id}>
-                      <td data-label="Proveedor">{s.name}</td>
+                    <tr key={s.id} className={s.is_archived ? 'row-muted opacity-60' : ''}>
+                      <td data-label="Proveedor">
+                        <div className="font-medium">{s.name}</div>
+                        {s.is_archived && <div className="muted tiny mt-1">Archivado</div>}
+                      </td>
                       <td data-label="Acciones" style={{ textAlign: 'right' }}>
-                        <button
-                          className="ghost-icon"
-                          type="button"
-                          onClick={() => handleDeleteSupplier(s)}
-                          disabled={submitting}
-                          aria-label={`Eliminar proveedor ${s.name}`}
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {isAdmin && (
+                          s.is_archived ? (
+                            <button
+                              className="ghost-icon"
+                              type="button"
+                              onClick={() => handleRestoreSupplier(s)}
+                              disabled={submitting}
+                              aria-label={`Restaurar proveedor ${s.name}`}
+                            >
+                              <RotateCcw size={16} />
+                            </button>
+                          ) : (
+                            <button
+                              className="ghost-icon"
+                              type="button"
+                              onClick={() => handleDeleteSupplier(s)}
+                              disabled={submitting}
+                              aria-label={`Archivar proveedor ${s.name}`}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )
+                        )}
                       </td>
                     </tr>
                   ))}

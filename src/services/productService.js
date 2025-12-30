@@ -3,8 +3,8 @@ import api from '../api/axios';
 const ENDPOINT = 'inventory/products/';
 
 export const productService = {
-    getAll: async () => {
-        const response = await api.get(ENDPOINT);
+    getAll: async (params = {}) => {
+        const response = await api.get(ENDPOINT, { params });
         // Soporte para paginación de DRF (response.data.results) o lista directa
         return response.data.results || response.data;
     },
@@ -28,6 +28,11 @@ export const productService = {
         await api.delete(`${ENDPOINT}${id}/`);
     },
 
+    restore: async (id) => {
+        const response = await api.post(`${ENDPOINT}${id}/restore/`);
+        return response.data;
+    },
+
     importCSV: async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -38,8 +43,8 @@ export const productService = {
     },
 
     // Extras
-    getSuppliers: async () => {
-        const response = await api.get('inventory/suppliers/');
+    getSuppliers: async (params = {}) => {
+        const response = await api.get('inventory/suppliers/', { params });
         return response.data.results || response.data;
     },
 
@@ -50,6 +55,11 @@ export const productService = {
 
     deleteSupplier: async (id) => {
         await api.delete(`inventory/suppliers/${id}/`);
+    },
+
+    restoreSupplier: async (id) => {
+        const response = await api.post(`inventory/suppliers/${id}/restore/`);
+        return response.data;
     },
 
     getLowStock: async () => {
