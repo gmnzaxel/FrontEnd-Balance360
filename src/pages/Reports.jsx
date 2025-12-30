@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { FileSpreadsheet, TrendingUp, DollarSign, Package, AlertTriangle, Calendar, ShoppingBag, CreditCard } from 'lucide-react';
+import { FileSpreadsheet, TrendingUp, DollarSign, Package, AlertTriangle, Calendar, ShoppingBag, CreditCard, HelpCircle } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
@@ -45,11 +45,21 @@ const Reports = () => {
         }
     };
 
-    const KPICard = ({ title, value, icon: Icon, tone, subvalue }) => (
+    const KPICard = ({ title, value, icon: Icon, tone, subvalue, tooltip }) => (
         <div className={`card reports-kpi tone-${tone}`}>
             <div className="reports-kpi-head">
                 <div>
-                    <p className="reports-kpi-label">{title}</p>
+                    <p className="reports-kpi-label">
+                        {title}
+                        {tooltip && (
+                            <button type="button" className="reports-tooltip" aria-label={tooltip}>
+                                <HelpCircle size={14} />
+                                <span className="reports-tooltip-bubble" role="tooltip">
+                                    {tooltip}
+                                </span>
+                            </button>
+                        )}
+                    </p>
                     <h3 className="reports-kpi-value">{value}</h3>
                 </div>
                 <div className="reports-kpi-icon">
@@ -100,6 +110,7 @@ const Reports = () => {
                             icon={DollarSign}
                             tone="primary"
                             subvalue={`${stats.sales_count} transacciones`}
+                            tooltip="Todo lo vendido en el mes, sin contar anulaciones ni reembolsos."
                         />
                         <KPICard
                             title="Margen bruto"
@@ -107,6 +118,7 @@ const Reports = () => {
                             icon={TrendingUp}
                             tone="success"
                             subvalue="Ganancia estimada"
+                            tooltip="Lo que ganaste aprox: ventas menos costo de los productos."
                         />
                         <KPICard
                             title="Valor de inventario"
@@ -114,6 +126,7 @@ const Reports = () => {
                             icon={Package}
                             tone="violet"
                             subvalue="Costo total stock"
+                            tooltip="Lo que vale tu stock hoy según el costo de compra."
                         />
                         <KPICard
                             title="Ticket promedio"
@@ -121,6 +134,7 @@ const Reports = () => {
                             icon={CreditCard}
                             tone="warning"
                             subvalue="Por venta"
+                            tooltip="Promedio que paga cada venta."
                         />
                     </div>
 
