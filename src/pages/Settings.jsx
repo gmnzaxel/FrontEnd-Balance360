@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
-import { Settings as SettingsIcon, Save, Store, Globe, AlertOctagon, Eye, X } from 'lucide-react';
+import { Save, Store, Eye } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 
 const Settings = () => {
     const [settings, setSettings] = useState({
         branch_name: '',
-        currency: 'ARS',
-        stock_minimo_por_distribuidor_enabled: false
+        currency: 'ARS'
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -91,29 +90,6 @@ const Settings = () => {
                             <p className="text-xs text-slate-500 mt-2">Se mostrará en el encabezado de tus comprobantes.</p>
                         </div>
 
-                        <div className="settings-divider">
-                            <div className="settings-row">
-                                <div className="settings-row-content">
-                                    <div className="settings-row-icon">
-                                        <AlertOctagon size={18} />
-                                    </div>
-                                    <div>
-                                <span className="block font-semibold text-slate-800 text-sm mb-1">Stock mínimo por distribuidor</span>
-                                        <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
-                                            Activa alertas de reabastecimiento personalizadas para cada proveedor en tu inventario.
-                                        </p>
-                                    </div>
-                                </div>
-                                <label className="toggle-switch transform scale-90 flex-shrink-0 ml-4">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.stock_minimo_por_distribuidor_enabled}
-                                        onChange={(e) => setSettings({ ...settings, stock_minimo_por_distribuidor_enabled: e.target.checked })}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                        </div>
                     </div>
                 </div>
 

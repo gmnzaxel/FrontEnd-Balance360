@@ -17,37 +17,6 @@ import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 import Select from '../components/ui/Select';
 
-// --- MOCK DATA GENERATOR ---
-const generateMockData = () => {
-  const days = [];
-  const now = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    // Generamos curvas "orgánicas" con algo de aleatoriedad
-    const base = 50000 + Math.random() * 50000;
-    const peak = Math.sin(i / 5) * 40000; // Onda sinusoidal
-    const total = Math.max(10000, base + peak);
-
-    days.push({
-      day: d.toISOString().split('T')[0],
-      total: Math.round(total),
-      count: Math.round(total / 8500), // Ticket promedio aprox
-    });
-  }
-  return days;
-};
-
-const MOCK_STATS = {
-  total_sold: 2854300,
-  sales_count: 342,
-  margin: 856200,
-  stockouts: 2,
-  sales_by_day: generateMockData(),
-  top_products: [], // Dejar vacío para probar el Empty State, o llenar si se prefiere
-};
-
-// Imports moved to top
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -92,6 +61,7 @@ const Dashboard = () => {
   // State for Supplier Modal
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState('');
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -114,10 +84,41 @@ const Dashboard = () => {
     ? stats?.low_stock_products?.filter(p => p.supplier_name === selectedSupplier)
     : stats?.low_stock_products || [];
 
+  useEffect(() => {
+    setSelectedProductIds([]);
+  }, [selectedSupplier]);
+
+  const allFilteredSelected = filteredStock.length > 0 && filteredStock.every((p) => selectedProductIds.includes(p.id));
+
+  const toggleProductSelection = (productId) => {
+    setSelectedProductIds((prev) => (
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    ));
+  };
+
+  const toggleAllFiltered = () => {
+    if (!filteredStock.length) return;
+    if (allFilteredSelected) {
+      setSelectedProductIds((prev) => prev.filter((id) => !filteredStock.some((p) => p.id === id)));
+      return;
+    }
+    setSelectedProductIds((prev) => {
+      const merged = new Set([...prev, ...filteredStock.map((p) => p.id)]);
+      return Array.from(merged);
+    });
+  };
+
   const handleDownloadSupplierExcel = () => {
     if (!selectedSupplier) return;
+    if (!filteredStock.length) return;
+    const selectedForExport = filteredStock.filter((p) => selectedProductIds.includes(p.id));
+    const productIds = (selectedForExport.length ? selectedForExport : filteredStock).map((p) => p.id);
     // Trigger backend download
-    window.open(`${api.defaults.baseURL}reports/export-supplier-order/?supplier=${encodeURIComponent(selectedSupplier)}`, '_blank');
+    const params = new URLSearchParams({
+      supplier: selectedSupplier,
+      product_ids: productIds.join(',')
+    });
+    window.open(`${api.defaults.baseURL}reports/export-supplier-order/?${params.toString()}`, '_blank');
   };
 
   return (
@@ -311,7 +312,7 @@ const Dashboard = () => {
                   <Button
                     variant="primary"
                     icon={<FileDown size={18} />}
-                    disabled={!selectedSupplier}
+                    disabled={!selectedSupplier || filteredStock.length === 0}
                     onClick={handleDownloadSupplierExcel}
                   >
                     Descargar Orden (Excel)
@@ -319,10 +320,18 @@ const Dashboard = () => {
                 </div>
               </div>
 
+              <div className="flex items-center justify-between text-sm text-slate-600">
+                <span>Seleccioná los productos a incluir en el Excel.</span>
+                <Button variant="secondary" size="sm" onClick={toggleAllFiltered}>
+                  {allFilteredSelected ? 'Quitar selección' : 'Seleccionar todos'}
+                </Button>
+              </div>
+
               <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 <table className="styled-table">
                   <thead>
                     <tr>
+                      <th className="text-center">Incluir</th>
                       <th>Código</th>
                       <th>Producto</th>
                       <th className="text-center">Stock Mínimo</th>
@@ -332,13 +341,20 @@ const Dashboard = () => {
                   </thead>
                   <tbody>
                     {filteredStock.length === 0 ? (
-                      <tr><td colSpan="5" className="text-center py-8 text-slate-500">No hay productos para este proveedor.</td></tr>
+                      <tr><td colSpan="6" className="text-center py-8 text-slate-500">No hay productos para este proveedor.</td></tr>
                     ) : (
                       filteredStock.map(p => {
                         const deficit = Math.max(0, p.stock_minimo - p.stock_actual);
                         const suggestedOrder = deficit + Math.ceil(p.stock_minimo * 0.2); // Suggest +20% buffer
                         return (
                           <tr key={p.id}>
+                            <td className="text-center" data-label="Incluir">
+                              <input
+                                type="checkbox"
+                                checked={selectedProductIds.includes(p.id)}
+                                onChange={() => toggleProductSelection(p.id)}
+                              />
+                            </td>
                             <td className="text-xs font-mono text-slate-500" data-label="Código">{p.codigo}</td>
                             <td className="font-medium" data-label="Producto">{p.nombre}</td>
                             <td className="text-center text-slate-500" data-label="Stock Mínimo">{p.stock_minimo}</td>
