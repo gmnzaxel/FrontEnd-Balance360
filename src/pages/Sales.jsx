@@ -278,6 +278,7 @@ const Sales = () => {
                     title={`Detalle de venta #${selectedSale.sale_number || selectedSale.id}`}
                     onClose={() => setSelectedSale(null)}
                     size="lg"
+                    className="sale-detail-modal-container"
                     footer={(
                         <div className="flex-between w-full">
                             {isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded && (

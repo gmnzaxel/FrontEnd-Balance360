@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import clsx from '../../utils/clsx';
 import { X } from 'lucide-react';
 
-const Modal = ({ title, children, onClose, size = 'md', footer, persist = false }) => {
+const Modal = ({ title, children, onClose, size = 'md', footer, persist = false, className }) => {
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape' && !persist) onClose?.();
@@ -14,7 +14,7 @@ const Modal = ({ title, children, onClose, size = 'md', footer, persist = false 
   return (
     <div className="modal-overlay" onClick={!persist ? onClose : undefined}>
       <div
-        className={clsx('ui-modal', size === 'lg' && 'ui-modal-lg')}
+        className={clsx('ui-modal', size === 'lg' && 'ui-modal-lg', className)}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-head">

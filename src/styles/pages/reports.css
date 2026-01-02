@@ -208,9 +208,29 @@
   min-height: 240px;
 }
 
+.reports-chart-scroll {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.reports-chart-scroll .reports-chart-body {
+  min-width: 520px;
+}
+
 .reports-top-list {
   max-height: 300px;
   overflow-y: auto;
+}
+
+.reports-top-scroll {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.reports-top-scroll .reports-top-list {
+  min-width: 520px;
 }
 
 .reports-top-item {

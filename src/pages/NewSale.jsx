@@ -373,7 +373,7 @@ const NewSale = () => {
           </div>
         </div>
         {totalPages > 1 && (
-          <div className="pagination">
+          <div className="pagination pos-pagination">
             <Button variant="ghost" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Anterior</Button>
             <span className="muted small">Página {page} de {totalPages}</span>
             <Button variant="ghost" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Siguiente</Button>
