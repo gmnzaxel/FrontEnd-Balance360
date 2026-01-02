@@ -90,6 +90,20 @@ const Sales = () => {
         }
     };
 
+    const handleHardDelete = async () => {
+        if (!selectedSale) return;
+        if (!window.confirm('Eliminar definitivamente esta venta anulada? Esta acción no se puede deshacer.')) return;
+        try {
+            await api.delete(`sales/sales/${selectedSale.id}/hard-delete/`);
+            toast.success('Venta eliminada definitivamente');
+            setShowActionModal(null);
+            setSelectedSale(null);
+            fetchSales();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'No se pudo eliminar la venta');
+        }
+    };
+
     if (loading) return <div className="p-8 text-center text-muted">Cargando ventas…</div>;
 
     const isAdmin = user?.role === 'ADMIN';
@@ -279,6 +293,16 @@ const Sales = () => {
                                         className="ui-btn ui-btn-danger"
                                     >
                                         <Trash2 size={16} /> Anular venta
+                                    </button>
+                                </div>
+                            )}
+                            {isAdmin && selectedSale.is_voided && (
+                                <div className="flex-row gap-sm">
+                                    <button
+                                        onClick={handleHardDelete}
+                                        className="ui-btn ui-btn-danger"
+                                    >
+                                        <Trash2 size={16} /> Eliminar venta
                                     </button>
                                 </div>
                             )}

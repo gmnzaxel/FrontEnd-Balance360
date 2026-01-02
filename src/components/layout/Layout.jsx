@@ -11,10 +11,10 @@ const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 1024px)').matches);
 
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 768px)');
+    const media = window.matchMedia('(max-width: 1024px)');
     const handler = (e) => setIsMobile(e.matches);
     media.addEventListener('change', handler);
     return () => media.removeEventListener('change', handler);

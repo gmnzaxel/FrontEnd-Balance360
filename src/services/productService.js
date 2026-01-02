@@ -46,8 +46,8 @@ export const productService = {
     },
 
     // Extras
-    getSuppliers: async (params = {}) => {
-        const response = await api.get('inventory/suppliers/', { params });
+    getSuppliers: async () => {
+        const response = await api.get('inventory/suppliers/');
         return response.data.results || response.data;
     },
 
@@ -58,15 +58,6 @@ export const productService = {
 
     deleteSupplier: async (id) => {
         await api.delete(`inventory/suppliers/${id}/`);
-    },
-
-    restoreSupplier: async (id) => {
-        const response = await api.post(`inventory/suppliers/${id}/restore/`);
-        return response.data;
-    },
-
-    hardDeleteSupplier: async (id) => {
-        await api.post(`inventory/suppliers/${id}/hard-delete/`);
     },
 
     getLowStock: async () => {

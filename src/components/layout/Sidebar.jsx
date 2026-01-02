@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ShieldCheck,
   LayoutDashboard,
@@ -23,6 +23,7 @@ const ICONS = {
 
 const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate, onCloseMobile }) => {
   const [hovering, setHovering] = useState(false);
+  const sidebarRef = useRef(null);
 
   const handleBrandKey = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -33,11 +34,22 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
 
   useEffect(() => {
     if (!mobileOpen) return undefined;
+    const handleClickOutside = (event) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        onCloseMobile();
+      }
+    };
     const handleEsc = (e) => {
       if (e.key === 'Escape') onCloseMobile();
     };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
     window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, [mobileOpen, onCloseMobile]);
 
   useEffect(() => {
@@ -66,6 +78,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
       {isMobile && mobileOpen && <div className="drawer-overlay" onClick={onCloseMobile} />}
 
       <aside
+        ref={sidebarRef}
         className={`sidebar ${mobileOpen ? 'open' : ''} ${hovering ? 'expanded' : ''} ${isMobile ? 'mobile-mode' : ''}`}
         onMouseEnter={() => !isMobile && setHovering(true)}
         onMouseLeave={() => !isMobile && setHovering(false)}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Edit, Trash2, Plus, Upload, Users, Search, Store, Package, RotateCcw, Archive, FileDown, CheckSquare } from 'lucide-react';
+import { Edit, Trash2, Plus, Upload, Users, Search, Store, Package, Archive, FileDown, CheckSquare } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 import { formatARS } from '../utils/format';
@@ -28,7 +28,6 @@ const Products = () => {
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showArchivedProducts, setShowArchivedProducts] = useState(false);
-  const [showArchivedSuppliers, setShowArchivedSuppliers] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -58,7 +57,7 @@ const Products = () => {
           page_size: pageSize,
           search: searchTerm || undefined
         }),
-        productService.getSuppliers({ include_archived: showArchivedSuppliers })
+        productService.getSuppliers()
       ]);
 
       const [prodRes, suppRes] = results;
@@ -92,7 +91,7 @@ const Products = () => {
 
   useEffect(() => {
     loadData();
-  }, [showArchivedProducts, showArchivedSuppliers, page, searchTerm]);
+  }, [showArchivedProducts, page, searchTerm]);
 
   useEffect(() => {
     setSelectedProductIds([]);
@@ -348,45 +347,10 @@ const Products = () => {
       toast.error('Solo los administradores pueden archivar proveedores');
       return;
     }
-    if (!window.confirm(`¿Archivar proveedor "${supplier.name}"?`)) return;
-    setSubmitting(true);
-    try {
-      await productService.deleteSupplier(supplier.id);
-      toast.success('Proveedor archivado');
-      setSuppliers((prev) => prev.map((s) => (s.id === supplier.id ? { ...s, is_archived: true } : s)));
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleRestoreSupplier = async (supplier) => {
-    if (!isAdmin) {
-      toast.error('Solo los administradores pueden restaurar proveedores');
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await productService.restoreSupplier(supplier.id);
-      toast.success('Proveedor restaurado');
-      setSuppliers((prev) => prev.map((s) => (s.id === supplier.id ? { ...s, is_archived: false } : s)));
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleHardDeleteSupplier = async (supplier) => {
-    if (!isAdmin) {
-      toast.error('Solo los administradores pueden eliminar proveedores');
-      return;
-    }
     if (!window.confirm(`Eliminar definitivamente "${supplier.name}"? Esta acción no se puede deshacer.`)) return;
     setSubmitting(true);
     try {
-      await productService.hardDeleteSupplier(supplier.id);
+      await productService.deleteSupplier(supplier.id);
       toast.success('Proveedor eliminado definitivamente');
       setSuppliers((prev) => prev.filter((s) => s.id !== supplier.id));
     } catch (error) {
@@ -395,6 +359,7 @@ const Products = () => {
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="products-page page">
@@ -803,17 +768,6 @@ const Products = () => {
               </Button>
             </div>
 
-            <label className="archive-toggle">
-              <input
-                type="checkbox"
-                className="archive-toggle-input"
-                checked={showArchivedSuppliers}
-                onChange={(e) => setShowArchivedSuppliers(e.target.checked)}
-              />
-              <span className="archive-toggle-control" aria-hidden="true" />
-              <span className="archive-toggle-label">Mostrar archivados</span>
-            </label>
-
             <div className="table-container compact" style={{ maxHeight: 200, overflowY: 'auto', marginTop: 10 }}>
               <table className="styled-table">
                 <thead>
@@ -824,45 +778,21 @@ const Products = () => {
                 </thead>
                 <tbody>
                   {suppliers.map((s) => (
-                    <tr key={s.id} className={s.is_archived ? 'row-muted opacity-60' : ''}>
+                    <tr key={s.id}>
                       <td data-label="Proveedor">
                         <div className="font-medium">{s.name}</div>
-                        {s.is_archived && <div className="muted tiny mt-1">Archivado</div>}
                       </td>
                       <td data-label="Acciones" style={{ textAlign: 'right' }}>
                         {isAdmin && (
-                          s.is_archived ? (
-                            <>
-                              <button
-                                className="ghost-icon"
-                                type="button"
-                                onClick={() => handleRestoreSupplier(s)}
-                                disabled={submitting}
-                                aria-label={`Restaurar proveedor ${s.name}`}
-                              >
-                                <RotateCcw size={16} />
-                              </button>
-                              <button
-                                className="ghost-icon text-danger-600"
-                                type="button"
-                                onClick={() => handleHardDeleteSupplier(s)}
-                                disabled={submitting}
-                                aria-label={`Eliminar proveedor ${s.name}`}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              className="ghost-icon"
-                              type="button"
-                              onClick={() => handleDeleteSupplier(s)}
-                              disabled={submitting}
-                              aria-label={`Archivar proveedor ${s.name}`}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          )
+                          <button
+                            className="ghost-icon text-danger-600"
+                            type="button"
+                            onClick={() => handleDeleteSupplier(s)}
+                            disabled={submitting}
+                            aria-label={`Eliminar proveedor ${s.name}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         )}
                       </td>
                     </tr>
