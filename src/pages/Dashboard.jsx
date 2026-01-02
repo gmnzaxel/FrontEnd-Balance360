@@ -108,17 +108,28 @@ const Dashboard = () => {
     });
   };
 
-  const handleDownloadSupplierExcel = () => {
+  const handleDownloadSupplierExcel = async () => {
     if (!selectedSupplier) return;
     if (!filteredStock.length) return;
     const selectedForExport = filteredStock.filter((p) => selectedProductIds.includes(p.id));
     const productIds = (selectedForExport.length ? selectedForExport : filteredStock).map((p) => p.id);
-    // Trigger backend download
-    const params = new URLSearchParams({
-      supplier: selectedSupplier,
-      product_ids: productIds.join(',')
-    });
-    window.open(`${api.defaults.baseURL}reports/export-supplier-order/?${params.toString()}`, '_blank');
+    try {
+      const response = await api.get('reports/export-supplier-order/', {
+        params: { supplier: selectedSupplier, product_ids: productIds.join(',') },
+        responseType: 'blob'
+      });
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      const fileName = `Orden_Pedido_${selectedSupplier}.xlsx`;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useContext } from 'react';
-import { Edit, Trash2, Plus, Upload, Users, AlertTriangle, Search, Store, Package, RotateCcw, Archive, FileDown } from 'lucide-react';
+import { Edit, Trash2, Plus, Upload, Users, AlertTriangle, Search, Store, Package, RotateCcw, Archive, FileDown, CheckSquare } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 import { formatARS } from '../utils/format';
@@ -20,6 +20,7 @@ const Products = () => {
   const [lowStockData, setLowStockData] = useState({ mode: 'simple', results: [] });
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === 'ADMIN';
+  const columnCount = isAdmin ? 9 : 8;
 
   // --- Estados de UI ---
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ const Products = () => {
   const [selectedSupplierFilter, setSelectedSupplierFilter] = useState('all');
   const [showArchivedProducts, setShowArchivedProducts] = useState(false);
   const [showArchivedSuppliers, setShowArchivedSuppliers] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
 
   // --- Estados de Formularios ---
   const [editingProduct, setEditingProduct] = useState(null);
@@ -89,6 +91,10 @@ const Products = () => {
     );
   }, [products, searchTerm]);
 
+  useEffect(() => {
+    setSelectedProductIds([]);
+  }, [searchTerm, showArchivedProducts, products]);
+
   // --- Acciones de Producto ---
   const handleArchive = async (id) => {
     if (!isAdmin) {
@@ -134,6 +140,63 @@ const Products = () => {
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
+  };
+
+  const toggleProductSelection = (productId) => {
+    setSelectedProductIds((prev) => (
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    ));
+  };
+
+  const allVisibleSelected = filteredProducts.length > 0
+    && filteredProducts.every((p) => selectedProductIds.includes(p.id));
+
+  const toggleSelectAllVisible = () => {
+    if (!filteredProducts.length) return;
+    if (allVisibleSelected) {
+      setSelectedProductIds((prev) => prev.filter((id) => !filteredProducts.some((p) => p.id === id)));
+      return;
+    }
+    setSelectedProductIds((prev) => {
+      const merged = new Set([...prev, ...filteredProducts.map((p) => p.id)]);
+      return Array.from(merged);
+    });
+  };
+
+  const handleBulkArchive = async () => {
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden archivar productos');
+      return;
+    }
+    if (!selectedProductIds.length) return;
+    if (!window.confirm(`¿Archivar ${selectedProductIds.length} productos seleccionados?`)) return;
+    const targets = products.filter((p) => selectedProductIds.includes(p.id) && !p.is_archived);
+    const results = await Promise.allSettled(targets.map((p) => productService.delete(p.id)));
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    if (failed) {
+      toast.error(`Se archivaron ${targets.length - failed} y fallaron ${failed}.`);
+    } else {
+      toast.success(`Archivados: ${targets.length}`);
+    }
+    loadData();
+  };
+
+  const handleBulkDelete = async () => {
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden eliminar productos');
+      return;
+    }
+    if (!selectedProductIds.length) return;
+    if (!window.confirm(`Eliminar definitivamente ${selectedProductIds.length} productos? Esta acción no se puede deshacer.`)) return;
+    const targets = products.filter((p) => selectedProductIds.includes(p.id));
+    const results = await Promise.allSettled(targets.map((p) => productService.hardDelete(p.id)));
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    if (failed) {
+      toast.error(`Eliminados ${targets.length - failed}. Fallaron ${failed}.`);
+    } else {
+      toast.success(`Eliminados: ${targets.length}`);
+    }
+    loadData();
   };
 
   const handleDownloadTemplate = () => {
@@ -222,9 +285,13 @@ const Products = () => {
 
     const toastId = toast.loading("Procesando archivo...");
     try {
-      const { created, updated, errors } = await productService.importCSV(file);
+      const { created, updated, errors, processed_rows, total_rows, skipped_rows } = await productService.importCSV(file);
 
       let msg = `Proceso finalizado. Nuevos: ${created}, Actualizados: ${updated}.`;
+      if (typeof total_rows === 'number' && typeof processed_rows === 'number') {
+        msg += ` Procesadas: ${processed_rows}/${total_rows}.`;
+      }
+      if (skipped_rows) msg += ` Omitidas: ${skipped_rows}.`;
       if (errors && errors.length > 0) msg += ` Errores: ${errors.length}`;
 
       toast.update(toastId, { render: msg, type: "success", isLoading: false, autoClose: 4000 });
@@ -348,6 +415,16 @@ const Products = () => {
           icon={<Search size={16} />}
           className="products-search"
         />
+        {isAdmin && (
+          <div className="flex-row gap-sm">
+            <button className="ui-btn ui-btn-secondary" onClick={handleBulkArchive} disabled={!selectedProductIds.length}>
+              <Archive size={16} /> Archivar
+            </button>
+            <button className="ui-btn ui-btn-secondary" onClick={handleBulkDelete} disabled={!selectedProductIds.length}>
+              <Trash2 size={16} /> Eliminar
+            </button>
+          </div>
+        )}
         <label className="archive-toggle">
           <input
             type="checkbox"
@@ -415,6 +492,17 @@ const Products = () => {
         <table className="styled-table">
           <thead>
             <tr>
+              {isAdmin && (
+                <th width="40">
+                  <button
+                    className="btn-icon"
+                    title={allVisibleSelected ? 'Deseleccionar todo' : 'Seleccionar todo'}
+                    onClick={toggleSelectAllVisible}
+                  >
+                    <CheckSquare size={16} />
+                  </button>
+                </th>
+              )}
               <th width="100">Código</th>
               <th>Producto / Proveedor</th>
               <th>Stock</th>
@@ -427,10 +515,19 @@ const Products = () => {
           </thead>
           <tbody>
             {loading ? (
-              [1, 2, 3].map(i => <tr key={i}><td colSpan="8"><Skeleton height={48} /></td></tr>)
+              [1, 2, 3].map(i => <tr key={i}><td colSpan={columnCount}><Skeleton height={48} /></td></tr>)
             ) : filteredProducts.length > 0 ? (
               filteredProducts.map((p) => (
                 <tr key={p.id} className={p.is_archived ? 'row-muted opacity-60' : ''}>
+                  {isAdmin && (
+                    <td data-label="Seleccionar">
+                      <input
+                        type="checkbox"
+                        checked={selectedProductIds.includes(p.id)}
+                        onChange={() => toggleProductSelection(p.id)}
+                      />
+                    </td>
+                  )}
                   <td className="muted font-mono" data-label="Código">{p.codigo}</td>
                   <td data-label="Producto / Proveedor">
                     <div className="font-medium">{p.nombre}</div>
@@ -442,9 +539,11 @@ const Products = () => {
                     )}
                   </td>
                   <td data-label="Stock">
-                    {p.bajo_stock
+                    {p.stock_actual < p.stock_minimo
                       ? <Badge tone="danger">Bajo ({p.stock_actual})</Badge>
-                      : <Badge tone="success">{p.stock_actual} un.</Badge>}
+                      : p.stock_actual === p.stock_minimo
+                        ? <Badge tone="warning">{p.stock_actual} un.</Badge>
+                        : <Badge tone="success">{p.stock_actual} un.</Badge>}
                   </td>
                   <td className="text-slate-500" data-label="Min">{p.stock_minimo}</td>
                   <td className="text-slate-500" data-label="Max">{p.stock_maximo || '-'}</td>
@@ -474,7 +573,7 @@ const Products = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="8">
+                <td colSpan={columnCount}>
                   <div className="empty-state">
                     <Package size={48} strokeWidth={1.5} className="text-slate-300 mb-2" />
                     <p className="font-medium text-slate-600">No se encontraron productos.</p>
