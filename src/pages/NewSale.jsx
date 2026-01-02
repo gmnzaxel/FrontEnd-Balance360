@@ -30,9 +30,22 @@ const NewSale = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.get('inventory/products/');
-      const list = response.data.results || response.data;
-      setProducts(Array.isArray(list) ? list : []);
+      const pageSize = 200;
+      let pageNum = 1;
+      let all = [];
+      while (true) {
+        const response = await api.get('inventory/products/', {
+          params: { page: pageNum, page_size: pageSize }
+        });
+        const payload = response.data;
+        const list = payload?.results || payload;
+        if (Array.isArray(list)) {
+          all = all.concat(list);
+        }
+        if (!payload?.next) break;
+        pageNum += 1;
+      }
+      setProducts(all);
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -295,11 +308,8 @@ const NewSale = () => {
                     <tr
                       key={p.id}
                       onClick={() => p.stock_actual > 0 && addToCart(p)}
-                      style={{
-                        cursor: p.stock_actual > 0 ? 'pointer' : 'not-allowed',
-                        opacity: p.stock_actual <= 0 ? 0.6 : 1,
-                        backgroundColor: p.stock_actual <= 0 ? '#f8f9fa' : undefined
-                      }}
+                      className={p.stock_actual <= 0 ? 'pos-row-disabled' : ''}
+                      style={{ cursor: p.stock_actual > 0 ? 'pointer' : 'not-allowed' }}
                       onMouseEnter={(e) => { if (p.stock_actual > 0) e.currentTarget.style.backgroundColor = 'var(--primary-50)'; }}
                       onMouseLeave={(e) => { if (p.stock_actual > 0) e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >

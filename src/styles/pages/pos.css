@@ -96,6 +96,15 @@
   border-top: 1px solid var(--border-subtle);
 }
 
+.pos-row-disabled {
+  background: rgba(100, 116, 139, 0.12);
+  opacity: 0.65;
+}
+
+.pos-row-disabled td {
+  color: rgba(148, 163, 184, 0.9);
+}
+
 @media (max-width: 1100px) {
   .pos-shell {
     grid-template-columns: 1fr;
