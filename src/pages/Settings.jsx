@@ -67,8 +67,6 @@ const Settings = () => {
 
     if (loading) return <div className="p-8 text-center text-muted">Cargando configuración…</div>;
 
-    const isAdmin = user?.role === 'ADMIN';
-
     return (
         <div className="settings-page page page-container">
             <div className="page-header">

@@ -243,6 +243,7 @@ const NewSale = () => {
 
       const saleSnapshot = {
         id: response.data.id,
+        sale_number: response.data.sale_number,
         date: response.data.date, // Backend date
         items: [...cart],
         subtotal: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0),
@@ -486,7 +487,7 @@ const NewSale = () => {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600">
               <CreditCard size={32} />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Venta #{lastSale?.id}</h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Venta #{lastSale?.sale_number || lastSale?.id}</h3>
             <p className="text-slate-500 mb-6">La venta se registró correctamente.</p>
 
             <Button

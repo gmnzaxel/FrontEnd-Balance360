@@ -235,7 +235,7 @@ const Sales = () => {
                     <tbody>
                         {filteredSales.map((sale) => (
                             <tr key={sale.id} className={sale.is_voided || sale.is_refunded ? 'row-muted opacity-60' : ''}>
-                                <td className="font-bold text-muted" data-label="ID">#{sale.id}</td>
+                                <td className="font-bold text-muted" data-label="ID">#{sale.sale_number || sale.id}</td>
                                 <td data-label="Fecha">{formatDate(sale.date)}</td>
                                 <td data-label="Vendedor">
                                     <div className="flex items-center gap-1">
@@ -275,7 +275,7 @@ const Sales = () => {
             {/* Sale Detail Modal */}
             {selectedSale && !showActionModal && (
                 <Modal
-                    title={`Detalle de venta #${selectedSale.id}`}
+                    title={`Detalle de venta #${selectedSale.sale_number || selectedSale.id}`}
                     onClose={() => setSelectedSale(null)}
                     size="lg"
                     footer={(
