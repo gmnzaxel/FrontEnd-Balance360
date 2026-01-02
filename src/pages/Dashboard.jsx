@@ -171,7 +171,7 @@ const Dashboard = () => {
       <div className="charts-grid">
         {/* ... AreaChart Card ... */}
         <Card title="Evolución de ventas" description="Tendencia de los últimos 30 días.">
-          <div style={{ height: 320, marginTop: 10 }}>
+          <div className="dashboard-chart-body">
             {loading ? <Skeleton height="100%" /> : (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats?.sales_by_day || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>

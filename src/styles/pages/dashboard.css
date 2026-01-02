@@ -66,6 +66,17 @@
   gap: 20px;
 }
 
+.dashboard-chart-body {
+  height: 320px;
+  min-height: 240px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.dashboard-chart-body .recharts-responsive-container {
+  min-height: 240px;
+}
+
 @media (max-width: 1280px) {
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -86,6 +97,10 @@
 
   .charts-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-chart-body {
+    height: 240px;
   }
 }
 
@@ -129,8 +144,8 @@
 
   .supplier-order-table .styled-table tbody tr {
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px 12px;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
     padding: 12px;
     border-radius: 12px;
     background: rgba(15, 23, 42, 0.35);
@@ -154,7 +169,40 @@
   }
 
   .supplier-order-table .styled-table tbody td[data-label="Incluir"] {
+    grid-column: 2;
     justify-self: end;
     align-self: start;
+  }
+
+  .supplier-order-table .styled-table tbody td[data-label="Incluir"]::before {
+    display: none;
+  }
+
+  .supplier-order-table .styled-table tbody td[data-label="Código"],
+  .supplier-order-table .styled-table tbody td[data-label="Producto"] {
+    grid-column: 1 / -1;
+  }
+
+  .supplier-order-table .styled-table tbody td[data-label="Código"] {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .supplier-order-table .styled-table tbody td[data-label="Producto"] {
+    font-size: 0.95rem;
+    line-height: 1.2;
+    color: var(--text-primary);
+  }
+
+  .supplier-order-table .styled-table tbody td[data-label="Stock Mínimo"],
+  .supplier-order-table .styled-table tbody td[data-label="Stock Actual"],
+  .supplier-order-table .styled-table tbody td[data-label="A Reponer"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .supplier-order-table .styled-table tbody td[data-label="A Reponer"] {
+    justify-content: flex-end;
   }
 }

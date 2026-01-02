@@ -9,10 +9,19 @@ const Reports = () => {
     const [series, setSeries] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         fetchData();
     }, [months]);
+
+    useEffect(() => {
+        const media = window.matchMedia('(max-width: 640px)');
+        const handleChange = (event) => setIsMobile(event.matches);
+        setIsMobile(media.matches);
+        media.addEventListener('change', handleChange);
+        return () => media.removeEventListener('change', handleChange);
+    }, []);
 
     const fetchData = async () => {
         setLoading(true);
@@ -43,6 +52,15 @@ const Reports = () => {
         } catch (error) {
             console.error("Error downloading report", error);
         }
+    };
+
+    const formatMonthLabel = (value) => {
+        if (!value) return '';
+        const parts = String(value).split('-');
+        if (parts.length < 2) return value;
+        const year = parts[0].slice(-2);
+        const month = parts[1];
+        return `${month}/${year}`;
     };
 
     const KPICard = ({ title, value, icon: Icon, tone, subvalue, tooltip }) => (
@@ -157,16 +175,43 @@ const Reports = () => {
                             </div>
                             <div className="reports-chart-body">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={series} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                    <BarChart
+                                        data={series}
+                                        margin={{
+                                            top: 10,
+                                            right: isMobile ? 12 : 30,
+                                            left: isMobile ? -18 : 0,
+                                            bottom: isMobile ? 18 : 0
+                                        }}
+                                    >
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                        <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                                        <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} />
+                                        <XAxis
+                                            dataKey="month"
+                                            tick={{ fill: '#64748b', fontSize: isMobile ? 10 : 12 }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            interval={isMobile ? 1 : 0}
+                                            tickFormatter={formatMonthLabel}
+                                        />
+                                        <YAxis
+                                            tick={{ fill: '#64748b', fontSize: isMobile ? 10 : 12 }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tickFormatter={(value) => `$${value}`}
+                                            width={isMobile ? 40 : 56}
+                                        />
                                         <Tooltip
                                             cursor={{ fill: '#f1f5f9' }}
                                             contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 12px 30px rgba(15,23,42,0.12)', backdropFilter: 'blur(8px)' }}
                                             formatter={(value) => [formatCurrency(value), "Ventas"]}
                                         />
-                                        <Bar dataKey="total" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={36} name="Ventas" />
+                                        <Bar
+                                            dataKey="total"
+                                            fill="#6366f1"
+                                            radius={[6, 6, 0, 0]}
+                                            barSize={isMobile ? 22 : 36}
+                                            name="Ventas"
+                                        />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>

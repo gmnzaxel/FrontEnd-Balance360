@@ -57,7 +57,7 @@ const NewSale = () => {
   useEffect(() => {
     fetchProducts();
     // Fetch Ticket Settings
-    api.get('core/settings/')
+    api.get('settings/')
       .then(res => setTicketConfig(res.data))
       .catch(err => console.error("Error loading ticket settings", err));
   }, [fetchProducts]);
@@ -513,78 +513,80 @@ const NewSale = () => {
           onClose={() => setShowCartModal(false)}
           size="md"
         >
-          <div className="cart-body">
-            {!cart.length && (
-              <div className="empty-state">
-                <ShoppingCart size={42} className="muted" />
-                <p>Agregá productos o servicios</p>
-              </div>
-            )}
-            {cart.map((item) => (
-              <div key={item.id} className="cart-item">
-                <div className="flex-row between">
-                  <div>
-                    <p className="title-sm">{item.nombre}</p>
-                    {item.item_type === 'SERVICIO' && <span className="badge badge-warning">Servicio</span>}
-                  </div>
-                  <button className="ghost-icon" onClick={() => removeItem(item.id)} aria-label="Eliminar">
-                    <Trash2 size={16} />
-                  </button>
+          <div className="cart-modal-content">
+            <div className="cart-body">
+              {!cart.length && (
+                <div className="empty-state">
+                  <ShoppingCart size={42} className="muted" />
+                  <p>Agregá productos o servicios</p>
                 </div>
-                <div className="flex-row between">
-                  <div className="quantity-group">
-                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>-</button>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => updateQuantity(item.id, e.target.value)}
-                    />
-                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+              )}
+              {cart.map((item) => (
+                <div key={item.id} className="cart-item">
+                  <div className="flex-row between">
+                    <div>
+                      <p className="title-sm">{item.nombre}</p>
+                      {item.item_type === 'SERVICIO' && <span className="badge badge-warning">Servicio</span>}
+                    </div>
+                    <button className="ghost-icon" onClick={() => removeItem(item.id)} aria-label="Eliminar">
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                  <div className="text-right">
-                    <div className="muted tiny">Unitario {formatARS(item.price)}</div>
-                    <div className="title-sm">{formatARS(item.price * item.quantity)}</div>
+                  <div className="flex-row between">
+                    <div className="quantity-group">
+                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>-</button>
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => updateQuantity(item.id, e.target.value)}
+                      />
+                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                    </div>
+                    <div className="text-right">
+                      <div className="muted tiny">Unitario {formatARS(item.price)}</div>
+                      <div className="title-sm">{formatARS(item.price * item.quantity)}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <div className="cart-footer">
-            <div className="grid two-cols">
-              <Input
-                label="Descuento"
-                type="number"
-                value={discount}
-                onChange={(e) => setDiscount(e.target.value)}
-                icon={<Tag size={14} />}
-              />
-              <Select
-                label="Método de pago"
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
+            <div className="cart-footer">
+              <div className="grid two-cols">
+                <Input
+                  label="Descuento"
+                  type="number"
+                  value={discount}
+                  onChange={(e) => setDiscount(e.target.value)}
+                  icon={<Tag size={14} />}
+                />
+                <Select
+                  label="Método de pago"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                >
+                  <option value="EFECTIVO">Efectivo</option>
+                  <option value="DEBITO">Tarjeta Débito</option>
+                  <option value="CREDITO">Tarjeta Crédito</option>
+                  <option value="TRANSFERENCIA">Transferencia</option>
+                  <option value="MERCADOPAGO">MercadoPago</option>
+                  <option value="OTRO">Otro</option>
+                </Select>
+              </div>
+              <div className="flex-row between" style={{ marginTop: 12, marginBottom: 12 }}>
+                <div className="muted">Total a pagar</div>
+                <div className="title-xl">{formatARS(total)}</div>
+              </div>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={handleSubmit}
+                disabled={!cart.length}
+                icon={<CreditCard size={18} />}
               >
-                <option value="EFECTIVO">Efectivo</option>
-                <option value="DEBITO">Tarjeta Débito</option>
-                <option value="CREDITO">Tarjeta Crédito</option>
-                <option value="TRANSFERENCIA">Transferencia</option>
-                <option value="MERCADOPAGO">MercadoPago</option>
-                <option value="OTRO">Otro</option>
-              </Select>
+                Confirmar venta
+              </Button>
             </div>
-            <div className="flex-row between" style={{ marginTop: 12, marginBottom: 12 }}>
-              <div className="muted">Total a pagar</div>
-              <div className="title-xl">{formatARS(total)}</div>
-            </div>
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={handleSubmit}
-              disabled={!cart.length}
-              icon={<CreditCard size={18} />}
-            >
-              Confirmar venta
-            </Button>
           </div>
         </Modal>
       )}

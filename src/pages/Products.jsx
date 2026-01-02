@@ -26,6 +26,7 @@ const Products = () => {
   const [submitting, setSubmitting] = useState(false); // Nuevo para deshabilitar botones
   const [showModal, setShowModal] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showArchivedProducts, setShowArchivedProducts] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
@@ -92,6 +93,13 @@ const Products = () => {
   useEffect(() => {
     loadData();
   }, [showArchivedProducts, page, searchTerm]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchTerm(searchInput.trim());
+    }, 350);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   useEffect(() => {
     setSelectedProductIds([]);
@@ -389,8 +397,8 @@ const Products = () => {
       <Card className="page-toolbar">
         <Input
           placeholder="Buscar por código o nombre…"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           icon={<Search size={16} />}
           className="products-search"
         />

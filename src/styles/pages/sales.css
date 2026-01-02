@@ -59,3 +59,68 @@
     justify-content: center;
   }
 }
+
+@media (max-width: 640px) {
+  .sale-detail-summary {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .sale-detail-summary .eyebrow {
+    font-size: 0.7rem;
+  }
+
+  .sale-detail-summary .avatar {
+    width: 22px;
+    height: 22px;
+    font-size: 0.65rem;
+  }
+
+  .sale-detail-items .styled-table thead {
+    display: none;
+  }
+
+  .sale-detail-items .styled-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.35);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    margin-bottom: 10px;
+  }
+
+  .sale-detail-items .styled-table tbody td {
+    border: none;
+    padding: 0;
+  }
+
+  .sale-detail-items .styled-table tbody td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  .sale-detail-items .styled-table tbody td[data-label="Producto"] {
+    grid-column: 1 / -1;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .sale-detail-items .styled-table tbody td[data-label="Cant."] {
+    justify-self: start;
+  }
+
+  .sale-detail-items .styled-table tbody td[data-label="Precio"],
+  .sale-detail-items .styled-table tbody td[data-label="Total"] {
+    text-align: right;
+    justify-self: end;
+  }
+}

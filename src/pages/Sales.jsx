@@ -312,9 +312,9 @@ const Sales = () => {
                         </div>
                     )}
                 >
-                    <div className="stack gap-md">
+                    <div className="sale-detail-modal stack gap-md">
                         {/* Summary Header */}
-                        <div className="grid four-cols gap-md p-md bg-slate-50 rounded-lg border border-slate-200">
+                        <div className="sale-detail-summary grid four-cols gap-md p-md bg-slate-50 rounded-lg border border-slate-200">
                             <div className="stack gap-xs">
                                 <span className="eyebrow">Fecha</span>
                                 <span className="font-medium text-slate-700">{formatDate(selectedSale.date)}</span>
@@ -343,7 +343,7 @@ const Sales = () => {
                         </div>
 
                         {/* Items Table */}
-                        <div className="table-container compact">
+                        <div className="table-container compact sale-detail-items">
                             <table className="styled-table">
                                 <thead>
                                     <tr>

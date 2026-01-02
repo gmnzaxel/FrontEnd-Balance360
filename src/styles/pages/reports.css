@@ -201,6 +201,11 @@
 .reports-chart-body {
   width: 100%;
   height: 300px;
+  min-height: 240px;
+}
+
+.reports-chart-body .recharts-responsive-container {
+  min-height: 240px;
 }
 
 .reports-top-list {
@@ -268,6 +273,30 @@
   .reports-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .reports-charts {
+    gap: 16px;
+  }
+
+  .reports-chart-card,
+  .reports-top-card {
+    min-height: auto;
+  }
+
+  .reports-chart-body {
+    height: 240px;
+  }
+
+  .reports-top-list {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .reports-top-item {
+    padding: 12px;
   }
 }
 
