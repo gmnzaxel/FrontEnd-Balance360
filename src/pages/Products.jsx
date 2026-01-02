@@ -505,11 +505,11 @@ const Products = () => {
           <form id="product-form" onSubmit={handleSubmit} className="form-stack">
             <div className="grid two-cols">
               <Input
-                label="Código *"
+                label="Código"
                 value={formData.codigo}
                 onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                required
                 placeholder="Ej: A-001"
+                helper="Si lo dejás vacío, se genera automáticamente."
               />
               <Select
                 label="Proveedor"
