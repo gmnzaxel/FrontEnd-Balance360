@@ -5,8 +5,7 @@ const ENDPOINT = 'inventory/products/';
 export const productService = {
     getAll: async (params = {}) => {
         const response = await api.get(ENDPOINT, { params });
-        // Soporte para paginación de DRF (response.data.results) o lista directa
-        return response.data.results || response.data;
+        return response.data;
     },
 
     getById: async (id) => {

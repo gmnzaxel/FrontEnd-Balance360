@@ -8,6 +8,36 @@
   max-width: 420px;
 }
 
+.bulk-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-0);
+  box-shadow: var(--shadow-xs);
+}
+
+.bulk-count {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.bulk-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--primary-500);
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
 .archive-toggle {
   display: inline-flex;
   align-items: center;

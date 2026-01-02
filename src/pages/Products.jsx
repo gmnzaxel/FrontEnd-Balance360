@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Edit, Trash2, Plus, Upload, Users, AlertTriangle, Search, Store, Package, RotateCcw, Archive, FileDown, CheckSquare } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
@@ -20,7 +20,7 @@ const Products = () => {
   const [lowStockData, setLowStockData] = useState({ mode: 'simple', results: [] });
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === 'ADMIN';
-  const columnCount = isAdmin ? 9 : 8;
+  const columnCount = isAdmin ? 8 : 7;
 
   // --- Estados de UI ---
   const [loading, setLoading] = useState(true);
@@ -32,6 +32,14 @@ const Products = () => {
   const [showArchivedProducts, setShowArchivedProducts] = useState(false);
   const [showArchivedSuppliers, setShowArchivedSuppliers] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [importErrors, setImportErrors] = useState([]);
+  const [showImportErrors, setShowImportErrors] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const pageSize = 25;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   // --- Estados de Formularios ---
   const [editingProduct, setEditingProduct] = useState(null);
@@ -46,7 +54,12 @@ const Products = () => {
     try {
       // Usamos allSettled para que si falla uno (ej: proveedores por permisos), no rompa todo el dashboard
       const results = await Promise.allSettled([
-        productService.getAll({ include_archived: showArchivedProducts }),
+        productService.getAll({
+          include_archived: showArchivedProducts,
+          page,
+          page_size: pageSize,
+          search: searchTerm || undefined
+        }),
         productService.getSuppliers({ include_archived: showArchivedSuppliers }),
         productService.getLowStock()
       ]);
@@ -54,7 +67,14 @@ const Products = () => {
       const [prodRes, suppRes, lowRes] = results;
 
       if (prodRes.status === 'fulfilled') {
-        setProducts(prodRes.value);
+        const payload = prodRes.value;
+        if (payload?.results) {
+          setProducts(payload.results);
+          setTotalCount(payload.count || 0);
+        } else {
+          setProducts(payload || []);
+          setTotalCount((payload || []).length);
+        }
       } else {
         console.error("Error loading products:", prodRes.reason);
         toast.error(getErrorMessage(prodRes.reason));
@@ -81,19 +101,15 @@ const Products = () => {
 
   useEffect(() => {
     loadData();
-  }, [showArchivedProducts, showArchivedSuppliers]);
-
-  // --- Filtros ---
-  const filteredProducts = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return products.filter((p) =>
-      p.nombre.toLowerCase().includes(term) || p.codigo.toLowerCase().includes(term)
-    );
-  }, [products, searchTerm]);
+  }, [showArchivedProducts, showArchivedSuppliers, page, searchTerm]);
 
   useEffect(() => {
     setSelectedProductIds([]);
   }, [searchTerm, showArchivedProducts, products]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, showArchivedProducts]);
 
   // --- Acciones de Producto ---
   const handleArchive = async (id) => {
@@ -148,17 +164,17 @@ const Products = () => {
     ));
   };
 
-  const allVisibleSelected = filteredProducts.length > 0
-    && filteredProducts.every((p) => selectedProductIds.includes(p.id));
+  const allVisibleSelected = products.length > 0
+    && products.every((p) => selectedProductIds.includes(p.id));
 
   const toggleSelectAllVisible = () => {
-    if (!filteredProducts.length) return;
+    if (!products.length) return;
     if (allVisibleSelected) {
-      setSelectedProductIds((prev) => prev.filter((id) => !filteredProducts.some((p) => p.id === id)));
+      setSelectedProductIds((prev) => prev.filter((id) => !products.some((p) => p.id === id)));
       return;
     }
     setSelectedProductIds((prev) => {
-      const merged = new Set([...prev, ...filteredProducts.map((p) => p.id)]);
+      const merged = new Set([...prev, ...products.map((p) => p.id)]);
       return Array.from(merged);
     });
   };
@@ -173,11 +189,10 @@ const Products = () => {
     const targets = products.filter((p) => selectedProductIds.includes(p.id) && !p.is_archived);
     const results = await Promise.allSettled(targets.map((p) => productService.delete(p.id)));
     const failed = results.filter((r) => r.status === 'rejected').length;
-    if (failed) {
-      toast.error(`Se archivaron ${targets.length - failed} y fallaron ${failed}.`);
-    } else {
-      toast.success(`Archivados: ${targets.length}`);
-    }
+    const archived = targets.length - failed;
+    if (failed) toast.error(`Archivados: ${archived}. Fallaron: ${failed}.`);
+    if (archived) toast.success(`Archivados: ${archived}`);
+    setSelectedProductIds([]);
     loadData();
   };
 
@@ -191,11 +206,10 @@ const Products = () => {
     const targets = products.filter((p) => selectedProductIds.includes(p.id));
     const results = await Promise.allSettled(targets.map((p) => productService.hardDelete(p.id)));
     const failed = results.filter((r) => r.status === 'rejected').length;
-    if (failed) {
-      toast.error(`Eliminados ${targets.length - failed}. Fallaron ${failed}.`);
-    } else {
-      toast.success(`Eliminados: ${targets.length}`);
-    }
+    const deleted = targets.length - failed;
+    if (failed) toast.error(`Eliminados: ${deleted}. Fallaron: ${failed}.`);
+    if (deleted) toast.success(`Eliminados: ${deleted}`);
+    setSelectedProductIds([]);
     loadData();
   };
 
@@ -236,6 +250,11 @@ const Products = () => {
     setEditingProduct(product);
     setFormData(product);
     setShowModal(true);
+  };
+
+  const handleViewDetails = (product) => {
+    setSelectedProduct(product);
+    setShowDetailsModal(true);
   };
 
   const handleCreate = () => {
@@ -295,6 +314,10 @@ const Products = () => {
       if (errors && errors.length > 0) msg += ` Errores: ${errors.length}`;
 
       toast.update(toastId, { render: msg, type: "success", isLoading: false, autoClose: 4000 });
+      if (errors && errors.length > 0) {
+        setImportErrors(errors);
+        setShowImportErrors(true);
+      }
       loadData();
     } catch (error) {
       toast.update(toastId, { render: getErrorMessage(error), type: "error", isLoading: false, autoClose: 3000 });
@@ -416,13 +439,17 @@ const Products = () => {
           className="products-search"
         />
         {isAdmin && (
-          <div className="flex-row gap-sm">
+          <div className="bulk-actions">
+            <div className="bulk-count">
+              Seleccionados: <strong>{selectedProductIds.length}</strong>
+            </div>
             <button className="ui-btn ui-btn-secondary" onClick={handleBulkArchive} disabled={!selectedProductIds.length}>
               <Archive size={16} /> Archivar
             </button>
             <button className="ui-btn ui-btn-secondary" onClick={handleBulkDelete} disabled={!selectedProductIds.length}>
               <Trash2 size={16} /> Eliminar
             </button>
+            <span className="bulk-pill" aria-live="polite">{selectedProductIds.length}</span>
           </div>
         )}
         <label className="archive-toggle">
@@ -510,21 +537,26 @@ const Products = () => {
               <th>Max</th>
               <th>Costo</th>
               <th>Precio Venta</th>
-              <th style={{ textAlign: 'right' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               [1, 2, 3].map(i => <tr key={i}><td colSpan={columnCount}><Skeleton height={48} /></td></tr>)
-            ) : filteredProducts.length > 0 ? (
-              filteredProducts.map((p) => (
-                <tr key={p.id} className={p.is_archived ? 'row-muted opacity-60' : ''}>
+            ) : products.length > 0 ? (
+              products.map((p) => (
+                <tr
+                  key={p.id}
+                  className={p.is_archived ? 'row-muted opacity-60' : ''}
+                  onClick={() => handleViewDetails(p)}
+                  style={{ cursor: 'pointer' }}
+                >
                   {isAdmin && (
                     <td data-label="Seleccionar">
                       <input
                         type="checkbox"
                         checked={selectedProductIds.includes(p.id)}
                         onChange={() => toggleProductSelection(p.id)}
+                        onClick={(e) => e.stopPropagation()}
                       />
                     </td>
                   )}
@@ -549,26 +581,6 @@ const Products = () => {
                   <td className="text-slate-500" data-label="Max">{p.stock_maximo || '-'}</td>
                   <td className="text-slate-500" data-label="Costo">{formatARS(p.costo_compra)}</td>
                   <td className="font-bold text-slate-700" data-label="Precio Venta">{formatARS(p.precio_venta)}</td>
-                  <td style={{ textAlign: 'right' }} data-label="Acciones">
-                    {isAdmin && (
-                      <div className="flex-row gap-xs justify-end">
-                        <button
-                          className="btn-icon"
-                          title={p.is_archived ? 'Desarchivar' : 'Archivar'}
-                          onClick={() => (p.is_archived ? handleRestore(p.id) : handleArchive(p.id))}
-                        >
-                          {p.is_archived ? <RotateCcw size={18} /> : <Archive size={18} />}
-                        </button>
-                        <button
-                          className="btn-icon text-danger-600"
-                          title="Eliminar definitivamente"
-                          onClick={() => handleHardDelete(p)}
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    )}
-                  </td>
                 </tr>
               ))
             ) : (
@@ -585,6 +597,106 @@ const Products = () => {
           </tbody>
         </table>
       </div>
+
+      <div className="pagination">
+        <button
+          className="ui-btn ui-btn-secondary"
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+        >
+          Anterior
+        </button>
+        <span className="muted small">Página {page} de {totalPages}</span>
+        <button
+          className="ui-btn ui-btn-secondary"
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={page === totalPages}
+        >
+          Siguiente
+        </button>
+      </div>
+
+      {showDetailsModal && selectedProduct && (
+        <Modal
+          title="Detalle de producto"
+          onClose={() => setShowDetailsModal(false)}
+          size="md"
+          footer={(
+            <>
+              <Button variant="ghost" onClick={() => setShowDetailsModal(false)}>Cerrar</Button>
+              {isAdmin && (
+                <>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      handleEdit(selectedProduct);
+                    }}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => selectedProduct.is_archived ? handleRestore(selectedProduct.id) : handleArchive(selectedProduct.id)}
+                  >
+                    {selectedProduct.is_archived ? 'Desarchivar' : 'Archivar'}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => handleHardDelete(selectedProduct)}
+                  >
+                    Eliminar
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+        >
+          <div className="form-stack">
+            <div className="grid two-cols">
+              <div>
+                <p className="text-xs text-slate-500">Código</p>
+                <p className="font-medium">{selectedProduct.codigo || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Proveedor</p>
+                <p className="font-medium">{selectedProduct.supplier_name || 'General'}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Nombre</p>
+              <p className="font-medium">{selectedProduct.nombre}</p>
+            </div>
+            <div className="grid three-cols">
+              <div>
+                <p className="text-xs text-slate-500">Stock actual</p>
+                <p className="font-medium">{selectedProduct.stock_actual}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Stock mínimo</p>
+                <p className="font-medium">{selectedProduct.stock_minimo}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Stock máximo</p>
+                <p className="font-medium">{selectedProduct.stock_maximo || '—'}</p>
+              </div>
+            </div>
+            <div className="grid two-cols">
+              <div>
+                <p className="text-xs text-slate-500">Costo</p>
+                <p className="font-medium">{formatARS(selectedProduct.costo_compra)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Precio venta</p>
+                <p className="font-medium">{formatARS(selectedProduct.precio_venta)}</p>
+              </div>
+            </div>
+            {selectedProduct.is_archived && (
+              <div className="muted text-sm">Producto archivado.</div>
+            )}
+          </div>
+        </Modal>
+      )}
 
       {/* Modal Producto */}
       {showModal && (
@@ -677,6 +789,41 @@ const Products = () => {
               />
             </div>
           </form>
+        </Modal>
+      )}
+
+      {showImportErrors && (
+        <Modal
+          title="Errores de importación"
+          onClose={() => setShowImportErrors(false)}
+          size="md"
+        >
+          <div className="form-stack">
+            <p className="text-sm text-slate-500">
+              Estas filas no se importaron. Corregilas y volvé a subir el archivo.
+            </p>
+            <div className="table-container compact" style={{ maxHeight: 260, overflowY: 'auto' }}>
+              <table className="styled-table">
+                <thead>
+                  <tr>
+                    <th>Fila</th>
+                    <th>Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importErrors.map((e, idx) => {
+                    const [rowLabel, ...rest] = String(e).split(':');
+                    return (
+                      <tr key={idx}>
+                        <td data-label="Fila">{rowLabel || `Fila ${idx + 1}`}</td>
+                        <td data-label="Error">{rest.join(':').trim() || e}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </Modal>
       )}
 
