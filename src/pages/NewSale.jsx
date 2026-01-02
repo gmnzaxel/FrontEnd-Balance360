@@ -17,7 +17,9 @@ const NewSale = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [cart, setCart] = useState([]);
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
@@ -26,32 +28,31 @@ const NewSale = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastSale, setLastSale] = useState(null);
   const [ticketConfig, setTicketConfig] = useState(null);
+  const [showCartModal, setShowCartModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
+  const [cartPulse, setCartPulse] = useState(false);
+  const [cartAnimKey, setCartAnimKey] = useState(0);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const pageSize = 200;
-      let pageNum = 1;
-      let all = [];
-      while (true) {
-        const response = await api.get('inventory/products/', {
-          params: { page: pageNum, page_size: pageSize }
-        });
-        const payload = response.data;
-        const list = payload?.results || payload;
-        if (Array.isArray(list)) {
-          all = all.concat(list);
+      const response = await api.get('inventory/products/', {
+        params: {
+          page,
+          page_size: PAGE_SIZE,
+          search: debouncedSearch || undefined
         }
-        if (!payload?.next) break;
-        pageNum += 1;
-      }
-      setProducts(all);
+      });
+      const payload = response.data;
+      const list = payload?.results || payload;
+      setProducts(Array.isArray(list) ? list : []);
+      setTotalCount(payload?.count || (Array.isArray(list) ? list.length : 0));
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, debouncedSearch]);
 
   useEffect(() => {
     fetchProducts();
@@ -62,7 +63,19 @@ const NewSale = () => {
   }, [fetchProducts]);
 
   useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const handler = (e) => setIsMobile(e.matches);
+    media.addEventListener('change', handler);
+    return () => media.removeEventListener('change', handler);
+  }, []);
+
+  useEffect(() => {
     setPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 250);
+    return () => clearTimeout(timer);
   }, [search]);
 
   /* 
@@ -99,7 +112,7 @@ const NewSale = () => {
         <body>
           <div class="header">
             <div class="company">${headerText}</div>
-            <div class="info">Fecha: ${new Date(lastSale.date).toLocaleString()}</div>
+            <div class="info">Fecha: ${new Date(lastSale.date).toLocaleString('es-AR', { hour12: false })}</div>
             <div class="info">Ticket #${lastSale.id}</div>
             <div class="info">Pago: ${lastSale.payment_method}</div>
           </div>
@@ -156,16 +169,7 @@ const NewSale = () => {
     }, 250);
   };
 
-  const filteredProducts = useMemo(() => {
-    const term = search.toLowerCase();
-    return products.filter((p) =>
-      p.nombre.toLowerCase().includes(term) ||
-      p.codigo.toLowerCase().includes(term)
-    );
-  }, [products, search]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
-  const pageProducts = filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const addToCart = (product) => {
     const exists = cart.find((item) => item.item_type === 'PRODUCTO' && item.product === product.id);
@@ -185,6 +189,9 @@ const NewSale = () => {
         quantity: 1,
       }]);
     }
+    setCartAnimKey((k) => k + 1);
+    setCartPulse(true);
+    setTimeout(() => setCartPulse(false), 450);
   };
 
   const addService = () => {
@@ -203,6 +210,9 @@ const NewSale = () => {
     }]);
     setServiceForm({ description: '', price: '' });
     setShowServiceModal(false);
+    setCartAnimKey((k) => k + 1);
+    setCartPulse(true);
+    setTimeout(() => setCartPulse(false), 450);
   };
 
   const updateQuantity = (id, quantity) => {
@@ -219,6 +229,11 @@ const NewSale = () => {
     const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     return subtotal - (parseFloat(discount) || 0);
   }, [cart, discount]);
+
+  const cartCount = useMemo(
+    () => cart.reduce((acc, item) => acc + item.quantity, 0),
+    [cart]
+  );
 
   const handleSubmit = async () => {
     if (!cart.length) {
@@ -254,6 +269,7 @@ const NewSale = () => {
 
       setLastSale(saleSnapshot);
       setShowSuccessModal(true);
+      setShowCartModal(false);
 
       // Clear form
       setCart([]);
@@ -305,14 +321,22 @@ const NewSale = () => {
                     </tr>
                   ))
                 ) : (
-                  pageProducts.map((p) => (
+                  products.map((p) => (
                     <tr
                       key={p.id}
                       onClick={() => p.stock_actual > 0 && addToCart(p)}
                       className={p.stock_actual <= 0 ? 'pos-row-disabled' : ''}
                       style={{ cursor: p.stock_actual > 0 ? 'pointer' : 'not-allowed' }}
-                      onMouseEnter={(e) => { if (p.stock_actual > 0) e.currentTarget.style.backgroundColor = 'var(--primary-50)'; }}
-                      onMouseLeave={(e) => { if (p.stock_actual > 0) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      onMouseEnter={(e) => {
+                        if (p.stock_actual > 0 && window.matchMedia('(hover: hover)').matches) {
+                          e.currentTarget.style.backgroundColor = 'var(--primary-50)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (p.stock_actual > 0 && window.matchMedia('(hover: hover)').matches) {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                      }}
                     >
                       <td data-label="Código">
                         <span className="badge badge-neutral" style={{ fontSize: '0.75rem' }}>{p.codigo}</span>
@@ -334,7 +358,7 @@ const NewSale = () => {
                     </tr>
                   ))
                 )}
-                {!loading && !pageProducts.length && (
+                {!loading && !products.length && (
                   <tr>
                     <td colSpan="5" className="pos-empty-cell">
                       <div className="pos-empty">
@@ -443,6 +467,18 @@ const NewSale = () => {
         </div>
       </div>
 
+      {isMobile && (
+        <button
+          className={`pos-cart-fab ${cartPulse ? 'pulse' : ''}`}
+          onClick={() => setShowCartModal(true)}
+          aria-label="Abrir carrito"
+        >
+          <ShoppingCart size={20} />
+          {cartCount > 0 && <span className="pos-cart-count">{cartCount}</span>}
+          <span key={cartAnimKey} className="pos-cart-fly" aria-hidden="true" />
+        </button>
+      )}
+
       {/* Service Modal */}
       {showServiceModal && (
         <Modal
@@ -468,6 +504,88 @@ const NewSale = () => {
             onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
             placeholder="0.00"
           />
+        </Modal>
+      )}
+
+      {showCartModal && (
+        <Modal
+          title="Finalizar compra"
+          onClose={() => setShowCartModal(false)}
+          size="md"
+        >
+          <div className="cart-body">
+            {!cart.length && (
+              <div className="empty-state">
+                <ShoppingCart size={42} className="muted" />
+                <p>Agregá productos o servicios</p>
+              </div>
+            )}
+            {cart.map((item) => (
+              <div key={item.id} className="cart-item">
+                <div className="flex-row between">
+                  <div>
+                    <p className="title-sm">{item.nombre}</p>
+                    {item.item_type === 'SERVICIO' && <span className="badge badge-warning">Servicio</span>}
+                  </div>
+                  <button className="ghost-icon" onClick={() => removeItem(item.id)} aria-label="Eliminar">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                <div className="flex-row between">
+                  <div className="quantity-group">
+                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>-</button>
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => updateQuantity(item.id, e.target.value)}
+                    />
+                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                  </div>
+                  <div className="text-right">
+                    <div className="muted tiny">Unitario {formatARS(item.price)}</div>
+                    <div className="title-sm">{formatARS(item.price * item.quantity)}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="cart-footer">
+            <div className="grid two-cols">
+              <Input
+                label="Descuento"
+                type="number"
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+                icon={<Tag size={14} />}
+              />
+              <Select
+                label="Método de pago"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              >
+                <option value="EFECTIVO">Efectivo</option>
+                <option value="DEBITO">Tarjeta Débito</option>
+                <option value="CREDITO">Tarjeta Crédito</option>
+                <option value="TRANSFERENCIA">Transferencia</option>
+                <option value="MERCADOPAGO">MercadoPago</option>
+                <option value="OTRO">Otro</option>
+              </Select>
+            </div>
+            <div className="flex-row between" style={{ marginTop: 12, marginBottom: 12 }}>
+              <div className="muted">Total a pagar</div>
+              <div className="title-xl">{formatARS(total)}</div>
+            </div>
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={handleSubmit}
+              disabled={!cart.length}
+              icon={<CreditCard size={18} />}
+            >
+              Confirmar venta
+            </Button>
+          </div>
         </Modal>
       )}
 

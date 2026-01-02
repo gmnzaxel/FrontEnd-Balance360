@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
-import { Save, Store, Eye, Trash2 } from 'lucide-react';
+import { Save, Store, Eye } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import { AuthContext } from '../context/AuthContext';
 
@@ -16,7 +16,6 @@ const Settings = () => {
     const [saving, setSaving] = useState(false);
 
     const [showPreview, setShowPreview] = useState(false);
-    const [purgeConfirm, setPurgeConfirm] = useState('');
 
     useEffect(() => {
         fetchSettings();
@@ -48,22 +47,6 @@ const Settings = () => {
         }
     };
 
-    const handlePurgeProducts = async () => {
-        if (purgeConfirm !== 'BORRAR') {
-            toast.error("Escribí BORRAR para confirmar.");
-            return;
-        }
-        setSaving(true);
-        try {
-            await api.post('inventory/products/purge/');
-            toast.success('Productos eliminados.');
-            setPurgeConfirm('');
-        } catch (error) {
-            toast.error(error.response?.data?.error || "No se pudo eliminar.");
-        } finally {
-            setSaving(false);
-        }
-    };
 
     if (loading) return <div className="p-8 text-center text-muted">Cargando configuración…</div>;
 
@@ -114,41 +97,6 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {settings && isAdmin && (
-                    <div className="card settings-card">
-                        <div className="card-header settings-card-header">
-                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Trash2 size={20} className="text-danger-600" />
-                                Operaciones avanzadas
-                            </h3>
-                        </div>
-                        <div className="settings-section">
-                            <div className="form-group">
-                                <label className="font-semibold text-slate-700 mb-2 block">Borrar todos los productos</label>
-                                <p className="text-xs text-slate-500 mb-3">
-                                    Esta acción elimina definitivamente todos los productos y movimientos de stock. Solo ADMIN.
-                                </p>
-                                <div className="grid two-cols">
-                                    <input
-                                        className="input-control"
-                                        type="text"
-                                        value={purgeConfirm}
-                                        onChange={(e) => setPurgeConfirm(e.target.value)}
-                                        placeholder="Escribí BORRAR"
-                                    />
-                                    <button
-                                        type="button"
-                                        className="btn btn-danger"
-                                        disabled={saving}
-                                        onClick={handlePurgeProducts}
-                                    >
-                                        {saving ? 'Procesando…' : 'Eliminar productos'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
                 {/* Card 2: Ticket Customization */}
                 <div className="card settings-card">
                     <div className="card-header settings-card-header settings-card-header-split">
@@ -241,7 +189,7 @@ const Settings = () => {
                                 </div>
                                 <div className="text-xxs text-slate-300 flex flex-col gap-1 items-center">
                                     <span>*** COPIA CLIENTE ***</span>
-                                    <span>{new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</span>
+                                    <span>{new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', { hour12: false })}</span>
                                 </div>
                                 <div className="h-8 bg-slate-800 w-3/4 mx-auto mt-4 opacity-10"></div>
                             </div>

@@ -107,6 +107,68 @@
   }
 }
 
+@media (max-width: 640px) {
+  .products-page .table-container .styled-table thead {
+    display: none;
+  }
+
+  .products-page .table-container .styled-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 12px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    margin-bottom: 12px;
+  }
+
+  .products-page .table-container .styled-table tbody td {
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.85rem;
+  }
+
+  .products-page .table-container .styled-table tbody td::before {
+    content: attr(data-label);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .products-page .table-container .styled-table tbody td[data-label="Producto / Proveedor"] {
+    grid-column: 1 / -1;
+    display: block;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed rgba(148, 163, 184, 0.2);
+  }
+
+  .products-page .table-container .styled-table tbody td[data-label="Producto / Proveedor"]::before {
+    display: none;
+  }
+
+  .products-page .table-container .styled-table tbody td[data-label="Seleccionar"] {
+    grid-column: 2 / 3;
+    justify-content: flex-end;
+  }
+
+  .products-page .table-container .styled-table tbody td[data-label="Código"] {
+    grid-column: 1 / 2;
+    justify-content: flex-start;
+  }
+
+  .products-page .table-container .styled-table .badge {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+}
+
 @media (max-width: 390px) {
   .products-page .page-header-actions {
     display: grid;

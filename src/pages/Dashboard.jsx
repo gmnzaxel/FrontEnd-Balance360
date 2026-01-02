@@ -307,8 +307,8 @@ const Dashboard = () => {
       {
         showSupplierModal && (
           <Modal title="Generar pedido a proveedor" onClose={() => setShowSupplierModal(false)} size="lg">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-end gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="supplier-order-modal flex flex-col gap-4">
+              <div className="supplier-order-controls flex items-end gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex-1">
                   <Select
                     label="Proveedor"
@@ -319,7 +319,7 @@ const Dashboard = () => {
                     {uniqueSuppliers.map(s => <option key={s} value={s}>{s}</option>)}
                   </Select>
                 </div>
-                <div className="mb-1">
+                <div className="supplier-order-download mb-1">
                   <Button
                     variant="primary"
                     icon={<FileDown size={18} />}
@@ -331,14 +331,14 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm text-slate-600">
+              <div className="supplier-order-actions flex items-center justify-between text-sm text-slate-600">
                 <span>Seleccioná los productos a incluir en el Excel.</span>
                 <Button variant="secondary" size="sm" onClick={toggleAllFiltered}>
                   {allFilteredSelected ? 'Quitar selección' : 'Seleccionar todos'}
                 </Button>
               </div>
 
-              <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <div className="supplier-order-table table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 <table className="styled-table">
                   <thead>
                     <tr>

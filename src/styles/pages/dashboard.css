@@ -94,3 +94,67 @@
     gap: 12px;
   }
 }
+
+@media (max-width: 640px) {
+  .supplier-order-modal {
+    gap: 12px;
+  }
+
+  .supplier-order-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .supplier-order-download .ui-btn,
+  .supplier-order-download .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .supplier-order-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .supplier-order-actions span {
+    font-size: 0.85rem;
+  }
+
+  .supplier-order-table .styled-table thead {
+    display: none;
+  }
+
+  .supplier-order-table .styled-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.35);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    margin-bottom: 10px;
+  }
+
+  .supplier-order-table .styled-table tbody td {
+    border: none;
+    padding: 0;
+  }
+
+  .supplier-order-table .styled-table tbody td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  .supplier-order-table .styled-table tbody td[data-label="Incluir"] {
+    justify-self: end;
+    align-self: start;
+  }
+}

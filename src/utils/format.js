@@ -8,5 +8,5 @@ export const formatARS = formatCurrency;
 
 export const formatDate = (dateString) => {
   if (!dateString) return '-';
-  return new Date(dateString).toLocaleString('es-AR');
+  return new Date(dateString).toLocaleString('es-AR', { hour12: false });
 };
