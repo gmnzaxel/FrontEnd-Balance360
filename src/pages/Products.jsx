@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Edit, Trash2, Plus, Upload, Users, AlertTriangle, Search, Store, Package, RotateCcw, Archive, FileDown, CheckSquare } from 'lucide-react';
+import { Edit, Trash2, Plus, Upload, Users, Search, Store, Package, RotateCcw, Archive, FileDown, CheckSquare } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 import { formatARS } from '../utils/format';
@@ -17,7 +17,6 @@ const Products = () => {
   // --- Estados de Datos ---
   const [products, setProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
-  const [lowStockData, setLowStockData] = useState({ mode: 'simple', results: [] });
   const { user } = useContext(AuthContext);
   const isAdmin = user?.role === 'ADMIN';
   const columnCount = isAdmin ? 8 : 7;
@@ -28,7 +27,6 @@ const Products = () => {
   const [showModal, setShowModal] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSupplierFilter, setSelectedSupplierFilter] = useState('all');
   const [showArchivedProducts, setShowArchivedProducts] = useState(false);
   const [showArchivedSuppliers, setShowArchivedSuppliers] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
@@ -38,7 +36,7 @@ const Products = () => {
   const [showImportErrors, setShowImportErrors] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const pageSize = 25;
+  const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   // --- Estados de Formularios ---
@@ -60,11 +58,10 @@ const Products = () => {
           page_size: pageSize,
           search: searchTerm || undefined
         }),
-        productService.getSuppliers({ include_archived: showArchivedSuppliers }),
-        productService.getLowStock()
+        productService.getSuppliers({ include_archived: showArchivedSuppliers })
       ]);
 
-      const [prodRes, suppRes, lowRes] = results;
+      const [prodRes, suppRes] = results;
 
       if (prodRes.status === 'fulfilled') {
         const payload = prodRes.value;
@@ -84,12 +81,6 @@ const Products = () => {
         setSuppliers(suppRes.value);
       } else {
         console.warn("Error loading suppliers (posible falta de permisos):", suppRes.reason);
-      }
-
-      if (lowRes.status === 'fulfilled') {
-        setLowStockData(lowRes.value);
-      } else {
-        console.warn("Error loading low stock:", lowRes.reason);
       }
 
     } catch (error) {
@@ -464,55 +455,7 @@ const Products = () => {
         </label>
       </Card>
 
-      {/* Alertas de Stock */}
-      {lowStockData.results.length > 0 && (
-        <Card
-          title="Alertas de stock"
-          description="Productos por debajo del stock mínimo."
-          className="alert-card"
-          headerSlot={<AlertTriangle size={20} className="text-danger-600" />}
-        >
-          {lowStockData.mode === 'simple' ? (
-            <div className="chip-grid">
-              {lowStockData.results.map((p) => (
-                <Badge key={p.id} tone="danger">
-                  {p.nombre} (Stock: {p.stock_actual} / Min: {p.stock_minimo})
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <>
-              <div style={{ marginBottom: 12, maxWidth: 300 }}>
-                <Select value={selectedSupplierFilter} onChange={(e) => setSelectedSupplierFilter(e.target.value)}>
-                  <option value="all">Todos los proveedores</option>
-                  {lowStockData.results.map((g) => (
-                    <option key={g.supplier_id} value={g.supplier_id}>{g.supplier_name}</option>
-                  ))}
-                </Select>
-              </div>
-              <div className="grid three-cols">
-                {lowStockData.results
-                  .filter((g) => selectedSupplierFilter === 'all' || g.supplier_id.toString() === selectedSupplierFilter)
-                  .map((group) => (
-                    <div key={group.supplier_id} className="mini-card">
-                      <h4 className="text-sm font-semibold mb-2 flex-row gap-xs">
-                        <Users size={14} className="text-slate-400" /> {group.supplier_name}
-                      </h4>
-                      <ul className="list-disc pl-4 space-y-1">
-                        {group.items.map((item) => (
-                          <li key={item.product_id} className="text-xs text-slate-600">
-                            <span className="font-medium text-slate-800">{item.product_name}</span>
-                            <span className="text-danger-600 ml-1">(Stock: {item.stock_actual})</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-              </div>
-            </>
-          )}
-        </Card>
-      )}
+      {/* Alertas de Stock (se muestran en Dashboard) */}
 
       {/* Tabla Principal */}
       <div className="table-container">
