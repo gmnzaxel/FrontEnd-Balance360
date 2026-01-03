@@ -551,6 +551,15 @@
   animation: fadeIn var(--duration-md) ease-out;
 }
 
+@media (max-width: 640px) {
+  .user-dropdown {
+    top: auto;
+    bottom: calc(100% + 8px);
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+}
+
 .dropdown-item {
   width: 100%;
   display: flex;
