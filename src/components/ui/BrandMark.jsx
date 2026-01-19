@@ -9,8 +9,7 @@ const BrandMark = ({ size = 24, className = '' }) => (
     fill="none"
     aria-hidden="true"
   >
-    <circle cx="32" cy="32" r="26" fill="currentColor" />
-    <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(3, 105, 161, 0.9)" strokeWidth="3" />
+    <circle cx="32" cy="32" r="24" fill="none" stroke="rgba(248, 250, 252, 0.4)" strokeWidth="2.4" />
     <path d="M16 20h32" stroke="rgba(248, 250, 252, 0.95)" strokeWidth="3.6" strokeLinecap="round" />
     <path d="M32 20v16" stroke="rgba(248, 250, 252, 0.95)" strokeWidth="4" strokeLinecap="round" />
     <path d="M22 28h10" stroke="rgba(248, 250, 252, 0.95)" strokeWidth="3.2" strokeLinecap="round" />
