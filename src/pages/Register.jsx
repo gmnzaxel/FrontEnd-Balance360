@@ -14,6 +14,7 @@ const Register = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     empresa_nombre: '',
@@ -26,25 +27,19 @@ const Register = () => {
     confirm_password: '',
   });
 
-  const getPasswordStrength = (value) => {
-    if (!value) return { level: 0, label: 'Ingresá una contraseña.' };
-    const hasNumber = /\d/.test(value);
-    const hasLetter = /[A-Za-z]/.test(value);
-    const hasSymbol = /[^A-Za-z0-9]/.test(value);
-    if (value.length >= 12 && hasNumber && hasLetter && hasSymbol) {
-      return { level: 3, label: 'Fuerte' };
-    }
-    if (value.length >= 8 && hasNumber && hasLetter) {
-      return { level: 2, label: 'Media' };
-    }
-    return { level: 1, label: 'Débil' };
-  };
-
-  const passwordStrength = getPasswordStrength(formData.password);
-
   const handleChange = (e) => {
     setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFocusCapture = () => {
+    setFocusMode(true);
+  };
+
+  const handleBlurCapture = (event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      setFocusMode(false);
+    }
   };
 
   const handleNext = () => {
@@ -128,7 +123,7 @@ const Register = () => {
 
   return (
     <div className="auth-shell auth-shell-register">
-      <div className="auth-layout">
+      <div className={`auth-layout ${focusMode ? 'auth-focus' : ''}`}>
         <aside className="auth-aside auth-aside-compact">
           <div className="auth-brand">
             <div className="brand-icon"><ShieldCheck size={26} /></div>
@@ -175,7 +170,12 @@ const Register = () => {
                 <span className="auth-step-label">Administrador</span>
               </div>
             </div>
-            <form onSubmit={handleSubmit} className="form-stack gap-lg">
+            <form
+              onSubmit={handleSubmit}
+              className="form-stack gap-lg"
+              onFocusCapture={handleFocusCapture}
+              onBlurCapture={handleBlurCapture}
+            >
               {step === 1 ? (
                 <div className="section-block">
                   <div className="section-title">
@@ -301,14 +301,6 @@ const Register = () => {
                         </button>
                       )}
                     />
-                    <div className="password-meter full-span">
-                      <div className="password-meter-track">
-                        <div className={`password-meter-bar level-${passwordStrength.level}`} />
-                      </div>
-                      <span className="password-meter-label">
-                        Fortaleza: {passwordStrength.label}
-                      </span>
-                    </div>
                   </div>
                 </div>
               )}

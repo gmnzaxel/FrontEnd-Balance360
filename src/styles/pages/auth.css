@@ -21,6 +21,8 @@
   align-items: center;
   position: relative;
   z-index: 1;
+  transition: grid-template-columns var(--duration-slow) var(--ease-smooth),
+    gap var(--duration-slow) var(--ease-smooth);
 }
 
 .auth-aside {
@@ -37,6 +39,11 @@
   -webkit-backdrop-filter: blur(var(--blur-lg));
   position: relative;
   overflow: hidden;
+  transition: opacity var(--duration-md) var(--ease-smooth),
+    transform var(--duration-md) var(--ease-smooth),
+    max-width var(--duration-md) var(--ease-smooth),
+    padding var(--duration-md) var(--ease-smooth),
+    margin var(--duration-md) var(--ease-smooth);
 }
 
 .auth-aside::after {
@@ -122,10 +129,33 @@
   width: 100%;
   max-width: 540px;
   justify-self: end;
+  transition: transform var(--duration-md) var(--ease-smooth),
+    max-width var(--duration-md) var(--ease-smooth);
 }
 
 .auth-panel.wide {
   max-width: 620px;
+}
+
+.auth-layout.auth-focus {
+  grid-template-columns: 0fr minmax(0, 1fr);
+  gap: 0;
+}
+
+.auth-layout.auth-focus .auth-aside {
+  opacity: 0;
+  transform: translateX(-24px) scale(0.98);
+  pointer-events: none;
+  max-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.auth-layout.auth-focus .auth-panel {
+  justify-self: center;
+  transform: translateX(-8px);
+  max-width: 640px;
 }
 
 .brand-chip {

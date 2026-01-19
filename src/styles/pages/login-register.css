@@ -196,6 +196,10 @@
   box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.08);
 }
 
+.auth-panel .muted.text-center {
+  margin-top: 14px;
+}
+
 .auth-note {
   display: inline-flex;
   align-items: center;
@@ -251,48 +255,4 @@
   .auth-panel .ui-card {
     padding: 24px;
   }
-}
-
-.password-meter {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.password-meter-track {
-  width: 100%;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.2);
-  overflow: hidden;
-}
-
-.password-meter-bar {
-  height: 100%;
-  width: 0%;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.3);
-  transition: width var(--duration-md) var(--ease-smooth),
-    background var(--duration-md) var(--ease-smooth);
-}
-
-.password-meter-bar.level-1 {
-  width: 38%;
-  background: rgba(56, 189, 248, 0.5);
-}
-
-.password-meter-bar.level-2 {
-  width: 68%;
-  background: rgba(14, 165, 233, 0.7);
-}
-
-.password-meter-bar.level-3 {
-  width: 100%;
-  background: rgba(34, 197, 94, 0.8);
-}
-
-.password-meter-label {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
 }
