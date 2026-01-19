@@ -56,6 +56,11 @@ export const productService = {
         return response.data;
     },
 
+    updateSupplier: async (id, data) => {
+        const response = await api.patch(`inventory/suppliers/${id}/`, data);
+        return response.data;
+    },
+
     deleteSupplier: async (id) => {
         await api.delete(`inventory/suppliers/${id}/`);
     },

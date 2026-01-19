@@ -44,6 +44,7 @@ const Products = () => {
   const [formData, setFormData] = useState({
     codigo: '', nombre: '', stock_actual: 0, stock_minimo: 5, stock_maximo: 0, costo_compra: 0, precio_venta: 0, supplier_name: '',
   });
+  const [editingSupplier, setEditingSupplier] = useState(null);
   const [supplierForm, setSupplierForm] = useState({ name: '', contact_phone: '' });
 
   // --- Carga Inicial ---
@@ -327,14 +328,20 @@ const Products = () => {
   const handleSubmitSupplier = async () => {
     if (!supplierForm.name.trim()) return;
     if (!isAdmin) {
-      toast.error('Solo los administradores pueden crear proveedores');
+      toast.error('Solo los administradores pueden gestionar proveedores');
       return;
     }
 
     setSubmitting(true);
     try {
-      await productService.createSupplier(supplierForm);
-      toast.success('Proveedor agregado');
+      if (editingSupplier) {
+        await productService.updateSupplier(editingSupplier.id, supplierForm);
+        toast.success('Proveedor actualizado');
+      } else {
+        await productService.createSupplier(supplierForm);
+        toast.success('Proveedor agregado');
+      }
+      setEditingSupplier(null);
       setSupplierForm({ name: '', contact_phone: '' });
       // Recargar solo proveedores
       const newSuppliers = await productService.getSuppliers();
@@ -348,6 +355,19 @@ const Products = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditSupplier = (supplier) => {
+    setEditingSupplier(supplier);
+    setSupplierForm({
+      name: supplier.name || '',
+      contact_phone: supplier.contact_phone || ''
+    });
+  };
+
+  const handleCancelSupplierEdit = () => {
+    setEditingSupplier(null);
+    setSupplierForm({ name: '', contact_phone: '' });
   };
 
   const handleDeleteSupplier = async (supplier) => {
@@ -748,7 +768,11 @@ const Products = () => {
         <Modal
           persist={true}
           title="Proveedores"
-          onClose={() => !submitting && setShowSupplierModal(false)}
+          onClose={() => {
+            if (submitting) return;
+            setShowSupplierModal(false);
+            handleCancelSupplierEdit();
+          }}
           footer={(
             <>
               <Button variant="ghost" onClick={() => setShowSupplierModal(false)}>Cerrar</Button>
@@ -759,10 +783,18 @@ const Products = () => {
             <div className="flex-row gap-sm items-end">
               <div style={{ flex: 1 }}>
                 <Input
-                  label="Nuevo proveedor"
+                  label={editingSupplier ? 'Editar proveedor' : 'Nuevo proveedor'}
                   value={supplierForm.name}
                   onChange={(e) => setSupplierForm({ ...supplierForm, name: e.target.value })}
                   placeholder="Nombre del proveedor"
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <Input
+                  label="Teléfono"
+                  value={supplierForm.contact_phone}
+                  onChange={(e) => setSupplierForm({ ...supplierForm, contact_phone: e.target.value })}
+                  placeholder="Ej: 11 2345 6789"
                 />
               </div>
               <Button
@@ -772,8 +804,19 @@ const Products = () => {
                 disabled={submitting || !supplierForm.name.trim() || !isAdmin}
                 style={{ marginBottom: 2 }} // Alinear con input
               >
-                {submitting ? '...' : <Plus size={18} />}
+                {submitting ? '...' : (editingSupplier ? 'Guardar' : <Plus size={18} />)}
               </Button>
+              {editingSupplier && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleCancelSupplierEdit}
+                  disabled={submitting}
+                  style={{ marginBottom: 2 }}
+                >
+                  Cancelar
+                </Button>
+              )}
             </div>
 
             <div className="table-container compact" style={{ maxHeight: 200, overflowY: 'auto', marginTop: 10 }}>
@@ -789,9 +832,22 @@ const Products = () => {
                     <tr key={s.id}>
                       <td data-label="Proveedor">
                         <div className="font-medium">{s.name}</div>
+                        {s.contact_phone && (
+                          <div className="muted tiny mt-1">{s.contact_phone}</div>
+                        )}
                       </td>
                       <td data-label="Acciones" style={{ textAlign: 'right' }}>
                         {isAdmin && (
+                          <>
+                            <button
+                              className="ghost-icon"
+                              type="button"
+                              onClick={() => handleEditSupplier(s)}
+                              disabled={submitting}
+                              aria-label={`Editar proveedor ${s.name}`}
+                            >
+                              <Edit size={16} />
+                            </button>
                           <button
                             className="ghost-icon text-danger-600"
                             type="button"
@@ -801,6 +857,7 @@ const Products = () => {
                           >
                             <Trash2 size={16} />
                           </button>
+                          </>
                         )}
                       </td>
                     </tr>

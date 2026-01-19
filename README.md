@@ -19,6 +19,13 @@ Frontend en React + Vite para el sistema de gestión Balance360.
     npm run dev
     ```
 
+## Calidad de codigo
+
+```bash
+npm run lint
+npm run format
+```
+
 ## Estructura
 
 - `src/api`: Configuración de Axios e interceptores (Refresh Token).

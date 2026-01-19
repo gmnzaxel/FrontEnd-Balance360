@@ -421,12 +421,16 @@
 .modal {
   width: 100%;
   max-width: 620px;
+  max-height: calc(100vh - 36px);
   background: var(--surface-1);
   border-radius: var(--radius-lg);
   padding: 18px;
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow);
   animation: modalPop var(--duration-md) ease-out;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .ui-modal-lg {
@@ -452,6 +456,8 @@
   flex-direction: column;
   gap: 14px;
   color: var(--text-secondary);
+  overflow: auto;
+  flex: 1 1 auto;
 }
 
 .modal-foot,
