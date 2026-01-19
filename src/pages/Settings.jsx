@@ -6,8 +6,7 @@ import Modal from '../components/ui/Modal';
 import { AuthContext } from '../context/AuthContext';
 
 const Settings = () => {
-    const { user } = useContext(AuthContext);
-    const isAdmin = user?.role === 'ADMIN';
+    const { isAdminActual, viewAsSeller, setViewAsSeller } = useContext(AuthContext);
     const [settings, setSettings] = useState({
         branch_name: '',
         currency: 'ARS'
@@ -70,6 +69,38 @@ const Settings = () => {
             </div>
 
             <form onSubmit={handleSave} className="settings-form page-section">
+                {isAdminActual && (
+                    <div className="card settings-card">
+                        <div className="card-header settings-card-header">
+                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <Eye size={20} className="text-primary-600" />
+                                Privacidad
+                            </h3>
+                        </div>
+
+                        <div className="settings-section">
+                            <div className="settings-row">
+                                <div className="settings-row-content">
+                                    <Eye size={18} className="text-primary-600" />
+                                    <div>
+                                        <p className="font-semibold text-slate-800">Vista de vendedor</p>
+                                        <p className="text-sm text-slate-500">
+                                            Oculta reportes, usuarios y accesos administrativos cuando usás una PC pública.
+                                        </p>
+                                    </div>
+                                </div>
+                                <label className="toggle-switch" aria-label="Activar vista de vendedor">
+                                    <input
+                                        type="checkbox"
+                                        checked={viewAsSeller}
+                                        onChange={(e) => setViewAsSeller(e.target.checked)}
+                                    />
+                                    <span className="slider" />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Card 1: Branch & Inventory */}
                 <div className="card settings-card">

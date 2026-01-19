@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 
 const Users = () => {
-    const { user: currentUser } = useContext(AuthContext);
+    const { user: currentUser, isAdmin } = useContext(AuthContext);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -36,7 +36,7 @@ const Users = () => {
         }
     };
 
-    if (currentUser?.role !== 'ADMIN') {
+    if (!isAdmin) {
         return <div className="p-8 text-center text-muted">No tienes permisos para ver esta página.</div>;
     }
 

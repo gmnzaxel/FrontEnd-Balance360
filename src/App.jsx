@@ -38,7 +38,7 @@ function App() {
                 <Route path="/reports" element={<AdminOnly><Reports /></AdminOnly>} />
                 <Route path="/users" element={<AdminOnly><Users /></AdminOnly>} />
                 <Route path="/mi-perfil" element={<Profile />} />
-                <Route path="/configuracion" element={<AdminOnly><Settings /></AdminOnly>} />
+                <Route path="/configuracion" element={<AdminOnly useActualRole><Settings /></AdminOnly>} />
               </Route>
             </Route>
 

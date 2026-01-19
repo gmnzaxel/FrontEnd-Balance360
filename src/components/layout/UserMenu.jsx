@@ -1,9 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, LogOut, Settings, ShieldCheck, User } from 'lucide-react';
+import React, { useEffect, useRef, useState, useContext } from 'react';
+import { ChevronDown, LogOut, Settings, User } from 'lucide-react';
+import { AuthContext } from '../../context/AuthContext';
 
 const UserMenu = ({ user, onLogout, onNavigate }) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+  const { isAdminActual } = useContext(AuthContext);
 
   useEffect(() => {
     const handleClick = (event) => {
@@ -43,7 +45,7 @@ const UserMenu = ({ user, onLogout, onNavigate }) => {
           <button className="dropdown-item" onClick={() => handleNavigate('/mi-perfil')}>
             <User size={16} /> Mi perfil
           </button>
-          {user?.role === 'ADMIN' && (
+          {isAdminActual && (
             <button className="dropdown-item" onClick={() => handleNavigate('/configuracion')}>
               <Settings size={16} /> Configuración
             </button>

@@ -17,8 +17,7 @@ const Products = () => {
   // --- Estados de Datos ---
   const [products, setProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
-  const { user } = useContext(AuthContext);
-  const isAdmin = user?.role === 'ADMIN';
+  const { isAdmin } = useContext(AuthContext);
   const columnCount = isAdmin ? 8 : 7;
 
   // --- Estados de UI ---

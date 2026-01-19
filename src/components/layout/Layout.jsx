@@ -7,7 +7,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 const Layout = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, effectiveRole, isAdmin } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,14 +31,14 @@ const Layout = () => {
       { path: '/new-sale', label: 'Punto de Venta' },
     ];
 
-    if (user?.role === 'ADMIN') {
+    if (isAdmin) {
       items.unshift({ path: '/', label: 'Dashboard' });
       items.splice(3, 0, { path: '/reports', label: 'Reportes' });
       items.push({ path: '/users', label: 'Usuarios' });
     }
 
     return items;
-  }, [user]);
+  }, [isAdmin, user]);
 
   const pageTitle = useMemo(() => {
     const current = navItems.find((item) => item.path === location.pathname);
@@ -53,12 +53,14 @@ const Layout = () => {
     setSidebarOpen(false);
   };
 
+  const effectiveUser = user ? { ...user, role: effectiveRole || user.role } : user;
+
   return (
     <div className="app-shell">
       <Sidebar
         navItems={navItems}
         activePath={location.pathname}
-        user={user}
+        user={effectiveUser}
         mobileOpen={sidebarOpen}
         isMobile={isMobile}
         onNavigate={handleNavigate}
@@ -71,7 +73,7 @@ const Layout = () => {
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
           menuSlot={(
             <UserMenu
-              user={user}
+              user={effectiveUser}
               onLogout={logout}
               onNavigate={handleNavigate}
             />

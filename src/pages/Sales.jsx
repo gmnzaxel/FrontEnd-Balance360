@@ -7,7 +7,7 @@ import { formatCurrency, formatDate } from '../utils/format';
 import Modal from '../components/ui/Modal';
 
 const Sales = () => {
-    const { user } = useContext(AuthContext);
+    const { isAdmin } = useContext(AuthContext);
     const [sales, setSales] = useState([]);
     const [filteredSales, setFilteredSales] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -105,8 +105,6 @@ const Sales = () => {
     };
 
     if (loading) return <div className="p-8 text-center text-muted">Cargando ventas…</div>;
-
-    const isAdmin = user?.role === 'ADMIN';
 
     return (
         <div className="sales-page page">

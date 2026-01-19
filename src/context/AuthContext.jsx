@@ -18,10 +18,15 @@ const parseToken = (token) => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [viewAsSeller, setViewAsSellerState] = useState(
+    () => localStorage.getItem('view_as_seller') === 'true'
+  );
 
   const handleLogout = useCallback(() => {
     clearStoredTokens();
+    localStorage.removeItem('view_as_seller');
     setUser(null);
+    setViewAsSellerState(false);
     toast.info('Sesión cerrada');
     window.location.href = '/login';
   }, []);
@@ -69,6 +74,14 @@ export const AuthProvider = ({ children }) => {
     bootstrapSession();
   }, [bootstrapSession]);
 
+  useEffect(() => {
+    if (!user) return;
+    if (user?.role !== 'ADMIN' && viewAsSeller) {
+      localStorage.removeItem('view_as_seller');
+      setViewAsSellerState(false);
+    }
+  }, [user, viewAsSeller]);
+
   const login = useCallback(async (username, password) => {
     try {
       const response = await api.post('token/', { username, password });
@@ -90,12 +103,33 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const setViewAsSeller = useCallback((next) => {
+    if (user?.role !== 'ADMIN') return;
+    const value = Boolean(next);
+    setViewAsSellerState(value);
+    localStorage.setItem('view_as_seller', value ? 'true' : 'false');
+  }, [user]);
+
+  const effectiveRole = useMemo(() => {
+    if (!user?.role) return null;
+    if (user.role === 'ADMIN' && viewAsSeller) return 'USER';
+    return user.role;
+  }, [user, viewAsSeller]);
+
+  const isAdmin = effectiveRole === 'ADMIN';
+  const isAdminActual = user?.role === 'ADMIN';
+
   const value = useMemo(() => ({
     user,
     login,
     logout: handleLogout,
     loading,
-  }), [user, login, handleLogout, loading]);
+    effectiveRole,
+    isAdmin,
+    isAdminActual,
+    viewAsSeller,
+    setViewAsSeller,
+  }), [user, login, handleLogout, loading, effectiveRole, isAdmin, isAdminActual, viewAsSeller, setViewAsSeller]);
 
   return (
     <AuthContext.Provider value={value}>
