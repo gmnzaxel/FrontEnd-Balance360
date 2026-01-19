@@ -126,22 +126,6 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
           )}
 
           {showLabels && (
-            <nav className="sidebar-nav">
-              {navItemsFiltered.map((item) => (
-                <button
-                  key={item.path}
-                  className={`nav-link ${activePath === item.path ? 'active' : ''}`}
-                  onClick={() => handleNavClick(item.path)}
-                  title={item.label}
-                >
-                  <span className="nav-icon">{ICONS[item.path] || ICONS['/']}</span>
-                  <span className="nav-label">{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          )}
-
-          {showLabels && (
             <div className="sidebar-extras">
               <div className="sidebar-section">
                 <p className="sidebar-section-title">Acciones rapidas</p>
