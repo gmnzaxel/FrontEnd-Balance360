@@ -1,0 +1,30 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: FrontEnd-Balance360
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: FrontEnd-Balance360/package-lock.json
+      - name: Install Dependencies
+        run: npm ci
+      - name: Lint and Format Check
+        run: |
+          npm run lint
+          npm run format:check
+      - name: Build
+        run: npm run build
