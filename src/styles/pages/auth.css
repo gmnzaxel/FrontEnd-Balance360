@@ -21,8 +21,8 @@
   align-items: center;
   position: relative;
   z-index: 1;
-  transition: grid-template-columns var(--duration-slow) var(--ease-smooth),
-    gap var(--duration-slow) var(--ease-smooth);
+  transition: grid-template-columns 420ms var(--ease-smooth),
+    gap 420ms var(--ease-smooth);
 }
 
 .auth-aside {
@@ -39,11 +39,11 @@
   -webkit-backdrop-filter: blur(var(--blur-lg));
   position: relative;
   overflow: hidden;
-  transition: opacity var(--duration-md) var(--ease-smooth),
-    transform var(--duration-md) var(--ease-smooth),
-    max-width var(--duration-md) var(--ease-smooth),
-    padding var(--duration-md) var(--ease-smooth),
-    margin var(--duration-md) var(--ease-smooth);
+  transition: opacity 360ms var(--ease-smooth),
+    transform 360ms var(--ease-smooth),
+    max-width 360ms var(--ease-smooth),
+    padding 360ms var(--ease-smooth),
+    margin 360ms var(--ease-smooth);
 }
 
 .auth-aside::after {
@@ -129,8 +129,8 @@
   width: 100%;
   max-width: 540px;
   justify-self: end;
-  transition: transform var(--duration-md) var(--ease-smooth),
-    max-width var(--duration-md) var(--ease-smooth);
+  transition: transform 360ms var(--ease-smooth),
+    max-width 360ms var(--ease-smooth);
 }
 
 .auth-panel.wide {
@@ -144,18 +144,40 @@
 
 .auth-layout.auth-focus .auth-aside {
   opacity: 0;
-  transform: translateX(-24px) scale(0.98);
+  transform: translateX(-80px) scale(0.96);
   pointer-events: none;
   max-width: 0;
   padding: 0;
   margin: 0;
   border: 0;
+  animation: asideExit 420ms var(--ease-smooth) forwards;
 }
 
 .auth-layout.auth-focus .auth-panel {
   justify-self: center;
-  transform: translateX(-8px);
+  transform: translateX(-36px);
   max-width: 640px;
+  animation: panelSlideIn 420ms var(--ease-smooth) forwards;
+}
+
+@keyframes asideExit {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-90px) scale(0.96);
+  }
+}
+
+@keyframes panelSlideIn {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-36px);
+  }
 }
 
 .brand-chip {
