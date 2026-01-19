@@ -108,6 +108,11 @@
   height: 0;
 }
 
+.sidebar:not(.mobile-mode) .sidebar-inner,
+.sidebar:not(.mobile-mode) .sidebar-visual {
+  overflow: hidden;
+}
+
 .sidebar-brand {
   display: flex;
   align-items: center;
