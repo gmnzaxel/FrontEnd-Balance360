@@ -81,6 +81,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
       { label: 'Inventario', path: '/products', icon: <Package size={16} /> },
       { label: 'Ventas', path: '/sales', icon: <ShoppingCart size={16} /> },
       { label: 'Nueva venta', path: '/new-sale', icon: <Zap size={16} /> },
+      ...(isAdmin ? [{ label: 'Reportes', path: '/reports', icon: <FileText size={16} /> }] : []),
       ...(isAdmin ? [{ label: 'Usuarios', path: '/users', icon: <Briefcase size={16} /> }] : []),
     ];
     return actions;
@@ -155,6 +156,22 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
           )}
 
           <div className="sidebar-spacer" />
+
+          {!showLabels && (
+            <div className="sidebar-quick-compact" aria-label="Acciones rápidas">
+              {quickActions.map((action) => (
+                <button
+                  key={action.label}
+                  className="sidebar-action-compact"
+                  onClick={() => handleNavClick(action.path)}
+                  title={action.label}
+                  aria-label={action.label}
+                >
+                  {action.icon}
+                </button>
+              ))}
+            </div>
+          )}
 
           {showLabels && !isMobile && (
             <div className="sidebar-profile">
