@@ -8,6 +8,30 @@ export const getErrorMessage = (error) => {
 
     const { status, data } = error.response;
 
+    const formatValue = (value) => {
+        if (Array.isArray(value)) {
+            const first = value[0];
+            if (typeof first === 'string') return first;
+            if (first && typeof first === 'object') {
+                const firstKey = Object.keys(first)[0];
+                if (firstKey) {
+                    const inner = first[firstKey];
+                    const innerMsg = Array.isArray(inner) ? inner[0] : inner;
+                    return `${firstKey}: ${innerMsg}`;
+                }
+            }
+        }
+        if (value && typeof value === 'object') {
+            const firstKey = Object.keys(value)[0];
+            if (firstKey) {
+                const inner = value[firstKey];
+                const innerMsg = Array.isArray(inner) ? inner[0] : inner;
+                return `${firstKey}: ${innerMsg}`;
+            }
+        }
+        return value;
+    };
+
     // 403 Forbidden
     if (status === 403) {
         const detail = data?.detail || data?.message;
@@ -36,6 +60,11 @@ export const getErrorMessage = (error) => {
 
         // DRF returns object with list of errors per field
         if (typeof data === 'object') {
+            if (Array.isArray(data.items)) {
+                const firstItem = data.items[0];
+                const message = formatValue(firstItem);
+                return `Items: ${message}`;
+            }
             // Check for 'detail' or 'error' key first
             if (data.detail) return data.detail;
             if (data.error) return data.error;
@@ -44,7 +73,7 @@ export const getErrorMessage = (error) => {
             const firstKey = Object.keys(data)[0];
             if (firstKey) {
                 const firstError = data[firstKey];
-                const errorMsg = Array.isArray(firstError) ? firstError[0] : firstError;
+                const errorMsg = formatValue(firstError);
                 // Format: "username: This field is required." -> "Username: This field is required."
                 const label = firstKey.charAt(0).toUpperCase() + firstKey.slice(1);
                 return `${label}: ${errorMsg}`;
