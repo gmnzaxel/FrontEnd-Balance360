@@ -155,8 +155,6 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
             </div>
           )}
 
-          <div className="sidebar-spacer" />
-
           {!showLabels && (
             <div className="sidebar-quick-compact" aria-label="Acciones rápidas">
               {quickActions.map((action) => (
@@ -172,6 +170,8 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
               ))}
             </div>
           )}
+
+          <div className="sidebar-spacer" />
 
           {showLabels && !isMobile && (
             <div className="sidebar-profile">
