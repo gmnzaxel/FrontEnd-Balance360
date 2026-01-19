@@ -7,9 +7,26 @@
   </defs>
   <circle cx="32" cy="32" r="26" fill="url(#b)"/>
   <circle cx="32" cy="32" r="26" fill="none" stroke="#0369a1" stroke-width="3"/>
-  <path d="M18 22h28" stroke="#f8fafc" stroke-width="3.6" stroke-linecap="round"/>
-  <path d="M32 22v14" stroke="#f8fafc" stroke-width="4" stroke-linecap="round"/>
-  <path d="M24 30h8" stroke="#f8fafc" stroke-width="3.2" stroke-linecap="round"/>
-  <path d="M32 30h8" stroke="#f8fafc" stroke-width="3.2" stroke-linecap="round"/>
-  <path d="M26 34h12" stroke="#f8fafc" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M16 20h32" stroke="#f8fafc" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M32 20v16" stroke="#f8fafc" stroke-width="4" stroke-linecap="round"/>
+  <path d="M22 28h10" stroke="#f8fafc" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M32 28h10" stroke="#f8fafc" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M24 32h16" stroke="#f8fafc" stroke-width="3.2" stroke-linecap="round"/>
+  <g fill="#f8fafc">
+    <rect x="19" y="42" width="7" height="2.6" rx="1.2"/>
+    <rect x="19" y="46" width="7" height="2.6" rx="1.2"/>
+    <rect x="19" y="50" width="7" height="2.6" rx="1.2"/>
+    <rect x="24" y="42" width="2.6" height="11" rx="1.2"/>
+
+    <rect x="29" y="42" width="7" height="2.6" rx="1.2"/>
+    <rect x="29" y="46" width="7" height="2.6" rx="1.2"/>
+    <rect x="29" y="50" width="7" height="2.6" rx="1.2"/>
+    <rect x="29" y="42" width="2.6" height="11" rx="1.2"/>
+    <rect x="34" y="46" width="2.6" height="7" rx="1.2"/>
+
+    <rect x="39" y="42" width="7" height="2.6" rx="1.2"/>
+    <rect x="39" y="50" width="7" height="2.6" rx="1.2"/>
+    <rect x="39" y="42" width="2.6" height="11" rx="1.2"/>
+    <rect x="44" y="42" width="2.6" height="11" rx="1.2"/>
+  </g>
 </svg>
