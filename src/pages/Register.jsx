@@ -7,6 +7,7 @@ import { getErrorMessage } from '../utils/errorUtils';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
+import BrandMark from '../components/ui/BrandMark';
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,13 @@ const Register = () => {
       toast.error('Completá los datos de la empresa antes de continuar.');
       return;
     }
+    setErrors((prev) => ({
+      ...prev,
+      username: '',
+      email: '',
+      password: '',
+      confirm_password: '',
+    }));
     setStep(2);
   };
 
@@ -115,7 +123,7 @@ const Register = () => {
       <div className="auth-layout">
         <aside className="auth-aside auth-aside-compact">
           <div className="auth-brand">
-            <div className="brand-icon"><ShieldCheck size={26} /></div>
+            <div className="brand-icon"><BrandMark size={26} /></div>
             <div className="brand-text">
               <span>Balance</span>
               <strong>360</strong>
@@ -143,7 +151,7 @@ const Register = () => {
             )}
           >
             <div className="brand-chip auth-mobile-brand">
-              <div className="brand-icon"><ShieldCheck size={26} /></div>
+              <div className="brand-icon"><BrandMark size={26} /></div>
               <div>
                 <p className="eyebrow">Onboarding seguro</p>
                 <h2>Balance360</h2>
@@ -296,7 +304,20 @@ const Register = () => {
 
               <div className={`auth-actions ${step === 1 ? 'is-single' : ''}`}>
                 {step === 2 && (
-                  <Button type="button" variant="secondary" onClick={() => setStep(1)}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setErrors((prev) => ({
+                        ...prev,
+                        username: '',
+                        email: '',
+                        password: '',
+                        confirm_password: '',
+                      }));
+                      setStep(1);
+                    }}
+                  >
                     Volver
                   </Button>
                 )}

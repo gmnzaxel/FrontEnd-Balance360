@@ -51,6 +51,36 @@
   opacity: 0.5;
 }
 
+.auth-aside > * {
+  animation: slideUp 420ms ease-out both;
+}
+
+.auth-aside .auth-brand {
+  animation-delay: 60ms;
+}
+
+.auth-aside .auth-headline {
+  animation-delay: 110ms;
+}
+
+.auth-aside .auth-subtitle {
+  animation-delay: 140ms;
+}
+
+.auth-aside .auth-list {
+  animation-delay: 180ms;
+}
+
+.auth-aside .auth-trust {
+  animation-delay: 220ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-aside > * {
+    animation: none;
+  }
+}
+
 .auth-brand {
   display: flex;
   align-items: center;

@@ -1,10 +1,11 @@
 import React, { useContext, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { User, Lock, ArrowRight } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
+import BrandMark from '../components/ui/BrandMark';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -42,7 +43,7 @@ const Login = () => {
       <div className="auth-layout">
         <aside className="auth-aside">
           <div className="auth-brand">
-            <div className="brand-icon"><ShieldCheck size={26} /></div>
+            <div className="brand-icon"><BrandMark size={26} /></div>
             <div className="brand-text">
               <span>Balance</span>
               <strong>360</strong>
@@ -65,7 +66,7 @@ const Login = () => {
             description="Accedé a tu cuenta para continuar."
           >
             <div className="brand-chip auth-mobile-brand">
-              <div className="brand-icon"><ShieldCheck size={26} /></div>
+              <div className="brand-icon"><BrandMark size={26} /></div>
               <div>
                 <p className="eyebrow">Acceso seguro</p>
                 <h2>Balance360</h2>

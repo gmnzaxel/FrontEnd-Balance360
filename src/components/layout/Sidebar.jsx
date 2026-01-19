@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ShieldCheck,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -10,6 +9,7 @@ import {
   Settings,
   X
 } from 'lucide-react';
+import BrandMark from '../ui/BrandMark';
 
 const ICONS = {
   '/': <LayoutDashboard size={20} />,
@@ -92,7 +92,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
             onKeyDown={handleBrandKey}
           >
             <div className="brand-icon">
-              <ShieldCheck size={24} />
+              <BrandMark size={22} />
             </div>
             <div className="brand-text">
               <span>Balance</span>
