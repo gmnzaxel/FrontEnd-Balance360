@@ -11,6 +11,9 @@ import Button from '../components/ui/Button';
 const Register = () => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     empresa_nombre: '',
@@ -18,11 +21,29 @@ const Register = () => {
     empresa_telefono: '',
     local_principal_nombre: '',
     username: '',
+    email: '',
     password: '',
     confirm_password: '',
   });
 
+  const getPasswordStrength = (value) => {
+    if (!value) return { level: 0, label: 'Ingresá una contraseña.' };
+    const hasNumber = /\d/.test(value);
+    const hasLetter = /[A-Za-z]/.test(value);
+    const hasSymbol = /[^A-Za-z0-9]/.test(value);
+    if (value.length >= 12 && hasNumber && hasLetter && hasSymbol) {
+      return { level: 3, label: 'Fuerte' };
+    }
+    if (value.length >= 8 && hasNumber && hasLetter) {
+      return { level: 2, label: 'Media' };
+    }
+    return { level: 1, label: 'Débil' };
+  };
+
+  const passwordStrength = getPasswordStrength(formData.password);
+
   const handleChange = (e) => {
+    setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -33,8 +54,15 @@ const Register = () => {
       'empresa_telefono',
       'local_principal_nombre',
     ];
-    const missing = requiredFields.filter((field) => !formData[field].trim());
+    const nextErrors = {};
+    requiredFields.forEach((field) => {
+      if (!formData[field].trim()) {
+        nextErrors[field] = 'Campo obligatorio.';
+      }
+    });
+    const missing = Object.keys(nextErrors);
     if (missing.length) {
+      setErrors((prev) => ({ ...prev, ...nextErrors }));
       toast.error('Completá los datos de la empresa antes de continuar.');
       return;
     }
@@ -52,13 +80,28 @@ const Register = () => {
       'password',
       'confirm_password',
     ];
-    const missing = requiredFields.filter((field) => !formData[field].trim());
-    if (missing.length) {
+    const nextErrors = {};
+    requiredFields.forEach((field) => {
+      if (!formData[field].trim()) {
+        nextErrors[field] = 'Campo obligatorio.';
+      }
+    });
+    if (Object.keys(nextErrors).length) {
+      setErrors((prev) => ({ ...prev, ...nextErrors }));
       toast.error('Completá los datos del administrador.');
       return;
     }
     if (formData.password !== formData.confirm_password) {
+      setErrors((prev) => ({ ...prev, confirm_password: 'Las contraseñas no coinciden.' }));
       toast.error('Las contraseñas no coinciden');
+      return;
+    }
+    if (formData.password.length < 8 || !/\d/.test(formData.password)) {
+      setErrors((prev) => ({
+        ...prev,
+        password: 'Mínimo 8 caracteres y al menos 1 número.',
+      }));
+      toast.error('La contraseña es débil.');
       return;
     }
     setLoading(true);
@@ -67,6 +110,16 @@ const Register = () => {
       toast.success('¡Empresa registrada con éxito!');
       navigate('/login');
     } catch (error) {
+      if (error.response?.data && typeof error.response.data === 'object') {
+        const apiErrors = {};
+        Object.entries(error.response.data).forEach(([key, value]) => {
+          const message = Array.isArray(value) ? value[0] : value;
+          apiErrors[key] = message;
+        });
+        if (Object.keys(apiErrors).length) {
+          setErrors((prev) => ({ ...prev, ...apiErrors }));
+        }
+      }
       toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -141,6 +194,7 @@ const Register = () => {
                       placeholder="Ej. Mi Negocio S.A."
                       helper="Usá el nombre legal o comercial."
                       className="full-span"
+                      error={errors.empresa_nombre}
                     />
                     <Input
                       label="Dirección"
@@ -149,6 +203,7 @@ const Register = () => {
                       onChange={handleChange}
                       placeholder="Calle 123"
                       icon={<MapPin size={16} />}
+                      error={errors.empresa_direccion}
                     />
                     <Input
                       label="Teléfono"
@@ -158,6 +213,7 @@ const Register = () => {
                       placeholder="+54 ..."
                       helper="Incluí código de país."
                       icon={<Phone size={16} />}
+                      error={errors.empresa_telefono}
                     />
                     <Input
                       label="Sucursal principal"
@@ -167,6 +223,7 @@ const Register = () => {
                       placeholder="Ej. Casa Central"
                       icon={<Store size={16} />}
                       className="full-span"
+                      error={errors.local_principal_nombre}
                     />
                   </div>
                 </div>
@@ -188,26 +245,70 @@ const Register = () => {
                       placeholder="admin"
                       helper="Solo letras y números, sin espacios."
                       className="full-span"
+                      autoComplete="username"
+                      error={errors.username}
+                    />
+                    <Input
+                      label="Email (opcional)"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="admin@tuempresa.com"
+                      helper="Lo usaremos para recuperación de cuenta."
+                      className="full-span"
+                      autoComplete="email"
+                      error={errors.email}
                     />
                     <Input
                       label="Contraseña"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="••••••••"
                       icon={<Lock size={16} />}
                       helper="Mínimo 8 caracteres y 1 número."
+                      autoComplete="new-password"
+                      error={errors.password}
+                      suffix={(
+                        <button
+                          type="button"
+                          className="field-action"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                          {showPassword ? 'Ocultar' : 'Mostrar'}
+                        </button>
+                      )}
                     />
                     <Input
                       label="Confirmar contraseña"
-                      type="password"
+                      type={showConfirm ? 'text' : 'password'}
                       name="confirm_password"
                       value={formData.confirm_password}
                       onChange={handleChange}
                       placeholder="••••••••"
                       icon={<Lock size={16} />}
+                      autoComplete="new-password"
+                      error={errors.confirm_password}
+                      suffix={(
+                        <button
+                          type="button"
+                          className="field-action"
+                          onClick={() => setShowConfirm((prev) => !prev)}
+                        >
+                          {showConfirm ? 'Ocultar' : 'Mostrar'}
+                        </button>
+                      )}
                     />
+                    <div className="password-meter full-span">
+                      <div className="password-meter-track">
+                        <div className={`password-meter-bar level-${passwordStrength.level}`} />
+                      </div>
+                      <span className="password-meter-label">
+                        Fortaleza: {passwordStrength.label}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}

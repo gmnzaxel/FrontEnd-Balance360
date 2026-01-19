@@ -166,6 +166,42 @@
   padding-left: 40px;
 }
 
+.field-control.with-suffix input {
+  padding-right: 84px;
+}
+
+.field-suffix {
+  position: absolute;
+  inset: 0 10px 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.field-action {
+  border: none;
+  background: rgba(15, 23, 42, 0.55);
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-smooth),
+    color var(--duration-fast) var(--ease-smooth),
+    transform var(--duration-fast) var(--ease-smooth);
+}
+
+.field-action:hover {
+  background: rgba(20, 184, 166, 0.2);
+  color: var(--text-primary);
+}
+
+.field-action:active {
+  transform: translateY(1px);
+}
+
 .field-control input:focus,
 .field-control select:focus,
 .input-control:focus,
@@ -200,6 +236,9 @@
   cursor: not-allowed;
 }
 
+.field-control input.error,
+.field-control select.error,
+.field-control textarea.error,
 .input-control.error,
 .select-control.error,
 .textarea-control.error {

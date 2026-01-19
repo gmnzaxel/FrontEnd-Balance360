@@ -9,16 +9,32 @@ import Card from '../components/ui/Card';
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const nextErrors = {};
+    if (!username.trim()) nextErrors.username = 'Ingresá tu usuario.';
+    if (!password) nextErrors.password = 'Ingresá tu contraseña.';
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
+      return;
+    }
     setLoading(true);
-    const success = await login(username, password);
+    const success = await login(username.trim(), password);
     setLoading(false);
-    if (success) navigate('/');
+    if (success) {
+      navigate('/');
+    } else {
+      setErrors((prev) => ({
+        ...prev,
+        password: 'Revisá usuario y contraseña.',
+      }));
+    }
   };
 
   return (
@@ -60,17 +76,36 @@ const Login = () => {
                 label="Usuario"
                 placeholder="usuario_admin"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setErrors((prev) => ({ ...prev, username: '' }));
+                }}
                 icon={<User size={18} />}
+                autoComplete="username"
+                error={errors.username}
                 required
               />
               <Input
                 label="Contraseña"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setErrors((prev) => ({ ...prev, password: '' }));
+                }}
                 icon={<Lock size={18} />}
+                autoComplete="current-password"
+                error={errors.password}
+                suffix={(
+                  <button
+                    type="button"
+                    className="field-action"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? 'Ocultar' : 'Mostrar'}
+                  </button>
+                )}
                 required
               />
               <Button type="submit" variant="primary" fullWidth loading={loading} icon={<ArrowRight size={18} />}>
