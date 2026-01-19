@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
-import { Eye, RotateCcw, Trash2, AlertCircle, X, Search, Calendar, Filter } from 'lucide-react';
+import { Eye, RotateCcw, Trash2, AlertCircle, X, Search, Calendar, Filter, Edit } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatCurrency, formatDate } from '../utils/format';
 import Modal from '../components/ui/Modal';
 
 const Sales = () => {
-    const { isAdmin } = useContext(AuthContext);
+    const { user, isAdmin } = useContext(AuthContext);
+    const navigate = useNavigate();
     const [sales, setSales] = useState([]);
     const [filteredSales, setFilteredSales] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -105,6 +107,21 @@ const Sales = () => {
     };
 
     if (loading) return <div className="p-8 text-center text-muted">Cargando ventas…</div>;
+
+    const canEditSale = (sale) => {
+        if (!sale || sale.is_voided || sale.is_refunded) return false;
+        if (isAdmin) return true;
+        if (!user) return false;
+        if (sale.user !== user.user_id) return false;
+        const minutes = (Date.now() - new Date(sale.date).getTime()) / 60000;
+        return minutes <= 45;
+    };
+
+    const handleEditSale = (sale) => {
+        if (!sale) return;
+        navigate(`/new-sale?edit=${sale.id}`);
+        setSelectedSale(null);
+    };
 
     return (
         <div className="sales-page page">
@@ -294,6 +311,14 @@ const Sales = () => {
                                         <Trash2 size={16} /> Anular venta
                                     </button>
                                 </div>
+                            )}
+                            {canEditSale(selectedSale) && (
+                                <button
+                                    onClick={() => handleEditSale(selectedSale)}
+                                    className="ui-btn ui-btn-secondary"
+                                >
+                                    <Edit size={16} /> Editar venta
+                                </button>
                             )}
                             {isAdmin && selectedSale.is_voided && (
                                 <div className="flex-row gap-sm">

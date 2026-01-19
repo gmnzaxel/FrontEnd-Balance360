@@ -7,6 +7,8 @@ import {
   Briefcase,
   Store,
   Settings,
+  Clock,
+  Zap,
   X
 } from 'lucide-react';
 import BrandMark from '../ui/BrandMark';
@@ -65,6 +67,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
     () => (user?.role === 'ADMIN' ? 'Administrador' : 'Vendedor'),
     [user?.role]
   );
+  const isAdmin = user?.role === 'ADMIN';
 
   const showLabels = (hovering && !isMobile) || isMobile;
 
@@ -72,6 +75,33 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
     onNavigate(path);
     if (isMobile) onCloseMobile();
   };
+
+  const quickActions = useMemo(() => {
+    const base = [
+      { label: 'Nueva venta', path: '/new-sale', icon: <Zap size={16} /> },
+      { label: 'Agregar producto', path: '/products', icon: <Package size={16} /> },
+    ];
+    if (isAdmin) {
+      base.push({ label: 'Reportes', path: '/reports', icon: <FileText size={16} /> });
+    }
+    return base;
+  }, [isAdmin]);
+
+  const quickStats = useMemo(() => {
+    if (isAdmin) {
+      return [
+        { label: 'Ventas hoy', value: '$ —' },
+        { label: 'Stock critico', value: '—' },
+        { label: 'Tickets', value: '—' },
+      ];
+    }
+    return [
+      { label: 'Ventas hoy', value: '$ —' },
+      { label: 'Tickets', value: '—' },
+    ];
+  }, [isAdmin]);
+
+  const quickLinks = useMemo(() => navItems.slice(0, 3), [navItems]);
 
   return (
     <>
@@ -119,6 +149,88 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
               </button>
             ))}
           </nav>
+
+          {showLabels && (
+            <div className="sidebar-extras">
+              <div className="sidebar-section">
+                <p className="sidebar-section-title">Resumen rapido</p>
+                <div className="sidebar-kpis">
+                  {quickStats.map((stat, index) => (
+                    <div className="sidebar-kpi" key={stat.label} style={{ '--delay': `${index * 60}ms` }}>
+                      <span className="kpi-value">{stat.value}</span>
+                      <span className="kpi-label">{stat.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="sidebar-section">
+                <p className="sidebar-section-title">Acciones rapidas</p>
+                <div className="sidebar-actions">
+                  {quickActions.map((action, index) => (
+                    <button
+                      key={action.label}
+                      className="sidebar-action"
+                      onClick={() => handleNavClick(action.path)}
+                      style={{ '--delay': `${index * 70}ms` }}
+                    >
+                      <span className="sidebar-action-icon">{action.icon}</span>
+                      <span>{action.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="sidebar-section">
+                <p className="sidebar-section-title">Frecuentes</p>
+                <div className="sidebar-recents">
+                  {quickLinks.map((item, index) => (
+                    <button
+                      key={item.path}
+                      className="sidebar-recent"
+                      onClick={() => handleNavClick(item.path)}
+                      style={{ '--delay': `${index * 70}ms` }}
+                    >
+                      <Clock size={14} />
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="sidebar-section">
+                <p className="sidebar-section-title">Alertas</p>
+                <div className="sidebar-alerts">
+                  <div className="sidebar-alert">
+                    <span className="alert-dot alert-warn" />
+                    <span>Stock bajo</span>
+                    <span className="alert-badge">0</span>
+                  </div>
+                  <div className="sidebar-alert">
+                    <span className="alert-dot alert-neutral" />
+                    <span>Pedidos pendientes</span>
+                    <span className="alert-badge">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="sidebar-spacer" />
+
+          {showLabels && !isMobile && (
+            <div className="sidebar-profile">
+              <div className="avatar">{user?.username?.[0]?.toUpperCase() || 'U'}</div>
+              <div className="user-meta">
+                <p className="user-name">{user?.username || 'Usuario'}</p>
+                <p className="user-role">{roleLabel}</p>
+                <div className="user-status">
+                  <span className="status-dot" />
+                  <span>Online</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {isMobile && (
             <div className="sidebar-user">

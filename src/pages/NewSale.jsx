@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, Tag, CreditCard, Trash2, Wrench, PackageX } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
@@ -14,6 +15,8 @@ import Skeleton from '../components/ui/Skeleton';
 const PAGE_SIZE = 12;
 
 const NewSale = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -32,6 +35,10 @@ const NewSale = () => {
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
   const [cartPulse, setCartPulse] = useState(false);
   const [cartAnimKey, setCartAnimKey] = useState(0);
+  const [editingSaleId, setEditingSaleId] = useState(null);
+  const [editingSaleNumber, setEditingSaleNumber] = useState(null);
+  const [loadingSale, setLoadingSale] = useState(false);
+  const [lastSaleWasEdit, setLastSaleWasEdit] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -61,6 +68,57 @@ const NewSale = () => {
       .then(res => setTicketConfig(res.data))
       .catch(err => console.error("Error loading ticket settings", err));
   }, [fetchProducts]);
+
+  const normalizeSaleItems = useCallback((items = []) => (
+    items.map((item) => {
+      const isService = item.item_type === 'SERVICIO';
+      const description = item.description || 'Servicio';
+      return {
+        id: `sale-${item.id || Math.random().toString(36).slice(2)}`,
+        item_type: item.item_type,
+        product: isService ? null : item.product,
+        description: isService ? description : undefined,
+        nombre: isService ? `[Servicio] ${description}` : (item.producto_nombre || item.nombre || 'Producto'),
+        price: parseFloat(item.price),
+        quantity: item.quantity,
+      };
+    })
+  ), []);
+
+  const loadSaleForEdit = useCallback(async (saleId) => {
+    if (!saleId) return;
+    setLoadingSale(true);
+    try {
+      const response = await api.get(`sales/sales/${saleId}/`);
+      const sale = response.data;
+      setCart(normalizeSaleItems(sale.items || []));
+      setDiscount(sale.discount || 0);
+      setPaymentMethod(sale.payment_method || 'EFECTIVO');
+      setEditingSaleId(sale.id);
+      setEditingSaleNumber(sale.sale_number || sale.id);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+      navigate('/new-sale', { replace: true });
+    } finally {
+      setLoadingSale(false);
+    }
+  }, [navigate, normalizeSaleItems]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const editId = params.get('edit');
+    if (editId) {
+      loadSaleForEdit(editId);
+    } else {
+      if (editingSaleId) {
+        setCart([]);
+        setDiscount(0);
+        setPaymentMethod('EFECTIVO');
+      }
+      setEditingSaleId(null);
+      setEditingSaleNumber(null);
+    }
+  }, [location.search, loadSaleForEdit, editingSaleId]);
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 768px)');
@@ -242,6 +300,7 @@ const NewSale = () => {
     }
 
     try {
+      const wasEditing = Boolean(editingSaleId);
       const payload = {
         payment_method: paymentMethod,
         discount: parseFloat(discount) || 0,
@@ -254,20 +313,25 @@ const NewSale = () => {
         })),
       };
 
-      const response = await api.post('sales/sales/', payload);
+      const response = wasEditing
+        ? await api.put(`sales/sales/${editingSaleId}/`, payload)
+        : await api.post('sales/sales/', payload);
 
+      const normalizedItems = normalizeSaleItems(response.data.items || cart);
+      const subtotal = normalizedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
       const saleSnapshot = {
         id: response.data.id,
         sale_number: response.data.sale_number,
         date: response.data.date, // Backend date
-        items: [...cart],
-        subtotal: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0),
-        discount: parseFloat(discount) || 0,
-        total: total, // Calculated total from frontend state
-        payment_method: paymentMethod,
+        items: normalizedItems,
+        subtotal,
+        discount: parseFloat(response.data.discount ?? discount) || 0,
+        total: parseFloat(response.data.total ?? total),
+        payment_method: response.data.payment_method || paymentMethod,
       };
 
       setLastSale(saleSnapshot);
+      setLastSaleWasEdit(wasEditing);
       setShowSuccessModal(true);
       setShowCartModal(false);
 
@@ -275,7 +339,10 @@ const NewSale = () => {
       setCart([]);
       setDiscount(0);
       setPaymentMethod('EFECTIVO');
-      toast.success('Venta registrada con éxito');
+      setEditingSaleId(null);
+      setEditingSaleNumber(null);
+      navigate('/new-sale', { replace: true });
+      toast.success(wasEditing ? 'Venta actualizada con éxito' : 'Venta registrada con éxito');
     } catch (error) {
       console.error(error);
       toast.error(getErrorMessage(error));
@@ -385,7 +452,15 @@ const NewSale = () => {
         <div className="card-head" style={{ padding: '14px 16px', borderBottom: '1px solid var(--slate-200)' }}>
           <div>
             <p className="eyebrow">Ticket activo</p>
-            <h3>Carrito</h3>
+            <div className="flex-row gap-sm items-center">
+              <h3>Carrito</h3>
+              {editingSaleId && (
+                <span className="badge badge-warning">Editando #{editingSaleNumber || editingSaleId}</span>
+              )}
+              {loadingSale && (
+                <span className="badge badge-neutral">Cargando…</span>
+              )}
+            </div>
           </div>
           <div className="badge badge-neutral">
             <ShoppingCart size={16} /> {cart.length} items
@@ -581,10 +656,10 @@ const NewSale = () => {
                 variant="primary"
                 fullWidth
                 onClick={handleSubmit}
-                disabled={!cart.length}
+                disabled={!cart.length || loadingSale}
                 icon={<CreditCard size={18} />}
               >
-                Confirmar venta
+                {editingSaleId ? 'Actualizar venta' : 'Confirmar venta'}
               </Button>
             </div>
           </div>
@@ -594,11 +669,11 @@ const NewSale = () => {
       {/* Success Modal */}
       {showSuccessModal && (
         <Modal
-          title="Venta registrada"
-          onClose={() => setShowSuccessModal(false)}
+          title={lastSaleWasEdit ? 'Venta actualizada' : 'Venta registrada'}
+          onClose={() => { setShowSuccessModal(false); setLastSaleWasEdit(false); }}
           size="sm"
           footer={(
-            <Button variant="primary" fullWidth onClick={() => setShowSuccessModal(false)}>
+            <Button variant="primary" fullWidth onClick={() => { setShowSuccessModal(false); setLastSaleWasEdit(false); }}>
               Nueva venta
             </Button>
           )}
@@ -608,7 +683,9 @@ const NewSale = () => {
               <CreditCard size={32} />
             </div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">Venta #{lastSale?.sale_number || lastSale?.id}</h3>
-            <p className="text-slate-500 mb-6">La venta se registró correctamente.</p>
+            <p className="text-slate-500 mb-6">
+              {lastSaleWasEdit ? 'La venta se actualizó correctamente.' : 'La venta se registró correctamente.'}
+            </p>
 
             <Button
               variant="secondary"
