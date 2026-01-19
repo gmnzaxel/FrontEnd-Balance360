@@ -7,7 +7,6 @@ import {
   Briefcase,
   Store,
   Settings,
-  Clock,
   Zap,
   X
 } from 'lucide-react';
@@ -77,31 +76,15 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
   };
 
   const quickActions = useMemo(() => {
-    const base = [
+    const actions = [
+      ...(isAdmin ? [{ label: 'Dashboard', path: '/', icon: <LayoutDashboard size={16} /> }] : []),
+      { label: 'Inventario', path: '/products', icon: <Package size={16} /> },
+      { label: 'Ventas', path: '/sales', icon: <ShoppingCart size={16} /> },
       { label: 'Nueva venta', path: '/new-sale', icon: <Zap size={16} /> },
-      { label: 'Agregar producto', path: '/products', icon: <Package size={16} /> },
+      ...(isAdmin ? [{ label: 'Usuarios', path: '/users', icon: <Briefcase size={16} /> }] : []),
     ];
-    if (isAdmin) {
-      base.push({ label: 'Reportes', path: '/reports', icon: <FileText size={16} /> });
-    }
-    return base;
+    return actions;
   }, [isAdmin]);
-
-  const quickStats = useMemo(() => {
-    if (isAdmin) {
-      return [
-        { label: 'Ventas hoy', value: '$ —' },
-        { label: 'Stock critico', value: '—' },
-        { label: 'Tickets', value: '—' },
-      ];
-    }
-    return [
-      { label: 'Ventas hoy', value: '$ —' },
-      { label: 'Tickets', value: '—' },
-    ];
-  }, [isAdmin]);
-
-  const quickLinks = useMemo(() => navItems.slice(0, 3), [navItems]);
 
   return (
     <>
@@ -153,18 +136,6 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
           {showLabels && (
             <div className="sidebar-extras">
               <div className="sidebar-section">
-                <p className="sidebar-section-title">Resumen rapido</p>
-                <div className="sidebar-kpis">
-                  {quickStats.map((stat, index) => (
-                    <div className="sidebar-kpi" key={stat.label} style={{ '--delay': `${index * 60}ms` }}>
-                      <span className="kpi-value">{stat.value}</span>
-                      <span className="kpi-label">{stat.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="sidebar-section">
                 <p className="sidebar-section-title">Acciones rapidas</p>
                 <div className="sidebar-actions">
                   {quickActions.map((action, index) => (
@@ -178,39 +149,6 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
                       <span>{action.label}</span>
                     </button>
                   ))}
-                </div>
-              </div>
-
-              <div className="sidebar-section">
-                <p className="sidebar-section-title">Frecuentes</p>
-                <div className="sidebar-recents">
-                  {quickLinks.map((item, index) => (
-                    <button
-                      key={item.path}
-                      className="sidebar-recent"
-                      onClick={() => handleNavClick(item.path)}
-                      style={{ '--delay': `${index * 70}ms` }}
-                    >
-                      <Clock size={14} />
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="sidebar-section">
-                <p className="sidebar-section-title">Alertas</p>
-                <div className="sidebar-alerts">
-                  <div className="sidebar-alert">
-                    <span className="alert-dot alert-warn" />
-                    <span>Stock bajo</span>
-                    <span className="alert-badge">0</span>
-                  </div>
-                  <div className="sidebar-alert">
-                    <span className="alert-dot alert-neutral" />
-                    <span>Pedidos pendientes</span>
-                    <span className="alert-badge">0</span>
-                  </div>
                 </div>
               </div>
             </div>

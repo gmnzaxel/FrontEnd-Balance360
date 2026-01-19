@@ -87,13 +87,13 @@
   display: flex;
   flex-direction: column;
   overflow: auto;
+  overflow-x: hidden;
   padding-bottom: var(--space-4);
   transition: width var(--duration-md) var(--ease-smooth),
     box-shadow var(--duration-md) var(--ease-smooth);
   box-shadow: var(--shadow-md);
   z-index: var(--z-drawer);
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+  scrollbar-width: none;
 }
 
 .sidebar.expanded .sidebar-inner,
@@ -102,32 +102,10 @@
   box-shadow: var(--shadow-md);
 }
 
-.sidebar-inner:hover,
-.sidebar-visual:hover {
-  scrollbar-color: var(--border-strong) transparent;
-}
-
 .sidebar-inner::-webkit-scrollbar,
 .sidebar-visual::-webkit-scrollbar {
-  width: 8px;
-}
-
-.sidebar-inner::-webkit-scrollbar-track,
-.sidebar-visual::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-inner::-webkit-scrollbar-thumb,
-.sidebar-visual::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-
-.sidebar-inner:hover::-webkit-scrollbar-thumb,
-.sidebar-visual:hover::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  width: 0;
+  height: 0;
 }
 
 .sidebar-brand {
@@ -214,8 +192,8 @@
 .sidebar-extras {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 8px 10px 4px;
+  gap: 12px;
+  padding: 12px 10px 4px;
 }
 
 .sidebar-section {
@@ -233,34 +211,6 @@
   color: var(--text-secondary);
   margin-bottom: 10px;
   display: block;
-}
-
-.sidebar-kpis {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.sidebar-kpi {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(14, 165, 233, 0.12);
-  animation: sidebar-rise 0.45s var(--ease-smooth) both;
-  animation-delay: var(--delay, 0ms);
-}
-
-.sidebar-kpi .kpi-value {
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.sidebar-kpi .kpi-label {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
 }
 
 .sidebar-actions {
@@ -301,76 +251,6 @@
   border-color: rgba(14, 165, 233, 0.4);
   box-shadow: 0 10px 18px rgba(2, 132, 199, 0.2);
   transform: translateY(-1px);
-}
-
-.sidebar-recents {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sidebar-recent {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid transparent;
-  font-size: 0.82rem;
-  animation: sidebar-rise 0.45s var(--ease-smooth) both;
-  animation-delay: var(--delay, 0ms);
-  transition: all var(--duration-fast) var(--ease-smooth);
-}
-
-.sidebar-recent:hover {
-  color: var(--text-primary);
-  border-color: rgba(14, 165, 233, 0.3);
-  background: rgba(14, 165, 233, 0.1);
-}
-
-.sidebar-alerts {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sidebar-alert {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-}
-
-.alert-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--primary-500);
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
-  animation: pulse-soft 2.4s ease-in-out infinite;
-}
-
-.alert-dot.alert-warn {
-  background: #f59e0b;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-}
-
-.alert-dot.alert-neutral {
-  background: #64748b;
-  box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.2);
-}
-
-.alert-badge {
-  margin-left: auto;
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  color: var(--text-primary);
-  background: rgba(15, 23, 42, 0.6);
 }
 
 .sidebar-spacer {
@@ -727,24 +607,9 @@
   }
 }
 
-@keyframes pulse-soft {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.85;
-  }
-  50% {
-    transform: scale(1.08);
-    opacity: 1;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .sidebar-kpi,
   .sidebar-action,
-  .sidebar-recent,
-  .sidebar-profile,
-  .alert-dot {
+  .sidebar-profile {
     animation: none;
   }
 }
