@@ -87,6 +87,11 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
     return actions;
   }, [isAdmin]);
 
+  const navItemsFiltered = useMemo(
+    () => navItems.filter((item) => item.path !== '/'),
+    [navItems]
+  );
+
   return (
     <>
       {isMobile && mobileOpen && <div className="drawer-overlay" onClick={onCloseMobile} />}
@@ -122,7 +127,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
 
           {showLabels && (
             <nav className="sidebar-nav">
-              {navItems.map((item) => (
+              {navItemsFiltered.map((item) => (
                 <button
                   key={item.path}
                   className={`nav-link ${activePath === item.path ? 'active' : ''}`}
