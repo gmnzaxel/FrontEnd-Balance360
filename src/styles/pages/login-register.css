@@ -14,6 +14,7 @@
   filter: blur(0px);
   opacity: 0.8;
   z-index: 0;
+  animation: floatGlow 18s ease-in-out infinite;
 }
 
 .auth-shell::before {
@@ -25,6 +26,8 @@
   bottom: -160px;
   right: -160px;
   background: radial-gradient(circle, rgba(56, 189, 248, 0.18), transparent 70%);
+  animation-delay: 6s;
+  animation-duration: 22s;
 }
 
 .auth-shell-register .auth-layout {
@@ -69,6 +72,12 @@
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(56, 189, 248, 0.8), transparent 70%);
   opacity: 0.7;
+}
+
+.auth-panel .ui-card:focus-within {
+  border-color: rgba(14, 165, 233, 0.35);
+  box-shadow: 0 26px 70px rgba(2, 6, 23, 0.58),
+    0 0 0 1px rgba(14, 165, 233, 0.2);
 }
 
 .auth-stepper {
@@ -200,6 +209,60 @@
   margin-top: 14px;
 }
 
+.auth-card .card-head,
+.auth-card .brand-chip {
+  animation: slideUp 420ms ease-out both;
+}
+
+.auth-card .card-head {
+  animation-delay: 60ms;
+}
+
+.auth-card .brand-chip {
+  animation-delay: 90ms;
+}
+
+.auth-card .form-stack {
+  animation: slideUp 420ms ease-out both;
+  animation-delay: 120ms;
+}
+
+.auth-card .auth-actions,
+.auth-card .muted.text-center {
+  animation: fadeIn 320ms ease-out both;
+  animation-delay: 180ms;
+}
+
+.auth-card .form-stack > * {
+  animation: fadeIn 260ms ease-out both;
+}
+
+.auth-card .form-stack > *:nth-child(1) {
+  animation-delay: 120ms;
+}
+
+.auth-card .form-stack > *:nth-child(2) {
+  animation-delay: 150ms;
+}
+
+.auth-card .form-stack > *:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.auth-card .form-stack > *:nth-child(4) {
+  animation-delay: 210ms;
+}
+
+.auth-stepper,
+.auth-panel .section-block {
+  animation: fadeIn 320ms ease-out both;
+  animation-delay: 120ms;
+}
+
+.auth-list li::before {
+  animation: dotPulse 6s ease-in-out infinite;
+}
+
 .auth-note {
   display: inline-flex;
   align-items: center;
@@ -254,5 +317,45 @@
 
   .auth-panel .ui-card {
     padding: 24px;
+  }
+}
+
+@keyframes floatGlow {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateY(16px) translateX(8px);
+    opacity: 0.95;
+  }
+}
+
+@keyframes dotPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-shell::before,
+  .auth-shell::after,
+  .auth-card .card-head,
+  .auth-card .brand-chip,
+  .auth-card .form-stack,
+  .auth-card .auth-actions,
+  .auth-card .muted.text-center,
+  .auth-card .form-stack > *,
+  .auth-stepper,
+  .auth-panel .section-block,
+  .auth-list li::before {
+    animation: none;
   }
 }
