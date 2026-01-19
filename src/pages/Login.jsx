@@ -12,7 +12,6 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [focusMode, setFocusMode] = useState(false);
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -38,19 +37,9 @@ const Login = () => {
     }
   };
 
-  const handleFocusCapture = () => {
-    setFocusMode(true);
-  };
-
-  const handleBlurCapture = (event) => {
-    if (!event.currentTarget.contains(event.relatedTarget)) {
-      setFocusMode(false);
-    }
-  };
-
   return (
     <div className="auth-shell">
-      <div className={`auth-layout ${focusMode ? 'auth-focus' : ''}`}>
+      <div className="auth-layout">
         <aside className="auth-aside">
           <div className="auth-brand">
             <div className="brand-icon"><ShieldCheck size={26} /></div>
@@ -82,12 +71,7 @@ const Login = () => {
                 <h2>Balance360</h2>
               </div>
             </div>
-            <form
-              onSubmit={handleSubmit}
-              className="form-stack"
-              onFocusCapture={handleFocusCapture}
-              onBlurCapture={handleBlurCapture}
-            >
+            <form onSubmit={handleSubmit} className="form-stack">
               <Input
                 label="Usuario"
                 placeholder="usuario_admin"

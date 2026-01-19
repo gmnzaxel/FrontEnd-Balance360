@@ -14,7 +14,6 @@ const Register = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     empresa_nombre: '',
@@ -30,16 +29,6 @@ const Register = () => {
   const handleChange = (e) => {
     setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleFocusCapture = () => {
-    setFocusMode(true);
-  };
-
-  const handleBlurCapture = (event) => {
-    if (!event.currentTarget.contains(event.relatedTarget)) {
-      setFocusMode(false);
-    }
   };
 
   const handleNext = () => {
@@ -123,7 +112,7 @@ const Register = () => {
 
   return (
     <div className="auth-shell auth-shell-register">
-      <div className={`auth-layout ${focusMode ? 'auth-focus' : ''}`}>
+      <div className="auth-layout">
         <aside className="auth-aside auth-aside-compact">
           <div className="auth-brand">
             <div className="brand-icon"><ShieldCheck size={26} /></div>
@@ -170,12 +159,7 @@ const Register = () => {
                 <span className="auth-step-label">Administrador</span>
               </div>
             </div>
-            <form
-              onSubmit={handleSubmit}
-              className="form-stack gap-lg"
-              onFocusCapture={handleFocusCapture}
-              onBlurCapture={handleBlurCapture}
-            >
+            <form onSubmit={handleSubmit} className="form-stack gap-lg">
               {step === 1 ? (
                 <div className="section-block">
                   <div className="section-title">
