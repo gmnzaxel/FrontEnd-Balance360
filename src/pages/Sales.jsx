@@ -112,9 +112,7 @@ const Sales = () => {
         if (!sale || sale.is_voided || sale.is_refunded) return false;
         if (isAdmin) return true;
         if (!user) return false;
-        if (sale.user !== user.user_id) return false;
-        const minutes = (Date.now() - new Date(sale.date).getTime()) / 60000;
-        return minutes <= 45;
+        return sale.user === user.user_id;
     };
 
     const handleEditSale = (sale) => {
@@ -383,12 +381,12 @@ const Sales = () => {
                                             ? (item.description || 'Servicio')
                                             : (item.producto_nombre || 'Producto');
                                         return (
-                                        <tr key={item.id}>
-                                            <td data-label="Producto">{itemLabel}</td>
-                                            <td style={{ textAlign: 'right' }} data-label="Cant.">{item.quantity}</td>
-                                            <td style={{ textAlign: 'right' }} data-label="Precio">{formatCurrency(item.price)}</td>
-                                            <td style={{ textAlign: 'right', fontWeight: 600 }} data-label="Total">{formatCurrency(item.quantity * item.price)}</td>
-                                        </tr>
+                                            <tr key={item.id}>
+                                                <td data-label="Producto">{itemLabel}</td>
+                                                <td style={{ textAlign: 'right' }} data-label="Cant.">{item.quantity}</td>
+                                                <td style={{ textAlign: 'right' }} data-label="Precio">{formatCurrency(item.price)}</td>
+                                                <td style={{ textAlign: 'right', fontWeight: 600 }} data-label="Total">{formatCurrency(item.quantity * item.price)}</td>
+                                            </tr>
                                         );
                                     })}
                                 </tbody>

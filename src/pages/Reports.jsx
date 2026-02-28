@@ -10,6 +10,7 @@ const Reports = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [chartType, setChartType] = useState('monthly'); // 'monthly' o 'daily'
 
     useEffect(() => {
         fetchData();
@@ -61,6 +62,15 @@ const Reports = () => {
         const year = parts[0].slice(-2);
         const month = parts[1];
         return `${month}/${year}`;
+    };
+
+    const formatDayLabel = (value) => {
+        if (!value) return '';
+        const parts = String(value).split('-');
+        if (parts.length < 3) return value;
+        const month = parts[1];
+        const day = parts[2];
+        return `${day}/${month}`;
     };
 
     const KPICard = ({ title, value, icon: Icon, tone, subvalue, tooltip }) => (
@@ -170,14 +180,30 @@ const Reports = () => {
                     <div className="reports-charts">
                         {/* Main Evolution Chart */}
                         <div className="card reports-chart-card">
-                            <div className="card-header reports-card-header">
+                            <div className="card-header reports-card-header flex-between">
                                 <h3 className="text-lg font-bold text-slate-800">Evolución de ingresos</h3>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        className={`btn ${chartType === 'monthly' ? 'btn-primary' : 'btn-outline'} text-xs px-3 py-1.5 h-auto min-h-0`}
+                                        onClick={() => setChartType('monthly')}
+                                    >
+                                        Meses
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`btn ${chartType === 'daily' ? 'btn-primary' : 'btn-outline'} text-xs px-3 py-1.5 h-auto min-h-0`}
+                                        onClick={() => setChartType('daily')}
+                                    >
+                                        Días
+                                    </button>
+                                </div>
                             </div>
                             <div className="reports-chart-scroll">
                                 <div className="reports-chart-body">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart
-                                            data={series}
+                                            data={chartType === 'monthly' ? series : stats.sales_by_day}
                                             margin={{
                                                 top: 10,
                                                 right: isMobile ? 12 : 30,
@@ -187,12 +213,12 @@ const Reports = () => {
                                         >
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis
-                                                dataKey="month"
+                                                dataKey={chartType === 'monthly' ? "month" : "day"}
                                                 tick={{ fill: '#64748b', fontSize: isMobile ? 10 : 12 }}
                                                 axisLine={false}
                                                 tickLine={false}
-                                                interval={isMobile ? 1 : 0}
-                                                tickFormatter={formatMonthLabel}
+                                                interval={chartType === 'monthly' && isMobile ? 1 : 'preserveStartEnd'}
+                                                tickFormatter={chartType === 'monthly' ? formatMonthLabel : formatDayLabel}
                                             />
                                             <YAxis
                                                 tick={{ fill: '#64748b', fontSize: isMobile ? 10 : 12 }}
@@ -205,12 +231,13 @@ const Reports = () => {
                                                 cursor={{ fill: '#f1f5f9' }}
                                                 contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 12px 30px rgba(15,23,42,0.12)', backdropFilter: 'blur(8px)' }}
                                                 formatter={(value) => [formatCurrency(value), "Ventas"]}
+                                                labelFormatter={(label) => chartType === 'monthly' ? formatMonthLabel(label) : formatDayLabel(label)}
                                             />
                                             <Bar
                                                 dataKey="total"
                                                 fill="#6366f1"
                                                 radius={[6, 6, 0, 0]}
-                                                barSize={isMobile ? 22 : 36}
+                                                barSize={chartType === 'monthly' ? (isMobile ? 22 : 36) : (isMobile ? 10 : 16)}
                                                 name="Ventas"
                                             />
                                         </BarChart>
@@ -227,28 +254,28 @@ const Reports = () => {
                             </div>
                             <div className="reports-top-scroll">
                                 <div className="reports-top-list">
-                                {stats.top_products?.length > 0 ? (
-                                    <div className="stack gap-sm">
-                                        {stats.top_products.map((p, i) => (
-                                            <div key={i} className="reports-top-item">
-                                                <div className="reports-top-meta">
-                                                    <div className={`reports-rank ${i < 3 ? 'top' : 'base'}`}>
-                                                        {i + 1}
+                                    {stats.top_products?.length > 0 ? (
+                                        <div className="stack gap-sm">
+                                            {stats.top_products.map((p, i) => (
+                                                <div key={i} className="reports-top-item">
+                                                    <div className="reports-top-meta">
+                                                        <div className={`reports-rank ${i < 3 ? 'top' : 'base'}`}>
+                                                            {i + 1}
+                                                        </div>
+                                                        <span className="text-sm font-medium text-slate-700 truncate" title={p.product__nombre}>
+                                                            {p.product__nombre}
+                                                        </span>
                                                     </div>
-                                                    <span className="text-sm font-medium text-slate-700 truncate" title={p.product__nombre}>
-                                                        {p.product__nombre}
-                                                    </span>
+                                                    <div className="text-right">
+                                                        <span className="block text-sm font-bold text-slate-900">{p.qty} un.</span>
+                                                        <span className="block text-xs text-slate-500">{formatCurrency(p.revenue)}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <span className="block text-sm font-bold text-slate-900">{p.qty} un.</span>
-                                                    <span className="block text-xs text-slate-500">{formatCurrency(p.revenue)}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center text-slate-400 py-8">Todavía no hay datos de productos.</div>
-                                )}
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center text-slate-400 py-8">Todavía no hay datos de productos.</div>
+                                    )}
                                 </div>
                             </div>
                         </div>
