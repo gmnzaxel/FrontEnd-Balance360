@@ -10,11 +10,23 @@ const Reports = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const formatDateObj = (d) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    const [startDate, setStartDate] = useState(formatDateObj(firstDay));
+    const [endDate, setEndDate] = useState(formatDateObj(today));
     const [chartType, setChartType] = useState('monthly'); // 'monthly' o 'daily'
 
     useEffect(() => {
         fetchData();
-    }, [months]);
+    }, [months, startDate, endDate]);
 
     useEffect(() => {
         const media = window.matchMedia('(max-width: 640px)');
@@ -29,7 +41,7 @@ const Reports = () => {
         try {
             const [seriesRes, statsRes] = await Promise.all([
                 api.get(`reports/series/?months=${months}`),
-                api.get('reports/monthly-summary/')
+                api.get(`reports/monthly-summary/?start_date=${startDate}&end_date=${endDate}`)
             ]);
             setSeries(seriesRes.data);
             setStats(statsRes.data);
@@ -42,7 +54,7 @@ const Reports = () => {
 
     const handleExport = async () => {
         try {
-            const response = await api.get(`reports/export-excel/?months=${months}`, { responseType: 'blob' });
+            const response = await api.get(`reports/export-excel/?months=${months}&start_date=${startDate}&end_date=${endDate}`, { responseType: 'blob' });
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -106,7 +118,27 @@ const Reports = () => {
                     <h2 className="page-heading">Reportes</h2>
                     <p className="page-subtitle">Métricas clave y rendimiento del negocio.</p>
                 </div>
-                <div className="page-header-actions reports-actions">
+                <div className="page-header-actions reports-actions" style={{ flexWrap: 'wrap' }}>
+                    <div className="reports-period" style={{ padding: '0.25rem 0.5rem' }}>
+                        <span className="text-slate-500 font-medium text-xs">Desde:</span>
+                        <input
+                            type="date"
+                            className="bg-transparent text-sm text-slate-700 outline-none w-auto max-w-[120px]"
+                            value={startDate}
+                            max={endDate}
+                            onChange={e => setStartDate(e.target.value)}
+                        />
+                    </div>
+                    <div className="reports-period" style={{ padding: '0.25rem 0.5rem' }}>
+                        <span className="text-slate-500 font-medium text-xs">Hasta:</span>
+                        <input
+                            type="date"
+                            className="bg-transparent text-sm text-slate-700 outline-none w-auto max-w-[120px]"
+                            value={endDate}
+                            min={startDate}
+                            onChange={e => setEndDate(e.target.value)}
+                        />
+                    </div>
                     <div className="reports-period">
                         <Calendar size={18} className="text-slate-400" />
                         <span className="reports-period-label">Histórico:</span>
@@ -133,12 +165,12 @@ const Reports = () => {
                     {/* KPIs Row */}
                     <div className="grid four-cols gap-md reports-kpi-grid">
                         <KPICard
-                            title="Ventas del mes"
+                            title="Ventas del período"
                             value={formatCurrency(stats.total_sold)}
                             icon={DollarSign}
                             tone="primary"
                             subvalue={`${stats.sales_count} transacciones`}
-                            tooltip="Importe total vendido en el mes. No incluye ventas anuladas ni reembolsadas."
+                            tooltip="Importe total vendido en el período. No incluye ventas anuladas ni reembolsadas."
                         />
                         <KPICard
                             title="Margen bruto"
