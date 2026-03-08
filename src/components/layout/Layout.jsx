@@ -28,11 +28,12 @@ const Layout = () => {
     const items = [
       { path: '/products', label: 'Inventario' },
       { path: '/sales', label: 'Ventas' },
+      { path: '/quotes', label: 'Presupuestos' },
       { path: '/new-sale', label: 'Punto de Venta' },
     ];
 
     if (isAdmin) {
-      items.unshift({ path: '/', label: 'Dashboard' });
+      items.unshift({ path: '/dashboard', label: 'Dashboard' });
       items.splice(3, 0, { path: '/reports', label: 'Reportes' });
       items.push({ path: '/users', label: 'Usuarios' });
     }

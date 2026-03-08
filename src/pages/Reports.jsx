@@ -118,42 +118,36 @@ const Reports = () => {
                     <h2 className="page-heading">Reportes</h2>
                     <p className="page-subtitle">Métricas clave y rendimiento del negocio.</p>
                 </div>
-                <div className="page-header-actions reports-actions" style={{ flexWrap: 'wrap' }}>
-                    <div className="reports-period" style={{ padding: '0.25rem 0.5rem' }}>
-                        <span className="text-slate-500 font-medium text-xs">Desde:</span>
+                <div className="page-header-actions">
+                    <div className="reports-date-filters" style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        background: 'rgba(30, 41, 59, 0.5)', padding: '6px 12px',
+                        borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)'
+                    }}>
+                        <Calendar size={16} className="text-slate-400" />
+                        <span className="text-slate-400 text-sm font-medium">Desde:</span>
                         <input
                             type="date"
-                            className="bg-transparent text-sm text-slate-700 outline-none w-auto max-w-[120px]"
+                            className="bg-transparent text-sm text-slate-200 outline-none w-auto font-medium"
+                            style={{ colorScheme: 'dark' }}
                             value={startDate}
                             max={endDate}
                             onChange={e => setStartDate(e.target.value)}
                         />
-                    </div>
-                    <div className="reports-period" style={{ padding: '0.25rem 0.5rem' }}>
-                        <span className="text-slate-500 font-medium text-xs">Hasta:</span>
+                        <span className="text-slate-500 mx-1">|</span>
+                        <span className="text-slate-400 text-sm font-medium">Hasta:</span>
                         <input
                             type="date"
-                            className="bg-transparent text-sm text-slate-700 outline-none w-auto max-w-[120px]"
+                            className="bg-transparent text-sm text-slate-200 outline-none w-auto font-medium"
+                            style={{ colorScheme: 'dark' }}
                             value={endDate}
                             min={startDate}
                             onChange={e => setEndDate(e.target.value)}
                         />
                     </div>
-                    <div className="reports-period">
-                        <Calendar size={18} className="text-slate-400" />
-                        <span className="reports-period-label">Histórico:</span>
-                        <select
-                            className="reports-period-select"
-                            value={months}
-                            onChange={e => setMonths(e.target.value)}
-                        >
-                            <option value="3">3 Meses</option>
-                            <option value="6">6 Meses</option>
-                            <option value="12">1 Año</option>
-                        </select>
-                    </div>
-                    <button className="btn btn-primary flex items-center gap-2" onClick={handleExport}>
-                        <FileSpreadsheet size={18} /> Exportar Excel
+                    <button className="btn btn-primary" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '12px' }}>
+                        <FileSpreadsheet size={16} /> Exportar
                     </button>
                 </div>
             </div>
@@ -209,22 +203,35 @@ const Reports = () => {
                     )}
 
                     {/* Charts Grid */}
-                    <div className="reports-charts">
+                    <div className="reports-charts" style={{ gridTemplateColumns: '1fr' }}>
                         {/* Main Evolution Chart */}
                         <div className="card reports-chart-card">
-                            <div className="card-header reports-card-header flex-between">
-                                <h3 className="text-lg font-bold text-slate-800">Evolución de ingresos</h3>
-                                <div className="flex gap-2">
+                            <div className="card-header reports-card-header flex-between" style={{ paddingBottom: '20px' }}>
+                                <div className="flex items-center gap-3">
+                                    <TrendingUp size={20} className="text-slate-400" />
+                                    <h3 className="text-lg font-bold text-slate-200">Evolución de ingresos</h3>
+                                </div>
+                                <div style={{ background: 'rgba(30,30,40,0.4)', borderRadius: '8px', padding: '4px', border: '1px solid rgba(255,255,255,0.05)' }} className="flex">
                                     <button
                                         type="button"
-                                        className={`btn ${chartType === 'monthly' ? 'btn-primary' : 'btn-outline'} text-xs px-3 py-1.5 h-auto min-h-0`}
+                                        style={{
+                                            background: chartType === 'monthly' ? '#3B82F6' : 'transparent',
+                                            color: chartType === 'monthly' ? '#FFF' : '#94A3B8',
+                                            borderRadius: '4px', border: 'none', padding: '6px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
                                         onClick={() => setChartType('monthly')}
                                     >
                                         Meses
                                     </button>
                                     <button
                                         type="button"
-                                        className={`btn ${chartType === 'daily' ? 'btn-primary' : 'btn-outline'} text-xs px-3 py-1.5 h-auto min-h-0`}
+                                        style={{
+                                            background: chartType === 'daily' ? '#3B82F6' : 'transparent',
+                                            color: chartType === 'daily' ? '#FFF' : '#94A3B8',
+                                            borderRadius: '4px', border: 'none', padding: '6px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
                                         onClick={() => setChartType('daily')}
                                     >
                                         Días
@@ -232,36 +239,38 @@ const Reports = () => {
                                 </div>
                             </div>
                             <div className="reports-chart-scroll">
-                                <div className="reports-chart-body">
+                                <div className="reports-chart-body" style={{ height: '350px' }}>
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart
                                             data={chartType === 'monthly' ? series : stats.sales_by_day}
                                             margin={{
                                                 top: 10,
-                                                right: isMobile ? 12 : 30,
-                                                left: isMobile ? -18 : 0,
-                                                bottom: isMobile ? 18 : 0
+                                                right: 10,
+                                                left: 0,
+                                                bottom: 0
                                             }}
                                         >
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                                             <XAxis
                                                 dataKey={chartType === 'monthly' ? "month" : "day"}
-                                                tick={{ fill: '#64748b', fontSize: isMobile ? 10 : 12 }}
+                                                tick={{ fill: '#64748b', fontSize: 12 }}
                                                 axisLine={false}
                                                 tickLine={false}
                                                 interval={chartType === 'monthly' && isMobile ? 1 : 'preserveStartEnd'}
                                                 tickFormatter={chartType === 'monthly' ? formatMonthLabel : formatDayLabel}
+                                                dy={10}
                                             />
                                             <YAxis
-                                                tick={{ fill: '#64748b', fontSize: isMobile ? 10 : 12 }}
+                                                tick={{ fill: '#64748b', fontSize: 12 }}
                                                 axisLine={false}
                                                 tickLine={false}
                                                 tickFormatter={(value) => `$${value}`}
-                                                width={isMobile ? 40 : 56}
+                                                width={60}
+                                                dx={-10}
                                             />
                                             <Tooltip
-                                                cursor={{ fill: '#f1f5f9' }}
-                                                contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 12px 30px rgba(15,23,42,0.12)', backdropFilter: 'blur(8px)' }}
+                                                cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                                                contentStyle={{ borderRadius: '12px', background: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 12px 30px rgba(0,0,0,0.5)', color: '#F8FAFC' }}
                                                 formatter={(value) => [formatCurrency(value), "Ventas"]}
                                                 labelFormatter={(label) => chartType === 'monthly' ? formatMonthLabel(label) : formatDayLabel(label)}
                                             />
@@ -269,45 +278,11 @@ const Reports = () => {
                                                 dataKey="total"
                                                 fill="#6366f1"
                                                 radius={[6, 6, 0, 0]}
-                                                barSize={chartType === 'monthly' ? (isMobile ? 22 : 36) : (isMobile ? 10 : 16)}
+                                                maxBarSize={60}
                                                 name="Ventas"
                                             />
                                         </BarChart>
                                     </ResponsiveContainer>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Top Products List/Chart */}
-                        <div className="card reports-top-card">
-                            <div className="card-header reports-card-header flex-between">
-                                <h3 className="text-lg font-bold text-slate-800">Top productos</h3>
-                                <ShoppingBag size={18} className="text-slate-400" />
-                            </div>
-                            <div className="reports-top-scroll">
-                                <div className="reports-top-list">
-                                    {stats.top_products?.length > 0 ? (
-                                        <div className="stack gap-sm">
-                                            {stats.top_products.map((p, i) => (
-                                                <div key={i} className="reports-top-item">
-                                                    <div className="reports-top-meta">
-                                                        <div className={`reports-rank ${i < 3 ? 'top' : 'base'}`}>
-                                                            {i + 1}
-                                                        </div>
-                                                        <span className="text-sm font-medium text-slate-700 truncate" title={p.product__nombre}>
-                                                            {p.product__nombre}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className="block text-sm font-bold text-slate-900">{p.qty} un.</span>
-                                                        <span className="block text-xs text-slate-500">{formatCurrency(p.revenue)}</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center text-slate-400 py-8">Todavía no hay datos de productos.</div>
-                                    )}
                                 </div>
                             </div>
                         </div>

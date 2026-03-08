@@ -22,6 +22,8 @@ const Sales = () => {
     const [dateFilter, setDateFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const [page, setPage] = useState(1);
+    const PAGE_SIZE = 20;
     const dateInputRef = useRef(null);
 
     useEffect(() => {
@@ -45,13 +47,34 @@ const Sales = () => {
 
             return matchesSearch && matchesDate && matchesStatus;
         }));
+        setPage(1);
     }, [searchTerm, dateFilter, statusFilter, sales]);
+
+    const paginatedSales = filteredSales.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const totalPages = Math.max(1, Math.ceil(filteredSales.length / PAGE_SIZE));
 
     const fetchSales = async () => {
         try {
-            const response = await api.get('sales/sales/');
-            setSales(response.data.results || response.data);
-            setFilteredSales(response.data.results || response.data);
+            let allSales = [];
+            let endpoint = 'sales/sales/';
+            while (endpoint) {
+                const response = await api.get(endpoint);
+                const data = response.data;
+                if (data.results) {
+                    allSales = [...allSales, ...data.results];
+                    if (data.next) {
+                        const urlObj = new URL(data.next);
+                        endpoint = urlObj.pathname.replace('/api/', '') + urlObj.search;
+                    } else {
+                        endpoint = null;
+                    }
+                } else {
+                    allSales = data;
+                    endpoint = null;
+                }
+            }
+            setSales(allSales);
+            setFilteredSales(allSales);
         } catch (error) {
             console.error(error);
             toast.error("Error al cargar ventas");
@@ -112,7 +135,8 @@ const Sales = () => {
         if (!sale || sale.is_voided || sale.is_refunded) return false;
         if (isAdmin) return true;
         if (!user) return false;
-        return sale.user === user.user_id;
+        const currentId = user.user_id || user.id;
+        return String(sale.user) === String(currentId);
     };
 
     const handleEditSale = (sale) => {
@@ -246,7 +270,7 @@ const Sales = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredSales.map((sale) => (
+                        {paginatedSales.map((sale) => (
                             <tr key={sale.id} className={sale.is_voided || sale.is_refunded ? 'row-muted opacity-60' : ''}>
                                 <td className="font-bold text-muted" data-label="ID">#{sale.sale_number || sale.id}</td>
                                 <td data-label="Fecha">{formatDate(sale.date)}</td>
@@ -276,7 +300,7 @@ const Sales = () => {
                                 </td>
                             </tr>
                         ))}
-                        {filteredSales.length === 0 && (
+                        {paginatedSales.length === 0 && (
                             <tr>
                                 <td colSpan="7" className="text-center p-8 text-muted">Todavía no hay ventas para los filtros aplicados.</td>
                             </tr>
@@ -284,6 +308,26 @@ const Sales = () => {
                     </tbody>
                 </table>
             </div>
+
+            {totalPages > 1 && (
+                <div className="pagination" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem', alignItems: 'center' }}>
+                    <button
+                        className="ui-btn ui-btn-ghost"
+                        disabled={page === 1}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                        Anterior
+                    </button>
+                    <span className="muted small">Página {page} de {totalPages}</span>
+                    <button
+                        className="ui-btn ui-btn-ghost"
+                        disabled={page === totalPages}
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                        Siguiente
+                    </button>
+                </div>
+            )}
 
             {/* Sale Detail Modal */}
             {selectedSale && !showActionModal && (
@@ -302,21 +346,23 @@ const Sales = () => {
                                     >
                                         <RotateCcw size={16} /> Reembolsar venta
                                     </button>
+                                </div>
+                            )}
+                            {canEditSale(selectedSale) && (
+                                <div className="flex-row gap-sm">
                                     <button
                                         onClick={() => setShowActionModal('anular')}
                                         className="ui-btn ui-btn-danger"
                                     >
                                         <Trash2 size={16} /> Anular venta
                                     </button>
+                                    <button
+                                        onClick={() => handleEditSale(selectedSale)}
+                                        className="ui-btn ui-btn-secondary"
+                                    >
+                                        <Edit size={16} /> Editar venta
+                                    </button>
                                 </div>
-                            )}
-                            {canEditSale(selectedSale) && (
-                                <button
-                                    onClick={() => handleEditSale(selectedSale)}
-                                    className="ui-btn ui-btn-secondary"
-                                >
-                                    <Edit size={16} /> Editar venta
-                                </button>
                             )}
                             {isAdmin && selectedSale.is_voided && (
                                 <div className="flex-row gap-sm">

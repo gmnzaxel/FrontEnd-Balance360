@@ -14,6 +14,7 @@ const Products = lazy(() => import('./pages/Products'));
 const Sales = lazy(() => import('./pages/Sales'));
 const NewSale = lazy(() => import('./pages/NewSale'));
 const Reports = lazy(() => import('./pages/Reports'));
+const Quotes = lazy(() => import('./pages/Quotes'));
 const Users = lazy(() => import('./pages/Users'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -31,9 +32,11 @@ function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
-                <Route path="/" element={<AdminOnly><Dashboard /></AdminOnly>} />
+                <Route path="/" element={<Navigate to="/new-sale" replace />} />
+                <Route path="/dashboard" element={<AdminOnly><Dashboard /></AdminOnly>} />
                 <Route path="/products" element={<Products />} />
                 <Route path="/sales" element={<Sales />} />
+                <Route path="/quotes" element={<Quotes />} />
                 <Route path="/new-sale" element={<NewSale />} />
                 <Route path="/reports" element={<AdminOnly><Reports /></AdminOnly>} />
                 <Route path="/users" element={<AdminOnly><Users /></AdminOnly>} />

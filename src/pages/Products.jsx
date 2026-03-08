@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Edit, Trash2, Plus, Upload, Users, Search, Store, Package, Archive, FileDown, CheckSquare } from 'lucide-react';
+import { Edit, Trash2, Plus, Upload, Users, Search, Store, Package, Archive, FileDown, CheckSquare, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 import { formatARS } from '../utils/format';
@@ -421,18 +421,37 @@ const Products = () => {
           icon={<Search size={16} />}
           className="products-search"
         />
-        {isAdmin && (
-          <div className="bulk-actions">
-            <div className="bulk-count">
-              Seleccionados: <strong>{selectedProductIds.length}</strong>
+        {isAdmin && selectedProductIds.length > 0 && (
+          <div style={{
+            position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(14, 165, 233, 0.2)', padding: '10px 20px', borderRadius: '100px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)', zIndex: 100,
+            display: 'flex', alignItems: 'center', gap: '16px', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc', fontSize: '14px', fontWeight: 600 }}>
+              <div style={{ display: 'flex', background: '#0ea5e9', color: 'white', borderRadius: '50%', width: '24px', height: '24px', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, boxShadow: '0 2px 10px rgba(14, 165, 233, 0.4)' }}>
+                {selectedProductIds.length}
+              </div>
+              <span style={{ letterSpacing: '0.02em' }}>Seleccionados</span>
             </div>
-            <button className="ui-btn ui-btn-secondary" onClick={handleBulkArchive} disabled={!selectedProductIds.length}>
-              <Archive size={16} /> Archivar
+
+            <div style={{ width: '1px', height: '24px', background: 'rgba(148, 163, 184, 0.2)' }}></div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="btn btn-secondary" onClick={handleBulkArchive} style={{ borderRadius: '100px', padding: '8px 16px', height: 'auto', fontSize: '13px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Archive size={14} /> Archivar
+              </button>
+              <button className="btn btn-danger" onClick={handleBulkDelete} style={{ borderRadius: '100px', padding: '8px 16px', height: 'auto', fontSize: '13px', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <Trash2 size={14} /> Eliminar
+              </button>
+            </div>
+
+            <div style={{ width: '1px', height: '24px', background: 'rgba(148, 163, 184, 0.2)' }}></div>
+
+            <button style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px', display: 'flex', transition: 'color 0.2s', outline: 'none' }} onClick={() => setSelectedProductIds([])} title="Cancelar selección" onMouseEnter={(e) => e.currentTarget.style.color = 'white'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
+              <X size={18} />
             </button>
-            <button className="ui-btn ui-btn-secondary" onClick={handleBulkDelete} disabled={!selectedProductIds.length}>
-              <Trash2 size={16} /> Eliminar
-            </button>
-            <span className="bulk-pill" aria-live="polite">{selectedProductIds.length}</span>
           </div>
         )}
         <label className="archive-toggle">
@@ -668,7 +687,7 @@ const Products = () => {
             </div>
 
             <Input
-                label="Nombre del producto *"
+              label="Nombre del producto *"
               value={formData.nombre}
               onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
               required
@@ -847,15 +866,15 @@ const Products = () => {
                             >
                               <Edit size={16} />
                             </button>
-                          <button
-                            className="ghost-icon text-danger-600"
-                            type="button"
-                            onClick={() => handleDeleteSupplier(s)}
-                            disabled={submitting}
-                            aria-label={`Eliminar proveedor ${s.name}`}
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                            <button
+                              className="ghost-icon text-danger-600"
+                              type="button"
+                              onClick={() => handleDeleteSupplier(s)}
+                              disabled={submitting}
+                              aria-label={`Eliminar proveedor ${s.name}`}
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </>
                         )}
                       </td>
