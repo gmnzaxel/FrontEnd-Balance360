@@ -11,7 +11,6 @@ const Sales = () => {
     const { user, isAdmin } = useContext(AuthContext);
     const navigate = useNavigate();
     const [sales, setSales] = useState([]);
-    const [filteredSales, setFilteredSales] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedSale, setSelectedSale] = useState(null);
     const [showActionModal, setShowActionModal] = useState(null); // 'anular' or 'reembolsar'
@@ -19,62 +18,51 @@ const Sales = () => {
     const [reason, setReason] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [dateFilter, setDateFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [showFilterMenu, setShowFilterMenu] = useState(false);
     const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const PAGE_SIZE = 20;
     const dateInputRef = useRef(null);
 
     useEffect(() => {
-        fetchSales();
-    }, []);
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    // Return to page 1 on filter changes
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearchTerm, dateFilter, statusFilter]);
 
     useEffect(() => {
-        if (!sales) return;
-        setFilteredSales(sales.filter(s => {
-            const matchesSearch = s.id.toString().includes(searchTerm) ||
-                s.user_name?.toLowerCase().includes(searchTerm.toLowerCase());
-
-            // Date filtering (matches YYYY-MM-DD part of ISO string)
-            const matchesDate = dateFilter ? s.date.startsWith(dateFilter) : true;
-
-            // Status filtering
-            const matchesStatus = statusFilter === 'ALL' ? true :
-                statusFilter === 'VOIDED' ? s.is_voided :
-                    statusFilter === 'REFUNDED' ? s.is_refunded :
-                        statusFilter === 'COMPLETED' ? (!s.is_voided && !s.is_refunded) : true;
-
-            return matchesSearch && matchesDate && matchesStatus;
-        }));
-        setPage(1);
-    }, [searchTerm, dateFilter, statusFilter, sales]);
-
-    const paginatedSales = filteredSales.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-    const totalPages = Math.max(1, Math.ceil(filteredSales.length / PAGE_SIZE));
+        fetchSales();
+    }, [page, debouncedSearchTerm, dateFilter, statusFilter]);
 
     const fetchSales = async () => {
+        setLoading(true);
         try {
-            let allSales = [];
-            let endpoint = 'sales/sales/';
-            while (endpoint) {
-                const response = await api.get(endpoint);
-                const data = response.data;
-                if (data.results) {
-                    allSales = [...allSales, ...data.results];
-                    if (data.next) {
-                        const urlObj = new URL(data.next);
-                        endpoint = urlObj.pathname.replace('/api/', '') + urlObj.search;
-                    } else {
-                        endpoint = null;
-                    }
-                } else {
-                    allSales = data;
-                    endpoint = null;
+            const response = await api.get('sales/sales/', {
+                params: {
+                    page,
+                    page_size: PAGE_SIZE,
+                    search: debouncedSearchTerm || undefined,
+                    date: dateFilter || undefined,
+                    status: statusFilter
                 }
+            });
+            const data = response.data;
+            const results = data.results || data;
+            setSales(Array.isArray(results) ? results : []);
+            if (data.count) {
+                setTotalPages(Math.max(1, Math.ceil(data.count / PAGE_SIZE)));
+            } else {
+                setTotalPages(1);
             }
-            setSales(allSales);
-            setFilteredSales(allSales);
         } catch (error) {
             console.error(error);
             toast.error("Error al cargar ventas");
@@ -270,7 +258,7 @@ const Sales = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {paginatedSales.map((sale) => (
+                        {sales.map((sale) => (
                             <tr key={sale.id} className={sale.is_voided || sale.is_refunded ? 'row-muted opacity-60' : ''}>
                                 <td className="font-bold text-muted" data-label="ID">#{sale.sale_number || sale.id}</td>
                                 <td data-label="Fecha">{formatDate(sale.date)}</td>
@@ -300,7 +288,7 @@ const Sales = () => {
                                 </td>
                             </tr>
                         ))}
-                        {paginatedSales.length === 0 && (
+                        {sales.length === 0 && (
                             <tr>
                                 <td colSpan="7" className="text-center p-8 text-muted">Todavía no hay ventas para los filtros aplicados.</td>
                             </tr>
