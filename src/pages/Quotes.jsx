@@ -20,7 +20,8 @@ const Quotes = () => {
     const [page, setPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [cart, setCart] = useState([]);
-    const [discount, setDiscount] = useState(0);
+    const [discount, setDiscount] = useState('');
+    const [discountType, setDiscountType] = useState('$');
     const [validityDays, setValidityDays] = useState(15);
     const [clientName, setClientName] = useState('');
     const [showServiceModal, setShowServiceModal] = useState(false);
@@ -91,6 +92,8 @@ const Quotes = () => {
                 nombre: product.nombre,
                 price: parseFloat(product.precio_venta) || 0,
                 quantity: 1,
+                discountType: '$',
+                discountValue: '',
             }]);
         }
     };
@@ -108,6 +111,8 @@ const Quotes = () => {
             price: parseFloat(serviceForm.price) || 0,
             quantity: 1,
             product: null,
+            discountType: '$',
+            discountValue: '',
         }]);
         setServiceForm({ description: '', price: '' });
         setShowServiceModal(false);
@@ -124,14 +129,41 @@ const Quotes = () => {
         setCart(cart.map((item) => item.id === id ? { ...item, price: priceToSet } : item));
     };
 
+    const updateItemDiscount = (id, value, type) => {
+        setCart(cart.map((item) => item.id === id ? { ...item, discountValue: value, discountType: type } : item));
+    };
+
     const removeItem = (id) => {
         setCart(cart.filter((item) => item.id !== id));
     };
 
+    const getSubtotalWithItemDiscounts = () => {
+        return cart.reduce((acc, item) => {
+            const baseSub = (parseFloat(item.price) || 0) * item.quantity;
+            let descItem = 0;
+            if (item.discountValue) {
+                if (item.discountType === '%') {
+                    descItem = baseSub * (parseFloat(item.discountValue) / 100);
+                } else {
+                    descItem = parseFloat(item.discountValue) || 0;
+                }
+            }
+            return acc + (baseSub - descItem);
+        }, 0);
+    };
+
     const total = useMemo(() => {
-        const subtotal = cart.reduce((acc, item) => acc + ((parseFloat(item.price) || 0) * item.quantity), 0);
-        return subtotal - (parseFloat(discount) || 0);
-    }, [cart, discount]);
+        const subtotal = getSubtotalWithItemDiscounts();
+        let descTotal = 0;
+        if (discount) {
+            if (discountType === '%') {
+                descTotal = subtotal * (parseFloat(discount) / 100);
+            } else {
+                descTotal = parseFloat(discount) || 0;
+            }
+        }
+        return Math.max(0, subtotal - descTotal);
+    }, [cart, discount, discountType]);
 
     const cartCount = useMemo(
         () => cart.reduce((acc, item) => acc + item.quantity, 0),
@@ -148,7 +180,7 @@ const Quotes = () => {
         if (!printWindow) return;
 
         const headerText = ticketConfig?.ticket_header || 'BALANCE 360';
-        const subtotal = cart.reduce((acc, item) => acc + ((parseFloat(item.price) || 0) * item.quantity), 0);
+        const subtotal = getSubtotalWithItemDiscounts();
         const dateStr = new Date().toLocaleString('es-AR', { hour12: false });
 
         const htmlContent = `
@@ -188,13 +220,25 @@ const Quotes = () => {
               </tr>
             </thead>
             <tbody>
-              ${cart.map(item => `
+              ${cart.map(item => {
+                  const baseSub = (parseFloat(item.price) || 0) * item.quantity;
+                  let descItem = 0;
+                  if (item.discountValue) {
+                      if (item.discountType === '%') {
+                          descItem = baseSub * (parseFloat(item.discountValue) / 100);
+                      } else {
+                          descItem = parseFloat(item.discountValue) || 0;
+                      }
+                  }
+                  const itemTotal = baseSub - descItem;
+                  return `
                 <tr>
-                  <td>${item.nombre}</td>
+                  <td>${item.nombre} ${descItem > 0 ? `<br><small>Desc: ${item.discountType === '%' ? item.discountValue + '%' : '$' + parseFloat(descItem).toFixed(2)}</small>` : ''}</td>
                   <td class="text-right">${item.quantity}</td>
-                  <td class="text-right">$${((parseFloat(item.price) || 0) * item.quantity).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">$${itemTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
                 </tr>
-              `).join('')}
+              `;
+              }).join('')}
             </tbody>
           </table>
 
@@ -203,10 +247,13 @@ const Quotes = () => {
               <span>Subtotal:</span>
               <span>$${subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
             </div>
-            ${discount > 0 ? `
+            ${parseFloat(discount) > 0 ? `
             <div class="row">
-              <span>Descuento:</span>
-              <span>-$${parseFloat(discount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>Descuento ${discountType === '%' ? `(${discount}%)` : ''}:</span>
+              <span>-${discountType === '%' 
+                 ? '$' + (subtotal * (parseFloat(discount) / 100)).toLocaleString('es-AR', { minimumFractionDigits: 2 })
+                 : '$' + parseFloat(discount).toLocaleString('es-AR', { minimumFractionDigits: 2 })
+              }</span>
             </div>` : ''}
             <div class="row" style="font-weight: bold; font-size: 14px; margin-top: 5px;">
               <span>TOTAL PREVISTO:</span>
@@ -233,7 +280,8 @@ const Quotes = () => {
     const handleClearCart = () => {
         if (window.confirm("¿Seguro que deseas vaciar el presupuesto actual?")) {
             setCart([]);
-            setDiscount(0);
+            setDiscount('');
+            setDiscountType('$');
             setClientName('');
         }
     }
@@ -359,14 +407,8 @@ const Quotes = () => {
                                 </button>
                             </div>
                             <div className="flex-row between items-center gap-sm">
-                                <div className="quantity-group" style={{ flexShrink: 0 }}>
-                                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>-</button>
-                                    <input
-                                        type="number"
-                                        value={item.quantity}
-                                        onChange={(e) => updateQuantity(item.id, e.target.value)}
-                                    />
-                                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                                <div className="badge badge-neutral" style={{ fontSize: '0.75rem', padding: '4px 8px', flexShrink: 0 }}>
+                                    {item.quantity} un.
                                 </div>
                                 <div style={{ flex: 1, position: 'relative' }}>
                                     <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-500)' }}>$</span>
@@ -374,14 +416,43 @@ const Quotes = () => {
                                         type="number"
                                         value={item.price}
                                         onChange={(e) => updatePrice(item.id, e.target.value)}
-                                        className="ui-input"
+                                        className="input-control"
                                         style={{ paddingLeft: '24px', paddingRight: '8px', height: '36px', width: '100%', textAlign: 'right' }}
                                         placeholder="Precio"
                                     />
                                 </div>
                             </div>
-                            <div className="text-right mt-1">
-                                <div className="title-sm">{formatARS((parseFloat(item.price) || 0) * item.quantity)}</div>
+                            <div className="flex-row between items-center mt-2">
+                                <div className="flex-row items-center gap-xs">
+                                  <span className="muted tiny">Desc.</span>
+                                  <div className="field-control">
+                                    <input
+                                      type="number"
+                                      style={{ width: '90px', padding: '4px 6px', height: '28px', fontSize: '0.8rem' }}
+                                      value={item.discountValue || ''}
+                                      onChange={(e) => updateItemDiscount(item.id, e.target.value, item.discountType)}
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                  <div className="field-control">
+                                    <select
+                                      style={{ width: '40px', padding: '0 4px', height: '28px', fontSize: '0.8rem', outline: 'none' }}
+                                      value={item.discountType || '$'}
+                                      onChange={(e) => updateItemDiscount(item.id, item.discountValue || '', e.target.value)}
+                                    >
+                                      <option value="$">$</option>
+                                      <option value="%">%</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  {(() => {
+                                      const base = (parseFloat(item.price) || 0) * item.quantity;
+                                      const dvs = parseFloat(item.discountValue);
+                                      const desc = isNaN(dvs) ? 0 : (item.discountType === '%' ? base * (dvs/100) : dvs);
+                                      return <div className="title-sm">{formatARS(base - desc)}</div>;
+                                  })()}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -395,13 +466,25 @@ const Quotes = () => {
                         style={{ marginBottom: '12px' }}
                     />
                     <div className="grid two-cols">
-                        <Input
-                            label="Descuento extra ($)"
-                            type="number"
-                            value={discount}
-                            onChange={(e) => setDiscount(e.target.value)}
-                            icon={<Tag size={14} />}
-                        />
+                        <div className="ui-field">
+                          <span className="field-label">Descuento Global</span>
+                          <div className="flex-row gap-xs">
+                            <div className="field-control" style={{ flex: 1 }}>
+                              <input
+                                type="number"
+                                value={discount}
+                                onChange={(e) => setDiscount(e.target.value)}
+                                placeholder="0"
+                              />
+                            </div>
+                            <div className="field-control">
+                              <select style={{ width: '60px', paddingLeft: '8px', paddingRight: '8px' }} value={discountType} onChange={(e) => setDiscountType(e.target.value)}>
+                                 <option value="$">$</option>
+                                 <option value="%">%</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
                         <Select
                             label="Validez (Días)"
                             value={validityDays}

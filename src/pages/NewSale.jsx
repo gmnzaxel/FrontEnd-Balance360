@@ -24,7 +24,8 @@ const NewSale = () => {
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [cart, setCart] = useState([]);
-  const [discount, setDiscount] = useState(0);
+  const [discount, setDiscount] = useState('');
+  const [discountType, setDiscountType] = useState('$');
   const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [serviceForm, setServiceForm] = useState({ description: '', price: '' });
@@ -81,6 +82,8 @@ const NewSale = () => {
         nombre: isService ? `[Servicio] ${description}` : (item.producto_nombre || item.nombre || 'Producto'),
         price: parseFloat(item.price),
         quantity: item.quantity,
+        discountType: '$',
+        discountValue: parseFloat(item.discount) || ''
       };
     })
   ), []);
@@ -112,7 +115,8 @@ const NewSale = () => {
     } else {
       if (editingSaleId) {
         setCart([]);
-        setDiscount(0);
+        setDiscount('');
+        setDiscountType('$');
         setPaymentMethod('EFECTIVO');
       }
       setEditingSaleId(null);
@@ -245,6 +249,8 @@ const NewSale = () => {
         nombre: product.nombre,
         price: parseFloat(product.precio_venta),
         quantity: 1,
+        discountType: '$',
+        discountValue: ''
       }]);
     }
     setCartAnimKey((k) => k + 1);
@@ -265,6 +271,8 @@ const NewSale = () => {
       price: parseFloat(serviceForm.price),
       quantity: 1,
       product: null,
+      discountType: '$',
+      discountValue: ''
     }]);
     setServiceForm({ description: '', price: '' });
     setShowServiceModal(false);
@@ -279,14 +287,42 @@ const NewSale = () => {
     setCart(cart.map((item) => item.id === id ? { ...item, quantity: value } : item));
   };
 
+  const updateItemDiscount = (id, value, type) => {
+    setCart(cart.map((item) => item.id === id ? { ...item, discountValue: value, discountType: type } : item));
+  };
+
   const removeItem = (id) => {
     setCart(cart.filter((item) => item.id !== id));
   };
 
+  const getSubtotalWithItemDiscounts = () => {
+    return cart.reduce((acc, item) => {
+      const baseSub = item.price * item.quantity;
+      let descItem = 0;
+      if (item.discountValue) {
+        if (item.discountType === '%') {
+          descItem = baseSub * (parseFloat(item.discountValue) / 100);
+        } else {
+          descItem = parseFloat(item.discountValue) || 0;
+        }
+      }
+      return acc + (baseSub - descItem);
+    }, 0);
+  };
+
   const total = useMemo(() => {
-    const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    return subtotal - (parseFloat(discount) || 0);
-  }, [cart, discount]);
+    const subtotal = getSubtotalWithItemDiscounts();
+
+    let descTotal = 0;
+    if (discount) {
+      if (discountType === '%') {
+        descTotal = subtotal * (parseFloat(discount) / 100);
+      } else {
+        descTotal = parseFloat(discount) || 0;
+      }
+    }
+    return Math.max(0, subtotal - descTotal);
+  }, [cart, discount, discountType]);
 
   const cartCount = useMemo(
     () => cart.reduce((acc, item) => acc + item.quantity, 0),
@@ -301,16 +337,33 @@ const NewSale = () => {
 
     try {
       const wasEditing = Boolean(editingSaleId);
+      const subtotalBase = getSubtotalWithItemDiscounts();
+      const finalGlobalDiscount = discountType === '%' 
+        ? parseFloat((subtotalBase * (parseFloat(discount) / 100)).toFixed(2)) || 0
+        : parseFloat(discount) || 0;
+
       const payload = {
         payment_method: paymentMethod,
-        discount: parseFloat(discount) || 0,
-        items: cart.map((item) => ({
-          item_type: item.item_type,
-          product: item.product,
-          description: item.item_type === 'SERVICIO' ? item.description : undefined,
-          quantity: item.quantity,
-          price: item.price,
-        })),
+        discount: finalGlobalDiscount,
+        items: cart.map((item) => {
+          const baseSub = item.price * item.quantity;
+          let descItem = 0;
+          if (item.discountValue) {
+            if (item.discountType === '%') {
+              descItem = baseSub * (parseFloat(item.discountValue) / 100);
+            } else {
+              descItem = parseFloat(item.discountValue) || 0;
+            }
+          }
+          return {
+            item_type: item.item_type,
+            product: item.product,
+            description: item.item_type === 'SERVICIO' ? item.description : undefined,
+            quantity: item.quantity,
+            price: item.price,
+            discount: parseFloat(descItem.toFixed(2)) || 0
+          };
+        }),
       };
 
       const response = wasEditing
@@ -337,7 +390,8 @@ const NewSale = () => {
 
       // Clear form
       setCart([]);
-      setDiscount(0);
+      setDiscount('');
+      setDiscountType('$');
       setPaymentMethod('EFECTIVO');
       setEditingSaleId(null);
       setEditingSaleNumber(null);
@@ -485,19 +539,39 @@ const NewSale = () => {
                   <Trash2 size={16} />
                 </button>
               </div>
-              <div className="flex-row between">
-                <div className="quantity-group">
-                  <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>-</button>
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => updateQuantity(item.id, e.target.value)}
-                  />
-                  <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+              <div className="flex-row between items-center">
+                <div className="badge badge-neutral" style={{ fontSize: '0.75rem', padding: '4px 8px' }}>
+                  {item.quantity} un.
+                </div>
+                <div className="flex-row items-center gap-xs">
+                  <span className="muted tiny">Desc.</span>
+                  <div className="field-control">
+                    <input
+                      type="number"
+                      style={{ width: '90px', padding: '4px 6px', height: '28px', fontSize: '0.8rem' }}
+                      value={item.discountValue || ''}
+                      onChange={(e) => updateItemDiscount(item.id, e.target.value, item.discountType)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="field-control">
+                    <select
+                      style={{ width: '40px', padding: '0 4px', height: '28px', fontSize: '0.8rem', outline: 'none' }}
+                      value={item.discountType || '$'}
+                      onChange={(e) => updateItemDiscount(item.id, item.discountValue || '', e.target.value)}
+                    >
+                      <option value="$">$</option>
+                      <option value="%">%</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="muted tiny">Unitario {formatARS(item.price)}</div>
-                  <div className="title-sm">{formatARS(item.price * item.quantity)}</div>
+                  <div className="title-sm">
+                    {formatARS((item.price * item.quantity) - (
+                      item.discountValue ? (item.discountType === '%' ? (item.price * item.quantity * parseFloat(item.discountValue) / 100) : parseFloat(item.discountValue)) : 0
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -506,13 +580,25 @@ const NewSale = () => {
 
         <div className="cart-footer">
           <div className="grid two-cols">
-            <Input
-              label="Descuento"
-              type="number"
-              value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
-              icon={<Tag size={14} />}
-            />
+            <div className="ui-field">
+              <span className="field-label">Descuento Global</span>
+              <div className="flex-row gap-xs">
+                <div className="field-control" style={{ flex: 1 }}>
+                  <input
+                    type="number"
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="field-control">
+                  <select style={{ width: '60px', paddingLeft: '8px', paddingRight: '8px' }} value={discountType} onChange={(e) => setDiscountType(e.target.value)}>
+                     <option value="$">$</option>
+                     <option value="%">%</option>
+                  </select>
+                </div>
+              </div>
+            </div>
             <Select
               label="Método de pago"
               value={paymentMethod}
@@ -607,19 +693,39 @@ const NewSale = () => {
                       <Trash2 size={16} />
                     </button>
                   </div>
-                  <div className="flex-row between">
-                    <div className="quantity-group">
-                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>-</button>
-                      <input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => updateQuantity(item.id, e.target.value)}
-                      />
-                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                  <div className="flex-row between items-center">
+                    <div className="badge badge-neutral" style={{ fontSize: '0.75rem', padding: '4px 8px' }}>
+                      {item.quantity} un.
+                    </div>
+                    <div className="flex-row items-center gap-xs">
+                      <span className="muted tiny">Desc.</span>
+                      <div className="field-control">
+                        <input
+                          type="number"
+                          style={{ width: '90px', padding: '4px 6px', height: '28px', fontSize: '0.8rem' }}
+                          value={item.discountValue || ''}
+                          onChange={(e) => updateItemDiscount(item.id, e.target.value, item.discountType)}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="field-control">
+                        <select
+                          style={{ width: '40px', padding: '0 4px', height: '28px', fontSize: '0.8rem', outline: 'none' }}
+                          value={item.discountType || '$'}
+                          onChange={(e) => updateItemDiscount(item.id, item.discountValue || '', e.target.value)}
+                        >
+                          <option value="$">$</option>
+                          <option value="%">%</option>
+                        </select>
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="muted tiny">Unitario {formatARS(item.price)}</div>
-                      <div className="title-sm">{formatARS(item.price * item.quantity)}</div>
+                      <div className="title-sm">
+                        {formatARS((item.price * item.quantity) - (
+                          item.discountValue ? (item.discountType === '%' ? (item.price * item.quantity * parseFloat(item.discountValue) / 100) : parseFloat(item.discountValue)) : 0
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -628,13 +734,25 @@ const NewSale = () => {
 
             <div className="cart-footer">
               <div className="grid two-cols">
-                <Input
-                  label="Descuento"
-                  type="number"
-                  value={discount}
-                  onChange={(e) => setDiscount(e.target.value)}
-                  icon={<Tag size={14} />}
-                />
+                <div className="ui-field">
+                  <span className="field-label">Descuento Global</span>
+                  <div className="flex-row gap-xs">
+                    <div className="field-control" style={{ flex: 1 }}>
+                      <input
+                        type="number"
+                        value={discount}
+                        onChange={(e) => setDiscount(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="field-control">
+                      <select style={{ width: '60px', paddingLeft: '8px', paddingRight: '8px' }} value={discountType} onChange={(e) => setDiscountType(e.target.value)}>
+                        <option value="$">$</option>
+                        <option value="%">%</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
                 <Select
                   label="Método de pago"
                   value={paymentMethod}

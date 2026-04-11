@@ -1,6 +1,6 @@
 .pos-shell {
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: 1fr 480px;
   gap: 16px;
   height: calc(100vh - 180px);
   min-height: 520px;
