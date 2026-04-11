@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, Tag, CreditCard, Trash2, Wrench, PackageX } from 'lucide-react';
 import api from '../api/axios';
@@ -23,10 +23,15 @@ const NewSale = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [cart, setCart] = useState([]);
-  const [discount, setDiscount] = useState('');
-  const [discountType, setDiscountType] = useState('$');
-  const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
+  const [cart, setCart] = useState(() => {
+    try { const saved = localStorage.getItem('pos_cart'); return saved ? JSON.parse(saved) : []; }
+    catch { return []; }
+  });
+  const [discount, setDiscount] = useState(() => localStorage.getItem('pos_discount') || '');
+  const [discountType, setDiscountType] = useState(() => localStorage.getItem('pos_discount_type') || '$');
+  const [paymentMethod, setPaymentMethod] = useState(() => localStorage.getItem('pos_payment') || 'EFECTIVO');
+  
+  const searchInputRef = useRef(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [serviceForm, setServiceForm] = useState({ description: '', price: '' });
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -40,6 +45,11 @@ const NewSale = () => {
   const [editingSaleNumber, setEditingSaleNumber] = useState(null);
   const [loadingSale, setLoadingSale] = useState(false);
   const [lastSaleWasEdit, setLastSaleWasEdit] = useState(false);
+  
+  const [multiplier, setMultiplier] = useState(1);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [showChangeModal, setShowChangeModal] = useState(false);
+  const [amountPaid, setAmountPaid] = useState('');
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -62,6 +72,11 @@ const NewSale = () => {
     }
   }, [page, debouncedSearch]);
 
+  useEffect(() => { localStorage.setItem('pos_cart', JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { localStorage.setItem('pos_discount', discount); }, [discount]);
+  useEffect(() => { localStorage.setItem('pos_discount_type', discountType); }, [discountType]);
+  useEffect(() => { localStorage.setItem('pos_payment', paymentMethod); }, [paymentMethod]);
+
   useEffect(() => {
     fetchProducts();
     // Fetch Ticket Settings
@@ -69,6 +84,10 @@ const NewSale = () => {
       .then(res => setTicketConfig(res.data))
       .catch(err => console.error("Error loading ticket settings", err));
   }, [fetchProducts]);
+
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [products]);
 
   const normalizeSaleItems = useCallback((items = []) => (
     items.map((item) => {
@@ -234,11 +253,12 @@ const NewSale = () => {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const addToCart = (product) => {
+    const qty = multiplier;
     const exists = cart.find((item) => item.item_type === 'PRODUCTO' && item.product === product.id);
     if (exists) {
       setCart(cart.map((item) =>
         item.item_type === 'PRODUCTO' && item.product === product.id
-          ? { ...item, quantity: item.quantity + 1 }
+          ? { ...item, quantity: item.quantity + qty }
           : item
       ));
     } else {
@@ -248,7 +268,7 @@ const NewSale = () => {
         product: product.id,
         nombre: product.nombre,
         price: parseFloat(product.precio_venta),
-        quantity: 1,
+        quantity: qty,
         discountType: '$',
         discountValue: ''
       }]);
@@ -256,6 +276,9 @@ const NewSale = () => {
     setCartAnimKey((k) => k + 1);
     setCartPulse(true);
     setTimeout(() => setCartPulse(false), 450);
+    setMultiplier(1);
+    setSearch('');
+    searchInputRef.current?.focus();
   };
 
   const addService = () => {
@@ -323,6 +346,36 @@ const NewSale = () => {
     }
     return Math.max(0, subtotal - descTotal);
   }, [cart, discount, discountType]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'F2') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === 'F8') {
+        e.preventDefault();
+        if (cart.length > 0) {
+          if (isMobile) {
+            setShowCartModal(true);
+          } else {
+            handleSubmit();
+          }
+        } else {
+          toast.info('El carrito está vacío');
+        }
+      }
+      if (e.key === 'Escape' && cart.length > 0 && !showCartModal && !showServiceModal && !showSuccessModal) {
+        e.preventDefault();
+        if (window.confirm('¿Vaciar el carrito actual?')) {
+          setCart([]);
+          setDiscount('');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cart, isMobile, showCartModal, showServiceModal, showSuccessModal, discount, discountType, paymentMethod]);
 
   const cartCount = useMemo(
     () => cart.reduce((acc, item) => acc + item.quantity, 0),
@@ -409,12 +462,50 @@ const NewSale = () => {
     <div className="pos-shell">
       <div className="catalog-panel">
         <div className="flex-row between">
-          <Input
-            placeholder="Buscar producto…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            icon={<Search size={18} />}
-          />
+          <div style={{ position: 'relative', flex: 1, marginRight: '16px' }}>
+            <Input
+              ref={searchInputRef}
+              placeholder="Buscar producto… [F2]"
+              value={search}
+              onChange={(e) => {
+                 let val = e.target.value;
+                 const match = val.match(/^(\d+)\*(.*)$/);
+                 if (match) {
+                     setMultiplier(parseInt(match[1], 10));
+                     val = match[2];
+                 }
+                 setSearch(val);
+              }}
+              onKeyDown={(e) => {
+                 if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setFocusedIndex(i => Math.min(products.length - 1, i + 1));
+                 } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setFocusedIndex(i => Math.max(0, i - 1));
+                 } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (focusedIndex >= 0 && products[focusedIndex]?.stock_actual > 0) {
+                        addToCart(products[focusedIndex]);
+                    } else if (search.length > 0) {
+                        api.get('inventory/products/', { params: { search, page_size: 1 } })
+                           .then(res => {
+                               const list = res.data.results || res.data;
+                               if (list.length === 1 && list[0].stock_actual > 0) {
+                                   addToCart(list[0]);
+                               }
+                           });
+                    }
+                 }
+              }}
+              icon={<Search size={18} />}
+            />
+            {multiplier > 1 && (
+               <span className="badge badge-primary" style={{ position: 'absolute', right: '12px', top: '10px' }}>
+                  {multiplier}x
+               </span>
+            )}
+          </div>
           <Button variant="secondary" icon={<Wrench size={16} />} onClick={() => setShowServiceModal(true)}>
             + Servicio
           </Button>
@@ -442,22 +533,17 @@ const NewSale = () => {
                     </tr>
                   ))
                 ) : (
-                  products.map((p) => (
+                  products.map((p, i) => (
                     <tr
                       key={p.id}
                       onClick={() => p.stock_actual > 0 && addToCart(p)}
                       className={p.stock_actual <= 0 ? 'pos-row-disabled' : ''}
-                      style={{ cursor: p.stock_actual > 0 ? 'pointer' : 'not-allowed' }}
-                      onMouseEnter={(e) => {
-                        if (p.stock_actual > 0 && window.matchMedia('(hover: hover)').matches) {
-                          e.currentTarget.style.backgroundColor = 'var(--primary-50)';
-                        }
+                      style={{ 
+                        cursor: p.stock_actual > 0 ? 'pointer' : 'not-allowed',
+                        backgroundColor: focusedIndex === i ? 'rgba(14, 165, 233, 0.12)' : 'transparent'
                       }}
-                      onMouseLeave={(e) => {
-                        if (p.stock_actual > 0 && window.matchMedia('(hover: hover)').matches) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }
-                      }}
+                      onMouseEnter={() => setFocusedIndex(i)}
+                      onMouseLeave={() => setFocusedIndex((prev) => prev === i ? -1 : prev)}
                     >
                       <td data-label="Código">
                         <span className="badge badge-neutral" style={{ fontSize: '0.75rem' }}>{p.codigo}</span>
@@ -612,6 +698,7 @@ const NewSale = () => {
               <option value="OTRO">Otro</option>
             </Select>
           </div>
+
           <div className="flex-row between" style={{ marginTop: 12, marginBottom: 12 }}>
             <div className="muted">Total a pagar</div>
             <div className="title-xl">{formatARS(total)}</div>
@@ -623,7 +710,7 @@ const NewSale = () => {
             disabled={!cart.length}
             icon={<CreditCard size={18} />}
           >
-            Confirmar venta
+            Confirmar venta [F8]
           </Button>
         </div>
       </div>
@@ -766,6 +853,7 @@ const NewSale = () => {
                   <option value="OTRO">Otro</option>
                 </Select>
               </div>
+
               <div className="flex-row between" style={{ marginTop: 12, marginBottom: 12 }}>
                 <div className="muted">Total a pagar</div>
                 <div className="title-xl">{formatARS(total)}</div>
@@ -800,11 +888,12 @@ const NewSale = () => {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600">
               <CreditCard size={32} />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Venta #{lastSale?.sale_number || lastSale?.id}</h3>
-            <p className="text-slate-500 mb-6">
-              {lastSaleWasEdit ? 'La venta se actualizó correctamente.' : 'La venta se registró correctamente.'}
+            <h3 className="text-xl font-bold text-slate-800 mb-2">
+              ¡Operación exitosa!
+            </h3>
+            <p className="text-slate-600 mb-6">
+              Venta #{lastSale?.sale_number || lastSale?.id} procesada por {formatARS(lastSale?.total || 0)}.
             </p>
-
             <Button
               variant="secondary"
               fullWidth
@@ -816,6 +905,8 @@ const NewSale = () => {
           </div>
         </Modal>
       )}
+
+
     </div>
   );
 };

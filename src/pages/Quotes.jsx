@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Search, ShoppingCart, Tag, Printer, Trash2, Wrench, PackageX, FileDown } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
@@ -19,11 +19,16 @@ const Quotes = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [page, setPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
-    const [cart, setCart] = useState([]);
-    const [discount, setDiscount] = useState('');
-    const [discountType, setDiscountType] = useState('$');
+    const [cart, setCart] = useState(() => {
+        try { const saved = localStorage.getItem('quote_cart'); return saved ? JSON.parse(saved) : []; }
+        catch { return []; }
+    });
+    const [discount, setDiscount] = useState(() => localStorage.getItem('quote_discount') || '');
+    const [discountType, setDiscountType] = useState(() => localStorage.getItem('quote_discount_type') || '$');
     const [validityDays, setValidityDays] = useState(15);
-    const [clientName, setClientName] = useState('');
+    const [clientName, setClientName] = useState(() => localStorage.getItem('quote_client') || '');
+    
+    const searchInputRef = useRef(null);
     const [showServiceModal, setShowServiceModal] = useState(false);
     const [serviceForm, setServiceForm] = useState({ description: '', price: '' });
     const [ticketConfig, setTicketConfig] = useState(null);
@@ -57,6 +62,11 @@ const Quotes = () => {
             .then(res => setTicketConfig(res.data))
             .catch(err => console.error("Error loading ticket settings", err));
     }, [fetchProducts]);
+
+    useEffect(() => { localStorage.setItem('quote_cart', JSON.stringify(cart)); }, [cart]);
+    useEffect(() => { localStorage.setItem('quote_discount', discount); }, [discount]);
+    useEffect(() => { localStorage.setItem('quote_discount_type', discountType); }, [discountType]);
+    useEffect(() => { localStorage.setItem('quote_client', clientName); }, [clientName]);
 
     useEffect(() => {
         const media = window.matchMedia('(max-width: 768px)');
@@ -164,6 +174,33 @@ const Quotes = () => {
         }
         return Math.max(0, subtotal - descTotal);
     }, [cart, discount, discountType]);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'F2') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+            if (e.key === 'F8') {
+                e.preventDefault();
+                if (cart.length > 0) {
+                    handleGenerateQuote();
+                } else {
+                    toast.info('El carrito está vacío');
+                }
+            }
+            if (e.key === 'Escape' && cart.length > 0 && !showCartModal && !showServiceModal) {
+                e.preventDefault();
+                if (window.confirm('¿Vaciar el presupuesto actual?')) {
+                    setCart([]);
+                    setDiscount('');
+                    setClientName('');
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    });
 
     const cartCount = useMemo(
         () => cart.reduce((acc, item) => acc + item.quantity, 0),
@@ -291,7 +328,8 @@ const Quotes = () => {
             <div className="catalog-panel">
                 <div className="flex-row between">
                     <Input
-                        placeholder="Buscar producto…"
+                        ref={searchInputRef}
+                        placeholder="Buscar producto… [F2]"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         icon={<Search size={18} />}
@@ -511,11 +549,12 @@ const Quotes = () => {
                         </Button>
                         <Button
                             variant="primary"
-                            onClick={handlePrintQuote}
+                            fullWidth
+                            onClick={handleGenerateQuote}
                             disabled={!cart.length}
-                            icon={<Printer size={18} />}
+                            icon={<CreditCard size={18} />}
                         >
-                            Imprimir XML
+                            Generar presupuesto [F8]
                         </Button>
                     </div>
                 </div>
