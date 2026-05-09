@@ -21,6 +21,7 @@ const NewSale = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -63,6 +64,7 @@ const NewSale = () => {
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
+    setFetchError(false);
     try {
       const response = await api.get('inventory/products/', {
         params: {
@@ -76,6 +78,7 @@ const NewSale = () => {
       setProducts(Array.isArray(list) ? list : []);
       setTotalCount(payload?.count || (Array.isArray(list) ? list.length : 0));
     } catch (error) {
+      setFetchError(true);
       toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -292,7 +295,6 @@ const NewSale = () => {
     setCartAnimKey(k => k + 1);
     triggerCartPulse();
     setMultiplier(1);
-    setSearch('');
     searchInputRef.current?.focus();
   }, [multiplier, triggerCartPulse]);
 
@@ -458,6 +460,33 @@ const NewSale = () => {
               }}
               icon={<Search size={18} />}
             />
+            {search && (
+              <button
+                onClick={() => { setSearch(''); searchInputRef.current?.focus(); }}
+                aria-label="Limpiar búsqueda"
+                style={{
+                  position: 'absolute',
+                  right: multiplier > 1 ? '52px' : '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--slate-400)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '2px',
+                  borderRadius: '50%',
+                  transition: 'color 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--slate-700)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--slate-400)'}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            )}
             {multiplier > 1 && (
                <span className="badge badge-primary" style={{ position: 'absolute', right: '12px', top: '10px' }}>
                   {multiplier}x
@@ -523,7 +552,24 @@ const NewSale = () => {
                     </tr>
                   ))
                 )}
-                {!loading && !products.length && (
+                {!loading && fetchError && (
+                  <tr>
+                    <td colSpan="5" className="pos-empty-cell">
+                      <div className="pos-empty">
+                        <PackageX size={48} style={{ color: 'var(--danger-400)' }} />
+                        <p style={{ fontWeight: 600, color: 'var(--danger-600)' }}>No se pudo conectar con el servidor</p>
+                        <p className="muted small">Verificá que el backend esté corriendo en {import.meta.env.VITE_API_URL || 'localhost:8000'}</p>
+                        <button
+                          onClick={fetchProducts}
+                          style={{ marginTop: '12px', padding: '6px 16px', borderRadius: '6px', background: 'var(--primary-600)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          Reintentar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {!loading && !fetchError && !products.length && (
                   <tr>
                     <td colSpan="5" className="pos-empty-cell">
                       <div className="pos-empty">

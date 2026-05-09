@@ -111,6 +111,7 @@ const CartItem = memo(({ item, onRemove, onUpdatePrice, onUpdateDiscount }) => {
 const Quotes = () => {
     const [products, setProducts]           = useState([]);
     const [loading, setLoading]             = useState(false);
+    const [fetchError, setFetchError]       = useState(false);
     const [search, setSearch]               = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [page, setPage]                   = useState(1);
@@ -148,6 +149,7 @@ const Quotes = () => {
 
     const fetchProducts = useCallback(async () => {
         setLoading(true);
+        setFetchError(false);
         try {
             const response = await api.get('inventory/products/', {
                 params: { page, page_size: PAGE_SIZE, search: debouncedSearch || undefined }
@@ -157,6 +159,7 @@ const Quotes = () => {
             setProducts(Array.isArray(list) ? list : []);
             setTotalCount(payload?.count || (Array.isArray(list) ? list.length : 0));
         } catch (error) {
+            setFetchError(true);
             toast.error(getErrorMessage(error));
         } finally {
             setLoading(false);
@@ -382,7 +385,24 @@ const Quotes = () => {
                                         <ProductRow key={p.id} product={p} onAdd={addToCart} />
                                     ))
                                 }
-                                {!loading && !products.length && (
+                                {!loading && fetchError && (
+                                    <tr>
+                                        <td colSpan="4" className="pos-empty-cell">
+                                            <div className="pos-empty">
+                                                <PackageX size={48} style={{ color: 'var(--danger-400)' }} />
+                                                <p style={{ fontWeight: 600, color: 'var(--danger-600)' }}>No se pudo conectar con el servidor</p>
+                                                <p className="muted small">Verificá que el backend esté corriendo</p>
+                                                <button
+                                                    onClick={fetchProducts}
+                                                    style={{ marginTop: '12px', padding: '6px 16px', borderRadius: '6px', background: 'var(--primary-600)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                                                >
+                                                    Reintentar
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                                {!loading && !fetchError && !products.length && (
                                     <tr>
                                         <td colSpan="4" className="pos-empty-cell">
                                             <div className="pos-empty">

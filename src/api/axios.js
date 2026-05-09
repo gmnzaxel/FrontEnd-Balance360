@@ -27,6 +27,7 @@ if (import.meta.env.MODE !== 'production') {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15_000, // 15 segundos — evita que requests queden colgados si el backend no responde
   headers: {
     'Content-Type': 'application/json',
   },
@@ -105,7 +106,17 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const { response, config } = error;
-    if (!response) return Promise.reject(error);
+
+    // Sin respuesta = backend caído, timeout o error de red
+    if (!response) {
+      const isTimeout = error.code === 'ECONNABORTED';
+      const msg = isTimeout
+        ? 'La solicitud tardó demasiado. Verificá que el servidor esté activo.'
+        : 'No se pudo conectar con el servidor. Verificá tu conexión o que el backend esté corriendo.';
+      // Importamos toast de forma lazy para no crear una dependencia circular
+      import('react-toastify').then(({ toast }) => toast.error(msg, { toastId: 'network-error' }));
+      return Promise.reject(error);
+    }
 
     const isAuthEndpoint = config?.url?.includes('token/');
     if (response.status === 401 && !config?._retry && !isAuthEndpoint) {
