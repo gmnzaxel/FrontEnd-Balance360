@@ -34,9 +34,16 @@ const api = axios.create({
 
 let refreshPromise = null;
 
+// Cache de tokens decodificados — evita llamar a jwtDecode en cada request
+const _tokenCache = new Map();
 const decodeToken = (token) => {
+  if (_tokenCache.has(token)) return _tokenCache.get(token);
   try {
-    return jwtDecode(token);
+    const decoded = jwtDecode(token);
+    // Limpiar entradas viejas si el cache crece (máx 5 tokens distintos)
+    if (_tokenCache.size >= 5) _tokenCache.clear();
+    _tokenCache.set(token, decoded);
+    return decoded;
   } catch (_e) {
     return null;
   }

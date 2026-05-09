@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef, memo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import useMediaQuery from '../hooks/useMediaQuery';
+import useCart from '../hooks/useCart';
 import { Search, ShoppingCart, Tag, CreditCard, Trash2, Wrench, PackageX } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
@@ -23,22 +25,30 @@ const NewSale = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [cart, setCart] = useState(() => {
-    try { const saved = localStorage.getItem('pos_cart'); return saved ? JSON.parse(saved) : []; }
-    catch { return []; }
-  });
-  const [discount, setDiscount] = useState(() => localStorage.getItem('pos_discount') || '');
-  const [discountType, setDiscountType] = useState(() => localStorage.getItem('pos_discount_type') || '$');
   const [paymentMethod, setPaymentMethod] = useState(() => localStorage.getItem('pos_payment') || 'EFECTIVO');
-  
+
+  // ─── Hook de carrito compartido ─────────────────────────────────────────────
+  const {
+    cart, setCart,
+    discount, setDiscount,
+    discountType, setDiscountType,
+    subtotal, total, cartCount,
+    removeItem, updateItemDiscount, addServiceItem, clearCart,
+  } = useCart({
+    cartKey: 'pos_cart',
+    discountKey: 'pos_discount',
+    discountTypeKey: 'pos_discount_type',
+  });
+
   const searchInputRef = useRef(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [serviceForm, setServiceForm] = useState({ description: '', price: '' });
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastSale, setLastSale] = useState(null);
-  const [ticketConfig, setTicketConfig] = useState(null);
+  const ticketConfigRef = useRef(null);
+  const cartPulseTimerRef = useRef(null);
   const [showCartModal, setShowCartModal] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [cartPulse, setCartPulse] = useState(false);
   const [cartAnimKey, setCartAnimKey] = useState(0);
   const [editingSaleId, setEditingSaleId] = useState(null);
@@ -72,18 +82,19 @@ const NewSale = () => {
     }
   }, [page, debouncedSearch]);
 
-  useEffect(() => { localStorage.setItem('pos_cart', JSON.stringify(cart)); }, [cart]);
-  useEffect(() => { localStorage.setItem('pos_discount', discount); }, [discount]);
-  useEffect(() => { localStorage.setItem('pos_discount_type', discountType); }, [discountType]);
-  useEffect(() => { localStorage.setItem('pos_payment', paymentMethod); }, [paymentMethod]);
-
   useEffect(() => {
-    fetchProducts();
-    // Fetch Ticket Settings
+    const t = setTimeout(() => localStorage.setItem('pos_payment', paymentMethod), 500);
+    return () => clearTimeout(t);
+  }, [paymentMethod]);
+
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
+  // Settings se carga una sola vez al montar
+  useEffect(() => {
     api.get('settings/')
-      .then(res => setTicketConfig(res.data))
-      .catch(err => console.error("Error loading ticket settings", err));
-  }, [fetchProducts]);
+      .then(res => { ticketConfigRef.current = res.data; })
+      .catch(err => console.error('Error loading ticket settings', err));
+  }, []);
 
   useEffect(() => {
     setFocusedIndex(-1);
@@ -143,12 +154,7 @@ const NewSale = () => {
     }
   }, [location.search, loadSaleForEdit, editingSaleId]);
 
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 768px)');
-    const handler = (e) => setIsMobile(e.matches);
-    media.addEventListener('change', handler);
-    return () => media.removeEventListener('change', handler);
-  }, []);
+  // isMobile ahora viene de useMediaQuery — se eliminó el useEffect duplicado
 
   useEffect(() => {
     setPage(1);
@@ -159,18 +165,14 @@ const NewSale = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  /* 
-     Re-inserting correctly the handlePrintTicket function 
-     and removing the accidental comment/broken code 
-  */
-  const handlePrintTicket = () => {
+  const handlePrintTicket = useCallback(() => {
     if (!lastSale) return;
 
     const printWindow = window.open('', '_blank', 'width=400,height=600');
     if (!printWindow) return;
 
-    const headerText = ticketConfig?.ticket_header || 'BALANCE 360';
-    const footerText = ticketConfig?.ticket_footer || '¡Gracias por su compra!';
+    const headerText = ticketConfigRef.current?.ticket_header || 'BALANCE 360';
+    const footerText = ticketConfigRef.current?.ticket_footer || '¡Gracias por su compra!';
 
     const htmlContent = `
       <html>
@@ -207,13 +209,20 @@ const NewSale = () => {
               </tr>
             </thead>
             <tbody>
-              ${lastSale.items.map(item => `
+              ${lastSale.items.map(item => {
+                const baseSub = (parseFloat(item.price) || 0) * item.quantity;
+                const dv = parseFloat(item.discountValue);
+                const descItem = !item.discountValue || isNaN(dv) ? 0
+                  : item.discountType === '%' ? baseSub * (dv / 100) : dv;
+                const itemTotal = baseSub - descItem;
+                return `
                 <tr>
-                  <td>${item.nombre || item.description}</td>
+                  <td>${item.nombre || item.description}${descItem > 0 ? `<br><small>Desc: ${item.discountType === '%' ? item.discountValue + '%' : '$' + parseFloat(item.discountValue).toFixed(2)}</small>` : ''}</td>
                   <td class="text-right">${item.quantity}</td>
-                  <td class="text-right">$${(item.price * item.quantity).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">$${itemTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
                 </tr>
-              `).join('')}
+              `;
+              }).join('')}
             </tbody>
           </table>
 
@@ -248,21 +257,28 @@ const NewSale = () => {
       printWindow.print();
       printWindow.close();
     }, 250);
-  };
+  }, [lastSale]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  const addToCart = (product) => {
-    const qty = multiplier;
-    const exists = cart.find((item) => item.item_type === 'PRODUCTO' && item.product === product.id);
-    if (exists) {
-      setCart(cart.map((item) =>
-        item.item_type === 'PRODUCTO' && item.product === product.id
-          ? { ...item, quantity: item.quantity + qty }
-          : item
-      ));
-    } else {
-      setCart([...cart, {
+  const triggerCartPulse = useCallback(() => {
+    clearTimeout(cartPulseTimerRef.current);
+    setCartPulse(true);
+    cartPulseTimerRef.current = setTimeout(() => setCartPulse(false), 450);
+  }, []);
+
+  const addToCart = useCallback((product) => {
+    setCart(prev => {
+      const qty = multiplier;
+      const exists = prev.find(i => i.item_type === 'PRODUCTO' && i.product === product.id);
+      if (exists) {
+        return prev.map(i =>
+          i.item_type === 'PRODUCTO' && i.product === product.id
+            ? { ...i, quantity: i.quantity + qty }
+            : i
+        );
+      }
+      return [...prev, {
         id: `prod-${product.id}`,
         item_type: 'PRODUCTO',
         product: product.id,
@@ -271,81 +287,35 @@ const NewSale = () => {
         quantity: qty,
         discountType: '$',
         discountValue: ''
-      }]);
-    }
-    setCartAnimKey((k) => k + 1);
-    setCartPulse(true);
-    setTimeout(() => setCartPulse(false), 450);
+      }];
+    });
+    setCartAnimKey(k => k + 1);
+    triggerCartPulse();
     setMultiplier(1);
     setSearch('');
     searchInputRef.current?.focus();
-  };
+  }, [multiplier, triggerCartPulse]);
 
-  const addService = () => {
+  const addService = useCallback(() => {
     if (!serviceForm.description || !serviceForm.price) {
       toast.error('Completa descripción y precio');
       return;
     }
-    setCart([...cart, {
-      id: `svc-${Date.now()}`,
-      item_type: 'SERVICIO',
-      description: serviceForm.description,
-      nombre: `[Servicio] ${serviceForm.description}`,
-      price: parseFloat(serviceForm.price),
-      quantity: 1,
-      product: null,
-      discountType: '$',
-      discountValue: ''
-    }]);
+    addServiceItem(serviceForm.description, serviceForm.price);
     setServiceForm({ description: '', price: '' });
     setShowServiceModal(false);
-    setCartAnimKey((k) => k + 1);
-    setCartPulse(true);
-    setTimeout(() => setCartPulse(false), 450);
-  };
+    setCartAnimKey(k => k + 1);
+    triggerCartPulse();
+  }, [serviceForm, addServiceItem, triggerCartPulse]);
 
-  const updateQuantity = (id, quantity) => {
+  const updateQuantity = useCallback((id, quantity) => {
     if (!quantity || Number.isNaN(quantity)) return;
     const value = Math.max(1, parseInt(quantity, 10));
-    setCart(cart.map((item) => item.id === id ? { ...item, quantity: value } : item));
-  };
+    setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: value } : item));
+  }, []);
 
-  const updateItemDiscount = (id, value, type) => {
-    setCart(cart.map((item) => item.id === id ? { ...item, discountValue: value, discountType: type } : item));
-  };
+  // subtotal, total, cartCount y removeItem/updateItemDiscount vienen de useCart
 
-  const removeItem = (id) => {
-    setCart(cart.filter((item) => item.id !== id));
-  };
-
-  const getSubtotalWithItemDiscounts = () => {
-    return cart.reduce((acc, item) => {
-      const baseSub = item.price * item.quantity;
-      let descItem = 0;
-      if (item.discountValue) {
-        if (item.discountType === '%') {
-          descItem = baseSub * (parseFloat(item.discountValue) / 100);
-        } else {
-          descItem = parseFloat(item.discountValue) || 0;
-        }
-      }
-      return acc + (baseSub - descItem);
-    }, 0);
-  };
-
-  const total = useMemo(() => {
-    const subtotal = getSubtotalWithItemDiscounts();
-
-    let descTotal = 0;
-    if (discount) {
-      if (discountType === '%') {
-        descTotal = subtotal * (parseFloat(discount) / 100);
-      } else {
-        descTotal = parseFloat(discount) || 0;
-      }
-    }
-    return Math.max(0, subtotal - descTotal);
-  }, [cart, discount, discountType]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -368,8 +338,7 @@ const NewSale = () => {
       if (e.key === 'Escape' && cart.length > 0 && !showCartModal && !showServiceModal && !showSuccessModal) {
         e.preventDefault();
         if (window.confirm('¿Vaciar el carrito actual?')) {
-          setCart([]);
-          setDiscount('');
+          clearCart();
         }
       }
     };
@@ -377,37 +346,28 @@ const NewSale = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [cart, isMobile, showCartModal, showServiceModal, showSuccessModal, discount, discountType, paymentMethod]);
 
-  const cartCount = useMemo(
-    () => cart.reduce((acc, item) => acc + item.quantity, 0),
-    [cart]
-  );
+  // cartCount viene de useCart
 
-  const handleSubmit = async () => {
+
+  const handleSubmit = useCallback(async () => {
     if (!cart.length) {
       toast.warning('El carrito está vacío');
       return;
     }
-
     try {
       const wasEditing = Boolean(editingSaleId);
-      const subtotalBase = getSubtotalWithItemDiscounts();
-      const finalGlobalDiscount = discountType === '%' 
-        ? parseFloat((subtotalBase * (parseFloat(discount) / 100)).toFixed(2)) || 0
+      const finalGlobalDiscount = discountType === '%'
+        ? parseFloat((subtotal * (parseFloat(discount) / 100)).toFixed(2)) || 0
         : parseFloat(discount) || 0;
 
       const payload = {
         payment_method: paymentMethod,
         discount: finalGlobalDiscount,
-        items: cart.map((item) => {
-          const baseSub = item.price * item.quantity;
-          let descItem = 0;
-          if (item.discountValue) {
-            if (item.discountType === '%') {
-              descItem = baseSub * (parseFloat(item.discountValue) / 100);
-            } else {
-              descItem = parseFloat(item.discountValue) || 0;
-            }
-          }
+        items: cart.map(item => {
+          const baseSub = (parseFloat(item.price) || 0) * item.quantity;
+          const dv = parseFloat(item.discountValue);
+          const descItem = !item.discountValue || isNaN(dv) ? 0
+            : item.discountType === '%' ? baseSub * (dv / 100) : dv;
           return {
             item_type: item.item_type,
             product: item.product,
@@ -424,13 +384,13 @@ const NewSale = () => {
         : await api.post('sales/sales/', payload);
 
       const normalizedItems = normalizeSaleItems(response.data.items || cart);
-      const subtotal = normalizedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      const snapSubtotal = normalizedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
       const saleSnapshot = {
         id: response.data.id,
         sale_number: response.data.sale_number,
-        date: response.data.date, // Backend date
+        date: response.data.date,
         items: normalizedItems,
-        subtotal,
+        subtotal: snapSubtotal,
         discount: parseFloat(response.data.discount ?? discount) || 0,
         total: parseFloat(response.data.total ?? total),
         payment_method: response.data.payment_method || paymentMethod,
@@ -440,8 +400,6 @@ const NewSale = () => {
       setLastSaleWasEdit(wasEditing);
       setShowSuccessModal(true);
       setShowCartModal(false);
-
-      // Clear form
       setCart([]);
       setDiscount('');
       setDiscountType('$');
@@ -454,7 +412,7 @@ const NewSale = () => {
       console.error(error);
       toast.error(getErrorMessage(error));
     }
-  };
+  }, [cart, editingSaleId, discount, discountType, subtotal, total, paymentMethod, normalizeSaleItems, navigate]);
 
 
 
