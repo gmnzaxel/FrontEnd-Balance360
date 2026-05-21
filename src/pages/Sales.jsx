@@ -414,12 +414,16 @@ const Sales = () => {
                                         const itemLabel = item.item_type === 'SERVICIO'
                                             ? (item.description || 'Servicio')
                                             : (item.producto_nombre || 'Producto');
+                                        const itemDiscount = parseFloat(item.discount) || 0;
                                         return (
                                             <tr key={item.id}>
-                                                <td data-label="Producto">{itemLabel}</td>
+                                                <td data-label="Producto">
+                                                    {itemLabel}
+                                                    {itemDiscount > 0 && <><br /><span className="muted tiny">Desc: -{formatCurrency(itemDiscount)}</span></>}
+                                                </td>
                                                 <td style={{ textAlign: 'right' }} data-label="Cant.">{item.quantity}</td>
                                                 <td style={{ textAlign: 'right' }} data-label="Precio">{formatCurrency(item.price)}</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 600 }} data-label="Total">{formatCurrency(item.quantity * item.price)}</td>
+                                                <td style={{ textAlign: 'right', fontWeight: 600 }} data-label="Total">{formatCurrency(item.quantity * item.price - itemDiscount)}</td>
                                             </tr>
                                         );
                                     })}
