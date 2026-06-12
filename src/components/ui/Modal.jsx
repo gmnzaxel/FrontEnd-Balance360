@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import clsx from '../../utils/clsx';
 import { X } from 'lucide-react';
 
@@ -11,7 +12,7 @@ const Modal = ({ title, children, onClose, size = 'md', footer, persist = false,
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose, persist]);
 
-  return (
+  const modalContent = (
     <div className="modal-overlay" onClick={!persist ? onClose : undefined}>
       <div
         className={clsx('ui-modal', size === 'lg' && 'ui-modal-lg', className)}
@@ -36,6 +37,8 @@ const Modal = ({ title, children, onClose, size = 'md', footer, persist = false,
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default Modal;

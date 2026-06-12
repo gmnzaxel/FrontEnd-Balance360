@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
 
 *,
 *::before,
@@ -18,8 +18,8 @@ body {
 
 body {
   font-family: var(--font-sans);
-  background: radial-gradient(circle at 10% 12%, rgba(14, 165, 233, 0.14), transparent 38%),
-    radial-gradient(circle at 86% 82%, rgba(56, 189, 248, 0.12), transparent 36%),
+  background: radial-gradient(circle at 10% 12%, rgba(99, 102, 241, 0.07), transparent 45%),
+    radial-gradient(circle at 86% 82%, rgba(139, 92, 246, 0.05), transparent 40%),
     var(--bg-app);
   color: var(--text-primary);
   min-height: 100vh;
@@ -114,65 +114,159 @@ textarea {
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-
-  100% {
-    background-position: -200% 0;
-  }
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
+/* ─── Entrance Animations ─────────────────────────────────────── */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-32px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(32px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  70% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 @keyframes modalPop {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes overlayFadeIn {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(var(--blur-sm)); }
+}
+
+/* ─── Emphasis & Micro-interactions ────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(99, 102, 241, 0.15); }
+  50% { border-color: rgba(99, 102, 241, 0.45); }
+}
+
+@keyframes ripple {
+  0% { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+@keyframes slideUpFadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-16px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ─── Utility Classes ──────────────────────────────────────────── */
 .animate-fade-in {
-  animation: fadeIn var(--duration-md) ease-out forwards;
+  animation: fadeIn var(--duration-md) var(--ease-out-expo) both;
 }
 
 .animate-slide-up {
-  animation: slideUp var(--duration-slow) ease-out forwards;
+  animation: slideUp var(--duration-enter) var(--ease-out-expo) both;
+}
+
+.animate-slide-down {
+  animation: slideDown var(--duration-enter) var(--ease-out-expo) both;
+}
+
+.animate-slide-left {
+  animation: slideInLeft var(--duration-enter) var(--ease-out-expo) both;
+}
+
+.animate-slide-right {
+  animation: slideInRight var(--duration-enter) var(--ease-out-expo) both;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--duration-md) var(--ease-spring) both;
+}
+
+.animate-pop-in {
+  animation: popIn var(--duration-enter) var(--ease-spring) both;
+}
+
+.animate-pulse {
+  animation: pulse 2s var(--ease-in-out) infinite;
+}
+
+.animate-float {
+  animation: float 3s var(--ease-in-out) infinite;
+}
+
+/* Stagger delays for child elements */
+.stagger-children > *:nth-child(1) { animation-delay: var(--stagger-1); }
+.stagger-children > *:nth-child(2) { animation-delay: var(--stagger-2); }
+.stagger-children > *:nth-child(3) { animation-delay: var(--stagger-3); }
+.stagger-children > *:nth-child(4) { animation-delay: var(--stagger-4); }
+.stagger-children > *:nth-child(5) { animation-delay: var(--stagger-5); }
+.stagger-children > *:nth-child(6) { animation-delay: var(--stagger-6); }
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

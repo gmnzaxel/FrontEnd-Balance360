@@ -6,6 +6,23 @@
   min-height: 520px;
 }
 
+.pos-table-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-0);
+}
+
+.pos-table-wrapper .table-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .catalog-panel {
   background: var(--surface-0);
   border: 1px solid var(--border-subtle);
@@ -15,6 +32,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  animation: slideInLeft var(--duration-enter) var(--ease-out-expo) both;
 }
 
 .catalog-grid {
@@ -70,6 +88,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: slideInRight var(--duration-enter) var(--ease-out-expo) both;
+  animation-delay: 100ms;
 }
 
 .cart-body {
@@ -88,6 +108,14 @@
   flex-direction: column;
   gap: 8px;
   margin-bottom: 10px;
+  animation: slideUp var(--duration-md) var(--ease-out-expo) both;
+  transition: border-color var(--duration-fast) var(--ease-smooth),
+    box-shadow var(--duration-fast) var(--ease-smooth);
+}
+
+.cart-item:hover {
+  border-color: rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .cart-footer {
@@ -115,5 +143,32 @@
 @media (max-width: 640px) {
   .catalog-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
+@media (min-width: 1101px) {
+  body:has(.pos-shell) {
+    overflow: hidden !important;
+  }
+
+  body:has(.pos-shell) .app-main {
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  body:has(.pos-shell) .app-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .pos-shell {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+
+  .catalog-panel {
+    overflow: hidden;
   }
 }

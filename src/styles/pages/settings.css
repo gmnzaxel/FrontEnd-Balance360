@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 24px;
   padding-bottom: 32px;
+  animation: slideUp var(--duration-enter) var(--ease-out-expo) both;
 }
 
 .settings-form {

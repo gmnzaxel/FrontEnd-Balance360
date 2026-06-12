@@ -153,7 +153,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
                   {quickActions.map((action, index) => (
                     <button
                       key={action.label}
-                      className="sidebar-action"
+                      className={`sidebar-action ${activePath === action.path ? 'active' : ''}`}
                       onClick={() => handleNavClick(action.path)}
                       style={{ '--delay': `${index * 70}ms` }}
                     >
@@ -171,7 +171,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
               {quickActions.map((action) => (
                 <button
                   key={action.label}
-                  className="sidebar-action-compact"
+                  className={`sidebar-action-compact ${activePath === action.path ? 'active' : ''}`}
                   onClick={() => handleNavClick(action.path)}
                   title={action.label}
                   aria-label={action.label}
@@ -190,7 +190,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
                   {secondaryActions.map((action, index) => (
                     <button
                       key={action.label}
-                      className="sidebar-action"
+                      className={`sidebar-action ${activePath === action.path ? 'active' : ''}`}
                       onClick={() => handleNavClick(action.path)}
                       style={{ '--delay': `${index * 70}ms` }}
                     >
@@ -208,7 +208,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
               {secondaryActions.map((action) => (
                 <button
                   key={action.label}
-                  className="sidebar-action-compact"
+                  className={`sidebar-action-compact ${activePath === action.path ? 'active' : ''}`}
                   onClick={() => handleNavClick(action.path)}
                   title={action.label}
                   aria-label={action.label}

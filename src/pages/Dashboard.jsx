@@ -21,21 +21,21 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'var(--surface-elevated)',
         backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.5)',
+        border: '1px solid var(--border-subtle)',
         padding: '12px',
         borderRadius: '12px',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+        boxShadow: 'var(--shadow-md)'
       }}>
-        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
+        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
           {label}
         </p>
-        <p style={{ margin: '4px 0 0', fontWeight: 700, color: '#4f46e5', fontSize: '1rem' }}>
+        <p style={{ margin: '4px 0 0', fontWeight: 700, color: 'var(--primary-500)', fontSize: '1rem' }}>
           {formatARS(payload[0].value)}
         </p>
         {payload[1] && (
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#10b981', fontWeight: 500 }}>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--success-text)', fontWeight: 500 }}>
             {payload[1].value} transacciones
           </p>
         )}
@@ -212,54 +212,7 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        {/* Top Products Card (Restored to original position) */}
-        <Card title="Top productos" description="Rendimiento por volumen.">
-          {loading ? <Skeleton height={240} /> : (
-            <div className="table-container compact" style={{ border: 'none', boxShadow: 'none' }}>
-              {!stats?.top_products?.length ? (
-                <div className="empty-state" style={{ padding: '40px 0' }}>
-                  <div style={{
-                    width: 48, height: 48,
-                    borderRadius: '50%', background: 'var(--slate-100)',
-                    color: 'var(--slate-400)', display: 'grid', placeItems: 'center',
-                    margin: '0 auto 12px'
-                  }}>
-                    <PackageOpen size={24} />
-                  </div>
-                  <p style={{ fontWeight: 600, color: 'var(--slate-700)', margin: 0 }}>Todavía no hay ventas registradas.</p>
-                  <p className="text-sm text-muted">El ranking aparecerá cuando haya ventas.</p>
-                </div>
-              ) : (
-                <table className="styled-table">
-                  <thead>
-                    <tr>
-                      <th style={{ background: 'transparent' }}>Producto</th>
-                      <th style={{ textAlign: 'right', background: 'transparent' }}>Cant.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.top_products.map((p, idx) => (
-                      <tr key={idx} style={{ background: 'transparent' }}>
-                        <td style={{ borderBottomColor: 'rgba(226, 232, 240, 0.6)' }} data-label="Producto">
-                          <span style={{ fontWeight: 500 }}>{p.product__nombre}</span>
-                        </td>
-                        <td style={{ textAlign: 'right', borderBottomColor: 'rgba(226, 232, 240, 0.6)' }} data-label="Cant.">
-                          <span className="badge badge-neutral" style={{ fontWeight: 700 }}>
-                            {p.qty}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
-        </Card>
-      </div>
-
-      {/* Low Stock Table Card (New Section Below) */}
-      <div className="mt-6">
+        {/* Alertas de stock Card (Moved next to charts) */}
         <Card title="Alertas de stock" description="Productos por debajo del mínimo.">
           <div className="flex justify-end mb-4">
             <Button variant="secondary" size="sm" icon={<Filter size={16} />} onClick={() => setShowSupplierModal(true)}>
@@ -267,7 +220,7 @@ const Dashboard = () => {
             </Button>
           </div>
           {loading ? <Skeleton height={200} /> : (
-            <div className="table-container compact" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            <div className="table-container compact" style={{ maxHeight: '240px', overflowY: 'auto' }}>
               {!stats?.low_stock_products?.length ? (
                 <div className="empty-state py-8">
                   <p>No hay productos con stock bajo.</p>
@@ -292,6 +245,53 @@ const Dashboard = () => {
                         </td>
                         <td className="text-center" data-label="Actual">
                           <span className="badge badge-danger">{p.stock_actual}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Top Productos Card (Moved to bottom) */}
+      <div className="mt-6">
+        <Card title="Top productos" description="Rendimiento por volumen de ventas.">
+          {loading ? <Skeleton height={240} /> : (
+            <div className="table-container compact">
+              {!stats?.top_products?.length ? (
+                <div className="empty-state" style={{ padding: '40px 0' }}>
+                  <div style={{
+                    width: 48, height: 48,
+                    borderRadius: '50%', background: 'var(--slate-100)',
+                    color: 'var(--slate-400)', display: 'grid', placeItems: 'center',
+                    margin: '0 auto 12px'
+                  }}>
+                    <PackageOpen size={24} />
+                  </div>
+                  <p style={{ fontWeight: 600, color: 'var(--slate-700)', margin: 0 }}>Todavía no hay ventas registradas.</p>
+                  <p className="text-sm text-muted">El ranking aparecerá cuando haya ventas.</p>
+                </div>
+              ) : (
+                <table className="styled-table">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th style={{ textAlign: 'right' }}>Cantidad vendida</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.top_products.map((p, idx) => (
+                      <tr key={idx}>
+                        <td data-label="Producto">
+                          <span style={{ fontWeight: 500 }}>{p.product__nombre}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }} data-label="Cantidad vendida">
+                          <span className="badge badge-neutral" style={{ fontWeight: 700 }}>
+                            {p.qty} unidades
+                          </span>
                         </td>
                       </tr>
                     ))}

@@ -23,8 +23,17 @@
     width: 100%;
   }
 
-  .catalog-panel .table-container {
+  .pos-table-wrapper {
+    flex: none !important;
+    min-height: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .pos-table-wrapper .table-container {
     max-height: none !important;
+    overflow-y: visible !important;
   }
 
   .cart-footer .grid {

@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { Trash2, Edit, Plus, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
+import Modal from '../components/ui/Modal';
 
 const Users = () => {
     const { user: currentUser, isAdmin } = useContext(AuthContext);
@@ -202,70 +203,69 @@ const Users = () => {
             </div>
 
             {showModal && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-header">
-                            {editingUser ? 'Editar usuario' : 'Nuevo usuario'}
+                <Modal
+                    title={editingUser ? 'Editar usuario' : 'Nuevo usuario'}
+                    onClose={() => setShowModal(false)}
+                    size="md"
+                >
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label>Nombre de Usuario</label>
+                            <input
+                                className="input-control"
+                                name="username"
+                                value={formData.username}
+                                onChange={handleChange}
+                                required
+                                disabled={!!editingUser}
+                                placeholder="Ej. jperez"
+                            />
                         </div>
-                        <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label>Email</label>
+                            <input
+                                className="input-control"
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="Ej. juan@empresa.com"
+                            />
+                        </div>
+                        {!editingUser && (
                             <div className="form-group">
-                                <label>Nombre de Usuario</label>
+                                <label>Contraseña</label>
                                 <input
                                     className="input-control"
-                                    name="username"
-                                    value={formData.username}
+                                    type="password"
+                                    name="password"
+                                    value={formData.password}
                                     onChange={handleChange}
                                     required
-                                    disabled={!!editingUser}
-                                    placeholder="Ej. jperez"
+                                    placeholder="••••••••"
                                 />
                             </div>
-                            <div className="form-group">
-                                <label>Email</label>
-                                <input
-                                    className="input-control"
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    placeholder="Ej. juan@empresa.com"
-                                />
-                            </div>
-                            {!editingUser && (
-                                <div className="form-group">
-                                    <label>Contraseña</label>
-                                    <input
-                                        className="input-control"
-                                        type="password"
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        required
-                                        placeholder="••••••••"
-                                    />
-                                </div>
-                            )}
-                            <div className="form-group">
-                                <label>Rol de Acceso</label>
-                                <select
-                                    className="select-control"
-                                    name="role"
-                                    value={formData.role}
-                                    onChange={handleChange}
-                                    disabled={editingUser?.id === currentUser?.user_id}
-                                >
-                                    <option value="USER">Usuario (Vendedor)</option>
-                                    <option value="ADMIN">Administrador</option>
-                                </select>
-                            </div>
+                        )}
+                        <div className="form-group">
+                            <label>Rol de Acceso</label>
+                            <select
+                                className="select-control"
+                                name="role"
+                                value={formData.role}
+                                onChange={handleChange}
+                                disabled={editingUser?.id === currentUser?.user_id}
+                            >
+                                <option value="USER">Usuario (Vendedor)</option>
+                                <option value="ADMIN">Administrador</option>
+                            </select>
+                        </div>
 
-                            <div className="modal-actions mt-6">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Guardar usuario</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                        <div className="modal-actions mt-6">
+                            <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
+                            <button type="submit" className="btn btn-primary">Guardar usuario</button>
+                        </div>
+                    </form>
+                </Modal>
             )}
         </div>
     );

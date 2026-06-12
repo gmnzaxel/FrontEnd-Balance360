@@ -26,6 +26,8 @@ const Sales = () => {
     const [totalPages, setTotalPages] = useState(1);
     const PAGE_SIZE = 20;
     const dateInputRef = useRef(null);
+    const searchInputRef = useRef(null);
+    const [focusedIndex, setFocusedIndex] = useState(-1);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -38,6 +40,53 @@ const Sales = () => {
     useEffect(() => {
         setPage(1);
     }, [debouncedSearchTerm, dateFilter, statusFilter]);
+
+    useEffect(() => {
+        setFocusedIndex(-1);
+    }, [sales]);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable;
+
+            if (isInput) {
+                if (e.key === 'ArrowDown' && e.target === searchInputRef.current) {
+                    e.preventDefault();
+                    setFocusedIndex(0);
+                }
+                return;
+            }
+
+            if (e.key === 'F2' || e.key === '/') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setFocusedIndex(i => Math.min(sales.length - 1, i + 1));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setFocusedIndex(i => Math.max(0, i - 1));
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                setPage((p) => Math.max(1, p - 1));
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                setPage((p) => Math.min(totalPages, p + 1));
+            } else if (focusedIndex >= 0 && focusedIndex < sales.length) {
+                const activeSale = sales[focusedIndex];
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setSelectedSale(activeSale);
+                } else if (e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                    if (canEditSale(activeSale)) handleEditSale(activeSale);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [sales, focusedIndex, totalPages, user, isAdmin]);
 
     useEffect(() => {
         fetchSales();
@@ -148,6 +197,7 @@ const Sales = () => {
                 <div className="toolbar-group sales-search">
                     <Search size={18} className="sales-search-icon" />
                     <input
+                        ref={searchInputRef}
                         className="input-control sales-search-input"
                         placeholder="Buscar por ID o vendedor…"
                         value={searchTerm}
@@ -258,8 +308,17 @@ const Sales = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {sales.map((sale) => (
-                            <tr key={sale.id} className={sale.is_voided || sale.is_refunded ? 'row-muted opacity-60' : ''}>
+                        {sales.map((sale, idx) => (
+                            <tr 
+                                key={sale.id} 
+                                className={sale.is_voided || sale.is_refunded ? 'row-muted opacity-60' : ''}
+                                onClick={() => setSelectedSale(sale)}
+                                style={{ 
+                                    cursor: 'pointer',
+                                    backgroundColor: focusedIndex === idx ? 'rgba(14, 165, 233, 0.12)' : undefined
+                                }}
+                                onMouseEnter={() => setFocusedIndex(idx)}
+                            >
                                 <td className="font-bold text-muted" data-label="ID">#{sale.sale_number || sale.id}</td>
                                 <td data-label="Fecha">{formatDate(sale.date)}</td>
                                 <td data-label="Vendedor">
@@ -450,59 +509,56 @@ const Sales = () => {
 
             {/* Confirmation Action Modal */}
             {showActionModal && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-header">
-                            <h3 className={`text-lg font-bold mb-0 ${showActionModal === 'anular' ? 'text-red-600' : 'text-yellow-600'}`}>
-                                {showActionModal === 'anular' ? 'Anular venta' : 'Reembolsar venta'}
-                            </h3>
+                <Modal
+                    title={showActionModal === 'anular' ? 'Anular venta' : 'Reembolsar venta'}
+                    onClose={() => { setShowActionModal(null); setConfirmText(''); setReason(''); }}
+                    size="md"
+                >
+                    <form onSubmit={handleAction}>
+                        <p className="text-sm text-slate-600 mb-4">
+                            Para confirmar esta acción irreversible, escribí <strong>{showActionModal === 'anular' ? 'borrar' : 'reembolsar'}</strong> en el campo de abajo.
+                        </p>
+                        <div className="form-group mb-4">
+                            <input
+                                className="input-control w-full"
+                                type="text"
+                                value={confirmText}
+                                onChange={(e) => setConfirmText(e.target.value)}
+                                placeholder={showActionModal === 'anular' ? 'borrar' : 'reembolsar'}
+                                required
+                                autoFocus
+                            />
                         </div>
-                        <form onSubmit={handleAction}>
-                            <p className="text-sm text-slate-600 mb-4">
-                                Para confirmar esta acción irreversible, escribí <strong>{showActionModal === 'anular' ? 'borrar' : 'reembolsar'}</strong> en el campo de abajo.
-                            </p>
-                            <div className="form-group mb-4">
-                                <input
-                                    className="input-control w-full"
-                                    type="text"
-                                    value={confirmText}
-                                    onChange={(e) => setConfirmText(e.target.value)}
-                                    placeholder={showActionModal === 'anular' ? 'borrar' : 'reembolsar'}
-                                    required
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="form-group mb-4">
-                                <label className="text-sm font-medium mb-1 block">Motivo (opcional)</label>
-                                <textarea
-                                    className="input-control w-full"
-                                    value={reason}
-                                    onChange={(e) => setReason(e.target.value)}
-                                    placeholder="Escribí el motivo (opcional)…"
-                                    rows={3}
-                                />
-                            </div>
-                            <div className="modal-actions">
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={() => { setShowActionModal(null); setConfirmText(''); setReason(''); }}
-                                    disabled={actionLoading}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className={`btn confirm-action ${showActionModal === 'anular' ? 'confirm-danger' : 'confirm-warning'}`}
-                                    style={{ width: 'auto', paddingLeft: '1rem', paddingRight: '1rem' }}
-                                    disabled={actionLoading}
-                                >
-                                    {actionLoading ? 'Procesando…' : (showActionModal === 'anular' ? 'Anular venta' : 'Reembolsar venta')}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                        <div className="form-group mb-4">
+                            <label className="text-sm font-medium mb-1 block">Motivo (opcional)</label>
+                            <textarea
+                                className="input-control w-full"
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                placeholder="Escribí el motivo (opcional)…"
+                                rows={3}
+                            />
+                        </div>
+                        <div className="modal-actions">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => { setShowActionModal(null); setConfirmText(''); setReason(''); }}
+                                disabled={actionLoading}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                className={`btn confirm-action ${showActionModal === 'anular' ? 'confirm-danger' : 'confirm-warning'}`}
+                                style={{ width: 'auto', paddingLeft: '1rem', paddingRight: '1rem' }}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? 'Procesando…' : (showActionModal === 'anular' ? 'Anular venta' : 'Reembolsar venta')}
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
             )}
         </div>
     );

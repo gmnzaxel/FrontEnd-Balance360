@@ -498,8 +498,8 @@ const NewSale = () => {
           </Button>
         </div>
         <div className="muted small mb-2">Catálogo (Más Vendidos)</div>
-        <div className="flex flex-col gap-0 border border-slate-200 rounded-lg overflow-hidden bg-white">
-          <div className="table-container" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+        <div className="pos-table-wrapper">
+          <div className="table-container">
             <table className="styled-table">
               <thead>
                 <tr>

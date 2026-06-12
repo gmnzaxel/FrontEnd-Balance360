@@ -54,6 +54,22 @@ const Layout = () => {
     setSidebarOpen(false);
   };
 
+  useEffect(() => {
+    const handleGlobalKeys = (e) => {
+      if (e.altKey && !e.ctrlKey && !e.shiftKey) {
+        const key = e.key;
+        const index = parseInt(key, 10) - 1;
+        if (index >= 0 && index < navItems.length) {
+          e.preventDefault();
+          handleNavigate(navItems[index].path);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeys);
+    return () => window.removeEventListener('keydown', handleGlobalKeys);
+  }, [navItems]);
+
   const effectiveUser = user ? { ...user, role: effectiveRole || user.role } : user;
 
   return (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { Edit, Trash2, Plus, Upload, Users, Search, Store, Package, Archive, FileDown, CheckSquare, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
@@ -14,6 +14,9 @@ import Skeleton from '../components/ui/Skeleton';
 import { AuthContext } from '../context/AuthContext';
 
 const Products = () => {
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const searchInputRef = useRef(null);
+
   // --- Estados de Datos ---
   const [products, setProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -106,8 +109,57 @@ const Products = () => {
   }, [searchTerm, showArchivedProducts, products]);
 
   useEffect(() => {
-    setPage(1);
-  }, [searchTerm, showArchivedProducts]);
+    setFocusedIndex(-1);
+  }, [products]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable;
+
+      if (isInput) {
+        if (e.key === 'ArrowDown' && e.target === searchInputRef.current) {
+          e.preventDefault();
+          setFocusedIndex(0);
+        }
+        return;
+      }
+
+      if (e.key === 'F2' || e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.altKey && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        if (isAdmin) handleCreate();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(i => Math.min(products.length - 1, i + 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(i => Math.max(0, i - 1));
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setPage((p) => Math.max(1, p - 1));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setPage((p) => Math.min(totalPages, p + 1));
+      } else if (focusedIndex >= 0 && focusedIndex < products.length) {
+        const activeProduct = products[focusedIndex];
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleViewDetails(activeProduct);
+        } else if (e.key === 'e' || e.key === 'E') {
+          e.preventDefault();
+          if (isAdmin) handleEdit(activeProduct);
+        } else if (e.key === 'Delete' || e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          if (isAdmin) handleArchive(activeProduct.id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [products, focusedIndex, totalPages, isAdmin]);
 
   // --- Acciones de Producto ---
   const handleArchive = async (id) => {
@@ -190,6 +242,23 @@ const Products = () => {
     const archived = targets.length - failed;
     if (failed) toast.error(`Archivados: ${archived}. Fallaron: ${failed}.`);
     if (archived) toast.success(`Archivados: ${archived}`);
+    setSelectedProductIds([]);
+    loadData();
+  };
+
+  const handleBulkRestore = async () => {
+    if (!isAdmin) {
+      toast.error('Solo los administradores pueden restaurar productos');
+      return;
+    }
+    if (!selectedProductIds.length) return;
+    if (!window.confirm(`¿Desarchivar/Restaurar ${selectedProductIds.length} productos seleccionados?`)) return;
+    const targets = products.filter((p) => selectedProductIds.includes(p.id) && p.is_archived);
+    const results = await Promise.allSettled(targets.map((p) => productService.restore(p.id)));
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    const restored = targets.length - failed;
+    if (failed) toast.error(`Restaurados: ${restored}. Fallaron: ${failed}.`);
+    if (restored) toast.success(`Restaurados: ${restored}`);
     setSelectedProductIds([]);
     loadData();
   };
@@ -415,6 +484,7 @@ const Products = () => {
 
       <Card className="page-toolbar">
         <Input
+          ref={searchInputRef}
           placeholder="Buscar por código o nombre…"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -424,32 +494,39 @@ const Products = () => {
         {isAdmin && selectedProductIds.length > 0 && (
           <div style={{
             position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)',
-            background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(14, 165, 233, 0.2)', padding: '10px 20px', borderRadius: '100px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)', zIndex: 100,
-            display: 'flex', alignItems: 'center', gap: '16px', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+            background: 'var(--surface-elevated)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(99, 102, 241, 0.2)', padding: '12px 24px', borderRadius: '100px',
+            boxShadow: 'var(--shadow), 0 0 30px rgba(99, 102, 241, 0.05)', zIndex: 100,
+            display: 'flex', alignItems: 'center', gap: '16px', animation: 'slideUp 0.3s var(--ease-smooth)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc', fontSize: '14px', fontWeight: 600 }}>
-              <div style={{ display: 'flex', background: '#0ea5e9', color: 'white', borderRadius: '50%', width: '24px', height: '24px', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, boxShadow: '0 2px 10px rgba(14, 165, 233, 0.4)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600 }}>
+              <div style={{ display: 'flex', background: 'var(--primary-500)', color: 'white', borderRadius: '50%', width: '24px', height: '24px', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, boxShadow: '0 2px 10px rgba(99, 102, 241, 0.4)' }}>
                 {selectedProductIds.length}
               </div>
               <span style={{ letterSpacing: '0.02em' }}>Seleccionados</span>
             </div>
 
-            <div style={{ width: '1px', height: '24px', background: 'rgba(148, 163, 184, 0.2)' }}></div>
+            <div style={{ width: '1px', height: '24px', background: 'var(--border-subtle)' }}></div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button className="btn btn-secondary" onClick={handleBulkArchive} style={{ borderRadius: '100px', padding: '8px 16px', height: 'auto', fontSize: '13px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <Archive size={14} /> Archivar
-              </button>
-              <button className="btn btn-danger" onClick={handleBulkDelete} style={{ borderRadius: '100px', padding: '8px 16px', height: 'auto', fontSize: '13px', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              {products.some(p => selectedProductIds.includes(p.id) && !p.is_archived) && (
+                <button className="btn btn-secondary" onClick={handleBulkArchive} style={{ borderRadius: '100px', padding: '8px 16px', height: 'auto', fontSize: '13px', border: '1px solid var(--border-subtle)' }}>
+                  <Archive size={14} /> Archivar
+                </button>
+              )}
+              {products.some(p => selectedProductIds.includes(p.id) && p.is_archived) && (
+                <button className="btn btn-secondary" onClick={handleBulkRestore} style={{ borderRadius: '100px', padding: '8px 16px', height: 'auto', fontSize: '13px', border: '1px solid var(--border-subtle)' }}>
+                  <Archive size={14} /> Desarchivar
+                </button>
+              )}
+              <button className="btn btn-danger" onClick={handleBulkDelete} style={{ borderRadius: '100px', padding: '8px 16px', height: 'auto', fontSize: '13px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                 <Trash2 size={14} /> Eliminar
               </button>
             </div>
 
-            <div style={{ width: '1px', height: '24px', background: 'rgba(148, 163, 184, 0.2)' }}></div>
+            <div style={{ width: '1px', height: '24px', background: 'var(--border-subtle)' }}></div>
 
-            <button style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px', display: 'flex', transition: 'color 0.2s', outline: 'none' }} onClick={() => setSelectedProductIds([])} title="Cancelar selección" onMouseEnter={(e) => e.currentTarget.style.color = 'white'} onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}>
+            <button style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', display: 'flex', transition: 'color 0.2s', outline: 'none' }} onClick={() => setSelectedProductIds([])} title="Cancelar selección" onMouseEnter={(e) => e.currentTarget.style.color = 'white'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}>
               <X size={18} />
             </button>
           </div>
@@ -497,12 +574,16 @@ const Products = () => {
             {loading ? (
               [1, 2, 3].map(i => <tr key={i}><td colSpan={columnCount}><Skeleton height={48} /></td></tr>)
             ) : products.length > 0 ? (
-              products.map((p) => (
+              products.map((p, idx) => (
                 <tr
                   key={p.id}
                   className={p.is_archived ? 'row-muted opacity-60' : ''}
                   onClick={() => handleViewDetails(p)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ 
+                    cursor: 'pointer',
+                    backgroundColor: focusedIndex === idx ? 'rgba(14, 165, 233, 0.12)' : undefined
+                  }}
+                  onMouseEnter={() => setFocusedIndex(idx)}
                 >
                   {isAdmin && (
                     <td data-label="Seleccionar">
@@ -682,6 +763,9 @@ const Products = () => {
                 onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
               >
                 <option value="">-- Seleccionar --</option>
+                {formData.supplier_name && !suppliers.some(s => s.name === formData.supplier_name) && (
+                  <option value={formData.supplier_name}>{formData.supplier_name} (No registrado)</option>
+                )}
                 {suppliers.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
               </Select>
             </div>

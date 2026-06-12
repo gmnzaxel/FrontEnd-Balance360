@@ -15,14 +15,16 @@ const PAGE_SIZE = 12;
 
 // ─── Sub-componentes memoizados ────────────────────────────────────────────────
 
-const ProductRow = memo(({ product, onAdd }) => {
+const ProductRow = memo(({ product, onAdd, isFocused, onMouseEnter }) => {
     const handleClick = useCallback(() => onAdd(product), [product, onAdd]);
     return (
         <tr
             onClick={handleClick}
-            style={{ cursor: 'pointer' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--primary-50)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+            style={{ 
+                cursor: 'pointer',
+                backgroundColor: isFocused ? 'rgba(14, 165, 233, 0.12)' : 'transparent'
+            }}
+            onMouseEnter={onMouseEnter}
         >
             <td data-label="Código">
                 <span className="badge badge-neutral" style={{ fontSize: '0.75rem' }}>{product.codigo}</span>
@@ -109,6 +111,7 @@ const CartItem = memo(({ item, onRemove, onUpdatePrice, onUpdateDiscount }) => {
 // ─── Componente principal ───────────────────────────────────────────────────────
 
 const Quotes = () => {
+    const [focusedIndex, setFocusedIndex] = useState(-1);
     const [products, setProducts]           = useState([]);
     const [loading, setLoading]             = useState(false);
     const [fetchError, setFetchError]       = useState(false);
@@ -325,26 +328,53 @@ const Quotes = () => {
         setTimeout(() => { printWindow.print(); printWindow.close(); }, 250);
     }, [cart, discount, discountType, subtotal, total, validityDays, clientName]);
 
-    // ─── Atajos de teclado — con deps correctas para no re-registrar en cada render
+    useEffect(() => {
+        setFocusedIndex(-1);
+    }, [products]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable;
+
+            if (isInput) {
+                if (e.key === 'ArrowDown' && e.target === searchInputRef.current) {
+                    e.preventDefault();
+                    setFocusedIndex(0);
+                }
+                return;
+            }
+
             if (e.key === 'F2') {
                 e.preventDefault();
                 searchInputRef.current?.focus();
-            }
-            if (e.key === 'F8') {
+            } else if (e.key === 'F8') {
                 e.preventDefault();
                 handleGenerateQuote();
-            }
-            if (e.key === 'Escape' && !showServiceModal) {
+            } else if (e.key === 'Escape' && !showServiceModal) {
                 e.preventDefault();
                 handleClearCart();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setFocusedIndex(i => Math.min(products.length - 1, i + 1));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setFocusedIndex(i => Math.max(0, i - 1));
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                setPage(p => Math.max(1, p - 1));
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                setPage(p => Math.min(totalPages, p + 1));
+            } else if (e.key === 'Enter') {
+                if (focusedIndex >= 0 && focusedIndex < products.length) {
+                    e.preventDefault();
+                    addToCart(products[focusedIndex]);
+                }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleGenerateQuote, handleClearCart, showServiceModal]);
+    }, [handleGenerateQuote, handleClearCart, showServiceModal, products, focusedIndex, totalPages, addToCart]);
 
     // ─── Render ─────────────────────────────────────────────────────────────────
 
@@ -365,8 +395,8 @@ const Quotes = () => {
                     </Button>
                 </div>
                 <div className="muted small mb-2">Catálogo</div>
-                <div className="flex flex-col gap-0 border border-slate-200 rounded-lg overflow-hidden bg-white">
-                    <div className="table-container" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+                <div className="pos-table-wrapper">
+                    <div className="table-container">
                         <table className="styled-table">
                             <thead>
                                 <tr>
@@ -381,8 +411,14 @@ const Quotes = () => {
                                     ? Array.from({ length: 8 }).map((_, i) => (
                                         <tr key={i}><td colSpan="4"><Skeleton height={20} /></td></tr>
                                     ))
-                                    : products.map(p => (
-                                        <ProductRow key={p.id} product={p} onAdd={addToCart} />
+                                    : products.map((p, idx) => (
+                                        <ProductRow 
+                                            key={p.id} 
+                                            product={p} 
+                                            onAdd={addToCart} 
+                                            isFocused={focusedIndex === idx}
+                                            onMouseEnter={() => setFocusedIndex(idx)}
+                                        />
                                     ))
                                 }
                                 {!loading && fetchError && (

@@ -1,11 +1,21 @@
 import React, { useEffect, useRef, useState, useContext } from 'react';
-import { ChevronDown, LogOut, Settings, User } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, User, Sun, Moon } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 
 const UserMenu = ({ user, onLogout, onNavigate }) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const { isAdminActual } = useContext(AuthContext);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   useEffect(() => {
     const handleClick = (event) => {
@@ -50,6 +60,10 @@ const UserMenu = ({ user, onLogout, onNavigate }) => {
               <Settings size={16} /> Configuración
             </button>
           )}
+          <button className="dropdown-item" onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+          </button>
           <div className="dropdown-separator" />
           <button className="dropdown-item danger" onClick={onLogout}>
             <LogOut size={16} /> Cerrar sesión

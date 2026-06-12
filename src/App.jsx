@@ -22,6 +22,11 @@ const Settings = lazy(() => import('./pages/Settings'));
 const SuspenseFallback = <div className="page-fallback">Cargando módulo...</div>;
 
 function App() {
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
+
   return (
     <AuthProvider>
       <Router>

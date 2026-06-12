@@ -119,18 +119,12 @@ const Reports = () => {
                     <p className="page-subtitle">Métricas clave y rendimiento del negocio.</p>
                 </div>
                 <div className="page-header-actions">
-                    <div className="reports-date-filters" style={{
-                        display: 'flex', alignItems: 'center', gap: '8px',
-                        background: 'rgba(30, 41, 59, 0.5)', padding: '6px 12px',
-                        borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)',
-                        backdropFilter: 'blur(10px)'
-                    }}>
+                    <div className="reports-date-filters">
                         <Calendar size={16} className="text-slate-400" />
                         <span className="text-slate-400 text-sm font-medium">Desde:</span>
                         <input
                             type="date"
-                            className="bg-transparent text-sm text-slate-200 outline-none w-auto font-medium"
-                            style={{ colorScheme: 'dark' }}
+                            className="bg-transparent text-sm text-slate-700 outline-none w-auto font-medium"
                             value={startDate}
                             max={endDate}
                             onChange={e => setStartDate(e.target.value)}
@@ -139,8 +133,7 @@ const Reports = () => {
                         <span className="text-slate-400 text-sm font-medium">Hasta:</span>
                         <input
                             type="date"
-                            className="bg-transparent text-sm text-slate-200 outline-none w-auto font-medium"
-                            style={{ colorScheme: 'dark' }}
+                            className="bg-transparent text-sm text-slate-700 outline-none w-auto font-medium"
                             value={endDate}
                             min={startDate}
                             onChange={e => setEndDate(e.target.value)}
@@ -209,29 +202,19 @@ const Reports = () => {
                             <div className="card-header reports-card-header flex-between" style={{ paddingBottom: '20px' }}>
                                 <div className="flex items-center gap-3">
                                     <TrendingUp size={20} className="text-slate-400" />
-                                    <h3 className="text-lg font-bold text-slate-200">Evolución de ingresos</h3>
+                                    <h3 className="text-lg font-bold text-slate-800">Evolución de ingresos</h3>
                                 </div>
-                                <div style={{ background: 'rgba(30,30,40,0.4)', borderRadius: '8px', padding: '4px', border: '1px solid rgba(255,255,255,0.05)' }} className="flex">
+                                <div className="reports-chart-selector flex">
                                     <button
                                         type="button"
-                                        style={{
-                                            background: chartType === 'monthly' ? '#3B82F6' : 'transparent',
-                                            color: chartType === 'monthly' ? '#FFF' : '#94A3B8',
-                                            borderRadius: '4px', border: 'none', padding: '6px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                        }}
+                                        className={chartType === 'monthly' ? 'active' : ''}
                                         onClick={() => setChartType('monthly')}
                                     >
                                         Meses
                                     </button>
                                     <button
                                         type="button"
-                                        style={{
-                                            background: chartType === 'daily' ? '#3B82F6' : 'transparent',
-                                            color: chartType === 'daily' ? '#FFF' : '#94A3B8',
-                                            borderRadius: '4px', border: 'none', padding: '6px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                        }}
+                                        className={chartType === 'daily' ? 'active' : ''}
                                         onClick={() => setChartType('daily')}
                                     >
                                         Días
@@ -250,10 +233,10 @@ const Reports = () => {
                                                 bottom: 0
                                             }}
                                         >
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
                                             <XAxis
                                                 dataKey={chartType === 'monthly' ? "month" : "day"}
-                                                tick={{ fill: '#64748b', fontSize: 12 }}
+                                                tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
                                                 axisLine={false}
                                                 tickLine={false}
                                                 interval={chartType === 'monthly' && isMobile ? 1 : 'preserveStartEnd'}
@@ -261,7 +244,7 @@ const Reports = () => {
                                                 dy={10}
                                             />
                                             <YAxis
-                                                tick={{ fill: '#64748b', fontSize: 12 }}
+                                                tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
                                                 axisLine={false}
                                                 tickLine={false}
                                                 tickFormatter={(value) => `$${value}`}
@@ -269,8 +252,14 @@ const Reports = () => {
                                                 dx={-10}
                                             />
                                             <Tooltip
-                                                cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-                                                contentStyle={{ borderRadius: '12px', background: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 12px 30px rgba(0,0,0,0.5)', color: '#F8FAFC' }}
+                                                cursor={{ fill: 'var(--border-subtle)', opacity: 0.1 }}
+                                                contentStyle={{
+                                                    borderRadius: '12px',
+                                                    background: 'var(--surface-elevated)',
+                                                    border: '1px solid var(--border-subtle)',
+                                                    boxShadow: 'var(--shadow-md)',
+                                                    color: 'var(--text-primary)'
+                                                }}
                                                 formatter={(value) => [formatCurrency(value), "Ventas"]}
                                                 labelFormatter={(label) => chartType === 'monthly' ? formatMonthLabel(label) : formatDayLabel(label)}
                                             />

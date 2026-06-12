@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  animation: slideUp var(--duration-enter) var(--ease-out-expo) both;
 }
 
 .products-search {
@@ -18,6 +19,7 @@
   background: var(--surface-0);
   box-shadow: var(--shadow-xs);
   flex-wrap: wrap;
+  animation: popIn var(--duration-enter) var(--ease-spring) both;
 }
 
 .bulk-count {
@@ -51,6 +53,13 @@
   color: var(--text-secondary);
   font-size: 0.85rem;
   font-weight: 600;
+  transition: border-color var(--duration-md) var(--ease-smooth),
+    box-shadow var(--duration-md) var(--ease-smooth);
+}
+
+.archive-toggle:has(.archive-toggle-input:checked) {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: var(--shadow-xs), 0 0 12px rgba(99, 102, 241, 0.1);
 }
 
 .archive-toggle-input {
