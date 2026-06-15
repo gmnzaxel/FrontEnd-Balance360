@@ -77,6 +77,11 @@ const attachAuthHeader = async (config) => {
   const isRefreshCall = config?.url?.includes('token/refresh');
   if (isRefreshCall) return config;
 
+  const impersonatedCompanyId = localStorage.getItem('impersonated_company_id');
+  if (impersonatedCompanyId) {
+    config.headers['X-Company-ID'] = impersonatedCompanyId;
+  }
+
   const token = localStorage.getItem('access_token');
   if (!token) return config;
 

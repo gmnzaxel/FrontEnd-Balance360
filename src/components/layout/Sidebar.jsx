@@ -100,12 +100,13 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
 
   const secondaryActions = useMemo(() => {
     const actions = [
+      ...(user?.is_superuser ? [{ label: 'Panel SuperAdmin', path: '/super-dashboard', icon: <LayoutDashboard size={16} /> }] : []),
       ...(isAdmin ? [{ label: 'Usuarios', path: '/users', icon: <Briefcase size={16} /> }] : []),
       ...(isAdmin ? [{ label: 'Ajustes', path: '/configuracion', icon: <Settings size={16} /> }] : []),
       { label: 'Soporte', path: 'support', icon: <LifeBuoy size={16} /> },
     ];
     return actions;
-  }, [isAdmin]);
+  }, [isAdmin, user]);
 
   const navItemsFiltered = useMemo(
     () => navItems.filter((item) => item.path !== '/dashboard'),

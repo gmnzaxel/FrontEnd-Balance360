@@ -25,6 +25,8 @@ export const AuthProvider = ({ children }) => {
   const handleLogout = useCallback(() => {
     clearStoredTokens();
     localStorage.removeItem('view_as_seller');
+    localStorage.removeItem('impersonated_company_id');
+    localStorage.removeItem('impersonated_company_name');
     setUser(null);
     setViewAsSellerState(false);
     toast.info('Sesión cerrada');

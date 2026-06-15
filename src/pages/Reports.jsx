@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { toast } from 'react-toastify';
 import { FileSpreadsheet, TrendingUp, DollarSign, Package, AlertTriangle, Calendar, ShoppingBag, CreditCard, HelpCircle } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
@@ -9,6 +10,7 @@ const Reports = () => {
     const [series, setSeries] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [exporting, setExporting] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -53,6 +55,9 @@ const Reports = () => {
     };
 
     const handleExport = async () => {
+        if (exporting) return;
+        setExporting(true);
+        const toastId = toast.info("Generando reporte Excel...", { autoClose: false });
         try {
             const response = await api.get(`reports/export-excel/?months=${months}&start_date=${startDate}&end_date=${endDate}`, { responseType: 'blob' });
             const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -62,8 +67,13 @@ const Reports = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
+            window.URL.revokeObjectURL(url);
+            toast.update(toastId, { render: "Reporte descargado con éxito", type: "success", isLoading: false, autoClose: 3000 });
         } catch (error) {
             console.error("Error downloading report", error);
+            toast.update(toastId, { render: "Error al generar el reporte", type: "error", isLoading: false, autoClose: 3000 });
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -139,8 +149,13 @@ const Reports = () => {
                             onChange={e => setEndDate(e.target.value)}
                         />
                     </div>
-                    <button className="btn btn-primary" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '12px' }}>
-                        <FileSpreadsheet size={16} /> Exportar
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleExport}
+                        disabled={exporting}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '12px' }}
+                    >
+                        <FileSpreadsheet size={16} /> {exporting ? 'Generando...' : 'Exportar'}
                     </button>
                 </div>
             </div>

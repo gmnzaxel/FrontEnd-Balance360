@@ -5,10 +5,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminOnly from './components/AdminOnly';
+import SuperUserOnly from './components/SuperUserOnly';
 import Layout from './components/layout/Layout';
 
 const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Products = lazy(() => import('./pages/Products'));
 const Sales = lazy(() => import('./pages/Sales'));
@@ -18,6 +18,7 @@ const Quotes = lazy(() => import('./pages/Quotes'));
 const Users = lazy(() => import('./pages/Users'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
+const SuperDashboard = lazy(() => import('./pages/SuperDashboard'));
 
 const SuspenseFallback = <div className="page-fallback">Cargando módulo...</div>;
 
@@ -33,11 +34,11 @@ function App() {
         <Suspense fallback={SuspenseFallback}>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/registro" element={<Register />} />
 
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
                 <Route path="/" element={<Navigate to="/new-sale" replace />} />
+                <Route path="/super-dashboard" element={<SuperUserOnly><SuperDashboard /></SuperUserOnly>} />
                 <Route path="/dashboard" element={<AdminOnly><Dashboard /></AdminOnly>} />
                 <Route path="/products" element={<Products />} />
                 <Route path="/sales" element={<Sales />} />
@@ -54,7 +55,26 @@ function App() {
           </Routes>
         </Suspense>
       </Router>
-      <ToastContainer position="bottom-right" />
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3500}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="dark"
+        toastStyle={{
+          background: 'var(--surface-1)',
+          border: '1px solid var(--border-strong)',
+          borderRadius: '14px',
+          color: 'var(--text-primary)',
+          fontSize: '0.9rem',
+          fontWeight: '500',
+          boxShadow: 'var(--shadow-md)',
+          padding: '14px 16px',
+        }}
+      />
     </AuthProvider>
   );
 }

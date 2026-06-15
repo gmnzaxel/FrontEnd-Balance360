@@ -56,6 +56,7 @@ const NewSale = () => {
   const [editingSaleNumber, setEditingSaleNumber] = useState(null);
   const [loadingSale, setLoadingSale] = useState(false);
   const [lastSaleWasEdit, setLastSaleWasEdit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
   const [multiplier, setMultiplier] = useState(1);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -316,46 +317,15 @@ const NewSale = () => {
     setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: value } : item));
   }, []);
 
-  // subtotal, total, cartCount y removeItem/updateItemDiscount vienen de useCart
-
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'F2') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-      if (e.key === 'F8') {
-        e.preventDefault();
-        if (cart.length > 0) {
-          if (isMobile) {
-            setShowCartModal(true);
-          } else {
-            handleSubmit();
-          }
-        } else {
-          toast.info('El carrito está vacío');
-        }
-      }
-      if (e.key === 'Escape' && cart.length > 0 && !showCartModal && !showServiceModal && !showSuccessModal) {
-        e.preventDefault();
-        if (window.confirm('¿Vaciar el carrito actual?')) {
-          clearCart();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cart, isMobile, showCartModal, showServiceModal, showSuccessModal, discount, discountType, paymentMethod]);
-
   // cartCount viene de useCart
 
-
   const handleSubmit = useCallback(async () => {
+    if (submitting) return;
     if (!cart.length) {
       toast.warning('El carrito está vacío');
       return;
     }
+    setSubmitting(true);
     try {
       const wasEditing = Boolean(editingSaleId);
       const finalGlobalDiscount = discountType === '%'
@@ -413,8 +383,39 @@ const NewSale = () => {
     } catch (error) {
       console.error(error);
       toast.error(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
     }
-  }, [cart, editingSaleId, discount, discountType, subtotal, total, paymentMethod, normalizeSaleItems, navigate]);
+  }, [cart, editingSaleId, discount, discountType, subtotal, total, paymentMethod, normalizeSaleItems, navigate, submitting]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'F2') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === 'F8') {
+        e.preventDefault();
+        if (cart.length > 0) {
+          if (isMobile) {
+            setShowCartModal(true);
+          } else {
+            handleSubmit();
+          }
+        } else {
+          toast.info('El carrito está vacío');
+        }
+      }
+      if (e.key === 'Escape' && cart.length > 0 && !showCartModal && !showServiceModal && !showSuccessModal) {
+        e.preventDefault();
+        if (window.confirm('¿Vaciar el carrito actual?')) {
+          clearCart();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cart, isMobile, showCartModal, showServiceModal, showSuccessModal, discount, discountType, paymentMethod, handleSubmit]);
 
 
 
@@ -527,7 +528,7 @@ const NewSale = () => {
                       className={p.stock_actual <= 0 ? 'pos-row-disabled' : ''}
                       style={{ 
                         cursor: p.stock_actual > 0 ? 'pointer' : 'not-allowed',
-                        backgroundColor: focusedIndex === i ? 'rgba(14, 165, 233, 0.12)' : 'transparent'
+                        backgroundColor: focusedIndex === i ? 'rgba(14, 165, 233, 0.12)' : undefined
                       }}
                       onMouseEnter={() => setFocusedIndex(i)}
                       onMouseLeave={() => setFocusedIndex((prev) => prev === i ? -1 : prev)}
@@ -711,10 +712,10 @@ const NewSale = () => {
             variant="primary"
             fullWidth
             onClick={handleSubmit}
-            disabled={!cart.length}
+            disabled={!cart.length || submitting}
             icon={<CreditCard size={18} />}
           >
-            Confirmar venta [F8]
+            {submitting ? 'Procesando...' : 'Confirmar venta [F8]'}
           </Button>
         </div>
       </div>
@@ -866,10 +867,10 @@ const NewSale = () => {
                 variant="primary"
                 fullWidth
                 onClick={handleSubmit}
-                disabled={!cart.length || loadingSale}
+                disabled={!cart.length || loadingSale || submitting}
                 icon={<CreditCard size={18} />}
               >
-                {editingSaleId ? 'Actualizar venta' : 'Confirmar venta'}
+                {submitting ? 'Procesando...' : (editingSaleId ? 'Actualizar venta' : 'Confirmar venta')}
               </Button>
             </div>
           </div>

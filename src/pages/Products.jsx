@@ -53,17 +53,19 @@ const Products = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Usamos allSettled para que si falla uno (ej: proveedores por permisos), no rompa todo el dashboard
-      const results = await Promise.allSettled([
+      const promises = [
         productService.getAll({
           include_archived: showArchivedProducts,
           page,
           page_size: pageSize,
           search: searchTerm || undefined
-        }),
-        productService.getSuppliers()
-      ]);
+        })
+      ];
+      if (isAdmin) {
+        promises.push(productService.getSuppliers());
+      }
 
+      const results = await Promise.allSettled(promises);
       const [prodRes, suppRes] = results;
 
       if (prodRes.status === 'fulfilled') {
@@ -80,9 +82,9 @@ const Products = () => {
         toast.error(getErrorMessage(prodRes.reason));
       }
 
-      if (suppRes.status === 'fulfilled') {
+      if (isAdmin && suppRes && suppRes.status === 'fulfilled') {
         setSuppliers(suppRes.value);
-      } else {
+      } else if (isAdmin && suppRes) {
         console.warn("Error loading suppliers (posible falta de permisos):", suppRes.reason);
       }
 
@@ -473,9 +475,11 @@ const Products = () => {
             <Upload size={16} /> Importar
             <input type="file" hidden onChange={handleImport} accept=".csv, .xlsx" disabled={submitting || !isAdmin} />
           </label>
-          <Button variant="secondary" icon={<Users size={16} />} onClick={() => setShowSupplierModal(true)}>
-            Proveedores
-          </Button>
+          {isAdmin && (
+            <Button variant="secondary" icon={<Users size={16} />} onClick={() => setShowSupplierModal(true)}>
+              Proveedores
+            </Button>
+          )}
           <Button variant="primary" icon={<Plus size={16} />} onClick={handleCreate} disabled={!isAdmin}>
             Nuevo producto
           </Button>
@@ -562,7 +566,7 @@ const Products = () => {
                 </th>
               )}
               <th width="100">Código</th>
-              <th>Producto / Proveedor</th>
+              <th style={{ width: isAdmin ? undefined : '50%' }}>{isAdmin ? 'Producto / Proveedor' : 'Producto'}</th>
               <th>Stock</th>
               <th>Min</th>
               <th>Max</th>
@@ -596,11 +600,13 @@ const Products = () => {
                     </td>
                   )}
                   <td className="muted font-mono" data-label="Código">{p.codigo}</td>
-                  <td data-label="Producto / Proveedor">
+                  <td data-label={isAdmin ? "Producto / Proveedor" : "Producto"}>
                     <div className="font-medium">{p.nombre}</div>
-                    <div className="muted tiny flex-row gap-xs items-center mt-1">
-                      <Store size={12} /> {p.supplier_name || 'Sin proveedor asignado'}
-                    </div>
+                    {isAdmin && (
+                      <div className="muted tiny flex-row gap-xs items-center mt-1">
+                        <Store size={12} /> {p.supplier_name || 'Sin proveedor asignado'}
+                      </div>
+                    )}
                     {p.is_archived && (
                       <div className="muted tiny mt-1">Archivado</div>
                     )}
@@ -688,15 +694,17 @@ const Products = () => {
           )}
         >
           <div className="form-stack">
-            <div className="grid two-cols">
+            <div className={isAdmin ? "grid two-cols" : "grid one-col"}>
               <div>
                 <p className="text-xs text-slate-500">Código</p>
                 <p className="font-medium">{selectedProduct.codigo || '—'}</p>
               </div>
-              <div>
-                <p className="text-xs text-slate-500">Proveedor</p>
-                <p className="font-medium">{selectedProduct.supplier_name || 'General'}</p>
-              </div>
+              {isAdmin && (
+                <div>
+                  <p className="text-xs text-slate-500">Proveedor</p>
+                  <p className="font-medium">{selectedProduct.supplier_name || 'General'}</p>
+                </div>
+              )}
             </div>
             <div>
               <p className="text-xs text-slate-500">Nombre</p>

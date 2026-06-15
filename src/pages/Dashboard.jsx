@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -16,6 +16,7 @@ import Skeleton from '../components/ui/Skeleton';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 import Select from '../components/ui/Select';
+import { AuthContext } from '../context/AuthContext';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -56,6 +57,8 @@ const kpis = [
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
+  const { isAdmin } = useContext(AuthContext);
+
   const [loading, setLoading] = useState(true);
 
   // State for Supplier Modal
@@ -214,11 +217,13 @@ const Dashboard = () => {
 
         {/* Alertas de stock Card (Moved next to charts) */}
         <Card title="Alertas de stock" description="Productos por debajo del mínimo.">
-          <div className="flex justify-end mb-4">
-            <Button variant="secondary" size="sm" icon={<Filter size={16} />} onClick={() => setShowSupplierModal(true)}>
-              Filtrar por proveedor
-            </Button>
-          </div>
+          {isAdmin && (
+            <div className="flex justify-end mb-4">
+              <Button variant="secondary" size="sm" icon={<Filter size={16} />} onClick={() => setShowSupplierModal(true)}>
+                Filtrar por proveedor
+              </Button>
+            </div>
+          )}
           {loading ? <Skeleton height={200} /> : (
             <div className="table-container compact" style={{ maxHeight: '240px', overflowY: 'auto' }}>
               {!stats?.low_stock_products?.length ? (
@@ -230,7 +235,7 @@ const Dashboard = () => {
                   <thead>
                     <tr>
                       <th>Producto</th>
-                      <th>Proveedor</th>
+                      {isAdmin && <th>Proveedor</th>}
                       <th className="text-center">Min</th>
                       <th className="text-center">Actual</th>
                     </tr>
@@ -239,7 +244,7 @@ const Dashboard = () => {
                     {stats.low_stock_products.map((p) => (
                       <tr key={p.id}>
                         <td className="font-medium text-slate-700" data-label="Producto">{p.nombre}</td>
-                        <td className="text-sm text-slate-500" data-label="Proveedor">{p.supplier_name || '-'}</td>
+                        {isAdmin && <td className="text-sm text-slate-500" data-label="Proveedor">{p.supplier_name || '-'}</td>}
                         <td className="text-center" data-label="Min">
                           <span className="badge badge-neutral">{p.stock_minimo}</span>
                         </td>

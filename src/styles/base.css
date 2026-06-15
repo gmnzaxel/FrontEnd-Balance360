@@ -270,3 +270,107 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ─── Pulse Dot (indicador de actividad) ─────────────────────── */
+@keyframes pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0); }
+}
+
+/* ─── React-Toastify Custom Theme ────────────────────────────── */
+.Toastify__toast {
+  font-family: var(--font-sans) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow-md) !important;
+  padding: 14px 16px !important;
+  min-height: unset !important;
+  align-items: flex-start !important;
+}
+
+.Toastify__toast-body {
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  padding: 0 !important;
+  color: var(--text-primary) !important;
+}
+
+.Toastify__close-button {
+  color: var(--text-secondary) !important;
+  opacity: 0.7 !important;
+  align-self: flex-start !important;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1 !important;
+}
+
+.Toastify__progress-bar {
+  height: 3px !important;
+  border-radius: 0 0 14px 14px !important;
+}
+
+/* Success toast */
+.Toastify__toast--success {
+  background: var(--surface-1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.2) !important;
+  border-left: 4px solid var(--success-text) !important;
+}
+.Toastify__toast--success .Toastify__progress-bar {
+  background: var(--success-text) !important;
+}
+.Toastify__toast--success .Toastify__toast-icon svg {
+  fill: var(--success-text) !important;
+}
+
+/* Error toast */
+.Toastify__toast--error {
+  background: var(--surface-1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.2) !important;
+  border-left: 4px solid var(--danger-text) !important;
+}
+.Toastify__toast--error .Toastify__progress-bar {
+  background: var(--danger-text) !important;
+}
+.Toastify__toast--error .Toastify__toast-icon svg {
+  fill: var(--danger-text) !important;
+}
+
+/* Warning toast */
+.Toastify__toast--warning {
+  background: var(--surface-1) !important;
+  border: 1px solid rgba(245, 158, 11, 0.2) !important;
+  border-left: 4px solid var(--warning-text) !important;
+}
+.Toastify__toast--warning .Toastify__progress-bar {
+  background: var(--warning-text) !important;
+}
+.Toastify__toast--warning .Toastify__toast-icon svg {
+  fill: var(--warning-text) !important;
+}
+
+/* Info toast */
+.Toastify__toast--info {
+  background: var(--surface-1) !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-left: 4px solid var(--primary-400) !important;
+}
+.Toastify__toast--info .Toastify__progress-bar {
+  background: var(--primary-400) !important;
+}
+.Toastify__toast--info .Toastify__toast-icon svg {
+  fill: var(--primary-400) !important;
+}
+
+/* Loading toast */
+.Toastify__toast--loading .Toastify__spinner {
+  border-right-color: var(--primary-400) !important;
+}
+
+/* Light mode overrides */
+[data-theme="light"] .Toastify__toast {
+  color: var(--text-primary) !important;
+}
+[data-theme="light"] .Toastify__toast-body {
+  color: var(--text-primary) !important;
+}

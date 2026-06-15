@@ -22,7 +22,7 @@ const ProductRow = memo(({ product, onAdd, isFocused, onMouseEnter }) => {
             onClick={handleClick}
             style={{ 
                 cursor: 'pointer',
-                backgroundColor: isFocused ? 'rgba(14, 165, 233, 0.12)' : 'transparent'
+                backgroundColor: isFocused ? 'rgba(14, 165, 233, 0.12)' : undefined
             }}
             onMouseEnter={onMouseEnter}
         >

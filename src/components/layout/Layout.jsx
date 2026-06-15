@@ -38,6 +38,10 @@ const Layout = () => {
       items.push({ path: '/users', label: 'Usuarios' });
     }
 
+    if (user?.is_superuser) {
+      items.unshift({ path: '/super-dashboard', label: 'Panel SuperAdmin' });
+    }
+
     return items;
   }, [isAdmin, user]);
 
@@ -46,6 +50,7 @@ const Layout = () => {
     if (current) return current.label;
     if (location.pathname === '/mi-perfil') return 'Mi Perfil';
     if (location.pathname === '/configuracion') return 'Configuración';
+    if (location.pathname === '/super-dashboard') return 'Panel SuperAdmin';
     return 'Balance360';
   }, [location.pathname, navItems]);
 
@@ -96,6 +101,70 @@ const Layout = () => {
             />
           )}
         />
+
+        {user?.is_superuser && localStorage.getItem('impersonated_company_id') && (
+          <div style={{
+            background: 'linear-gradient(90deg, rgba(245, 158, 11, 0.12) 0%, rgba(251, 191, 36, 0.08) 100%)',
+            borderBottom: '1px solid rgba(245, 158, 11, 0.2)',
+            padding: '10px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#f59e0b',
+                boxShadow: '0 0 0 3px rgba(245, 158, 11, 0.2)',
+                animation: 'pulseDot 2s infinite',
+                flexShrink: 0,
+              }} />
+              <span style={{ fontSize: '0.875rem', color: '#d97706', fontWeight: '600', lineHeight: 1.4 }}>
+                Modo auditoría activo:{' '}
+                <strong style={{ color: '#f59e0b' }}>
+                  {localStorage.getItem('impersonated_company_name') || 'Empresa seleccionada'}
+                </strong>
+                <span style={{ fontWeight: '400', color: '#9ca3af', marginLeft: '6px' }}>
+                  — Los cambios que realices afectan a esta empresa.
+                </span>
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.removeItem('impersonated_company_id');
+                localStorage.removeItem('impersonated_company_name');
+                navigate('/super-dashboard');
+              }}
+              style={{
+                background: 'rgba(245, 158, 11, 0.15)',
+                color: '#d97706',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                padding: '6px 14px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '0.8rem',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(245, 158, 11, 0.25)';
+                e.target.style.borderColor = 'rgba(245, 158, 11, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(245, 158, 11, 0.15)';
+                e.target.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+              }}
+            >
+              ← Salir de empresa
+            </button>
+          </div>
+        )}
 
         <main className="app-content">
           <Suspense fallback={

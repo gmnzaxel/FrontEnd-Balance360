@@ -107,8 +107,8 @@ const Profile = () => {
 
                 {/* Company Info Card */}
                 <InfoCard icon={<Building size={20} />} title="Empresa">
-                    <InfoRow label="Nombre comercial" value={profileData.company_name} />
-                    <InfoRow label="Sucursal actual" value={profileData.branch_name} />
+                    <InfoRow label="Nombre comercial" value={profileData.company_name || 'Ninguna (Superusuario)'} />
+                    <InfoRow label="Sucursal actual" value={profileData.branch_name || 'N/A'} />
                     <InfoRow label="Moneda" value={profileData.currency || 'ARS'} />
                 </InfoCard>
 

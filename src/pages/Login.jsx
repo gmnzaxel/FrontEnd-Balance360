@@ -113,12 +113,6 @@ const Login = () => {
                 Ingresar
               </Button>
             </form>
-            <p className="muted text-center">
-              ¿No tenés cuenta?{' '}
-              <Link to="/registro" className="link">
-                Registrá tu empresa
-              </Link>
-            </p>
           </Card>
         </div>
       </div>

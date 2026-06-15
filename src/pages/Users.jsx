@@ -11,6 +11,7 @@ const Users = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [formData, setFormData] = useState({
         username: '',
@@ -48,6 +49,8 @@ const Users = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (submitting) return;
+        setSubmitting(true);
         try {
             if (editingUser) {
                 await api.patch(`users/${editingUser.id}/`, formData);
@@ -63,6 +66,8 @@ const Users = () => {
         } catch (error) {
             console.error(error);
             toast.error(getErrorMessage(error));
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -205,7 +210,7 @@ const Users = () => {
             {showModal && (
                 <Modal
                     title={editingUser ? 'Editar usuario' : 'Nuevo usuario'}
-                    onClose={() => setShowModal(false)}
+                    onClose={() => !submitting && setShowModal(false)}
                     size="md"
                 >
                     <form onSubmit={handleSubmit}>
@@ -261,8 +266,10 @@ const Users = () => {
                         </div>
 
                         <div className="modal-actions mt-6">
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                            <button type="submit" className="btn btn-primary">Guardar usuario</button>
+                            <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={submitting}>Cancelar</button>
+                            <button type="submit" className="btn btn-primary" disabled={submitting}>
+                                {submitting ? 'Guardando...' : 'Guardar usuario'}
+                            </button>
                         </div>
                     </form>
                 </Modal>
