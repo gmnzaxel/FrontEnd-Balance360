@@ -9,7 +9,15 @@ const Settings = () => {
     const { isAdminActual, viewAsSeller, setViewAsSeller } = useContext(AuthContext);
     const [settings, setSettings] = useState({
         branch_name: '',
-        currency: 'ARS'
+        currency: 'ARS',
+        ticket_header: '',
+        ticket_footer: '',
+        ticket_address: '',
+        ticket_cuit: '',
+        ticket_iibb: '',
+        ticket_iva: '',
+        ticket_phone: '',
+        ticket_email: ''
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -152,22 +160,90 @@ const Settings = () => {
                             <label className="font-semibold text-slate-700 mb-2 block">Encabezado</label>
                             <textarea
                                 className="input-control w-full font-mono text-sm bg-slate-50 focus:bg-white transition-colors"
-                                rows={4}
+                                rows={3}
                                 value={settings.ticket_header || ''}
                                 onChange={(e) => setSettings({ ...settings, ticket_header: e.target.value })}
-                                placeholder="Nombre de la empresa&#10;Dirección&#10;Teléfono"
-                                style={{ resize: 'vertical', minHeight: '100px' }}
+                                placeholder="Dirección del local&#10;Sitio web u otra información general"
+                                style={{ resize: 'vertical', minHeight: '80px' }}
                             />
                         </div>
+                        
+                        <div className="form-group" style={{ marginTop: '1rem' }}>
+                            <label className="font-semibold text-slate-700 mb-2 block">Dirección del Local (Ubicación)</label>
+                            <input
+                                className="input-control w-full"
+                                type="text"
+                                value={settings.ticket_address || ''}
+                                onChange={(e) => setSettings({ ...settings, ticket_address: e.target.value })}
+                                placeholder="Ej: Av. Siempreviva 742, CABA"
+                            />
+                        </div>
+                        
+                        <div className="grid two-cols gap-sm" style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+                            <div className="form-group">
+                                <label className="font-semibold text-slate-700 mb-2 block">CUIT</label>
+                                <input
+                                    className="input-control w-full"
+                                    type="text"
+                                    value={settings.ticket_cuit || ''}
+                                    onChange={(e) => setSettings({ ...settings, ticket_cuit: e.target.value })}
+                                    placeholder="Ej: 20-12345678-9"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="font-semibold text-slate-700 mb-2 block">Ingresos Brutos (IIBB)</label>
+                                <input
+                                    className="input-control w-full"
+                                    type="text"
+                                    value={settings.ticket_iibb || ''}
+                                    onChange={(e) => setSettings({ ...settings, ticket_iibb: e.target.value })}
+                                    placeholder="Ej: 123-45678-9"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid three-cols gap-sm" style={{ marginBottom: '1rem' }}>
+                            <div className="form-group">
+                                <label className="font-semibold text-slate-700 mb-2 block">Condición de IVA</label>
+                                <input
+                                    className="input-control w-full"
+                                    type="text"
+                                    value={settings.ticket_iva || ''}
+                                    onChange={(e) => setSettings({ ...settings, ticket_iva: e.target.value })}
+                                    placeholder="Ej: Responsable Inscripto"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="font-semibold text-slate-700 mb-2 block">Teléfono en Ticket</label>
+                                <input
+                                    className="input-control w-full"
+                                    type="text"
+                                    value={settings.ticket_phone || ''}
+                                    onChange={(e) => setSettings({ ...settings, ticket_phone: e.target.value })}
+                                    placeholder="Ej: 11-5555-5555"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="font-semibold text-slate-700 mb-2 block">Email en Ticket</label>
+                                <input
+                                    className="input-control w-full"
+                                    type="email"
+                                    value={settings.ticket_email || ''}
+                                    onChange={(e) => setSettings({ ...settings, ticket_email: e.target.value })}
+                                    placeholder="Ej: contacto@tienda.com"
+                                />
+                            </div>
+                        </div>
+
                         <div className="form-group">
                             <label className="font-semibold text-slate-700 mb-2 block">Pie de Página</label>
                             <textarea
                                 className="input-control w-full font-mono text-sm bg-slate-50 focus:bg-white transition-colors"
-                                rows={4}
+                                rows={3}
                                 value={settings.ticket_footer || ''}
                                 onChange={(e) => setSettings({ ...settings, ticket_footer: e.target.value })}
                                 placeholder="Mensaje de agradecimiento..."
-                                style={{ resize: 'vertical', minHeight: '100px' }}
+                                style={{ resize: 'vertical', minHeight: '80px' }}
                             />
                         </div>
                     </div>
@@ -182,47 +258,69 @@ const Settings = () => {
                     onClose={() => setShowPreview(false)}
                     size="md"
                 >
-                    <div className="settings-preview-wrap">
-                        <div className="settings-preview-ticket">
-                            {/* Paper Texture Content */}
-                            <div className="text-center mb-6">
-                                <h4 className="font-bold text-slate-900 text-lg mb-2 uppercase break-words border-b-2 border-slate-900 pb-2 inline-block">
+                    <div className="settings-preview-wrap" style={{ background: 'var(--slate-900)', padding: '20px', borderRadius: '8px' }}>
+                        <div className="settings-preview-ticket" style={{ background: 'white', color: 'black', padding: '15px', width: '80mm', maxWidth: '100%', boxSizing: 'border-box', border: '1px solid #ccc', margin: '0 auto', fontSize: '12px', fontFamily: "'Courier New', Courier, monospace" }}>
+                            {/* Header exact replication */}
+                            <div className="text-center" style={{ borderBottom: '1px dashed #000', paddingBottom: '10px', marginBottom: '10px' }}>
+                                <div className="branch-title" style={{ fontSize: '16px', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: '2px solid #000', paddingBottom: '3px', display: 'inline-block', marginBottom: '8px' }}>
                                     {settings.branch_name || 'TU NEGOCIO'}
-                                </h4>
-                                <div className="whitespace-pre-wrap text-slate-500 mb-4 mt-2">
-                                    {settings.ticket_header || 'Dirección del Local\nTel: 555-1234\nwww.tubalance360.com'}
+                                </div>
+                                <div className="company" style={{ fontSize: '11px', color: '#333', marginBottom: '5px', whiteSpace: 'pre-wrap' }}>
+                                    {settings.ticket_header || 'BALANCE 360'}
+                                </div>
+                                {settings.ticket_address && <div style={{ fontSize: '10px', color: '#555' }}>Dirección: {settings.ticket_address}</div>}
+                                {settings.ticket_cuit && <div style={{ fontSize: '10px', color: '#555' }}>CUIT: {settings.ticket_cuit}</div>}
+                                {settings.ticket_iibb && <div style={{ fontSize: '10px', color: '#555' }}>IIBB: {settings.ticket_iibb}</div>}
+                                {settings.ticket_iva && <div style={{ fontSize: '10px', color: '#555' }}>IVA: {settings.ticket_iva}</div>}
+                                {settings.ticket_phone && <div style={{ fontSize: '10px', color: '#555' }}>Tel: {settings.ticket_phone}</div>}
+                                {settings.ticket_email && <div style={{ fontSize: '10px', color: '#555' }}>Email: {settings.ticket_email}</div>}
+                                <div style={{ fontSize: '10px', color: '#555', marginTop: '5px' }}>Fecha: {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', { hour12: false })}</div>
+                                <div style={{ fontSize: '10px', color: '#555' }}>Ticket #12345</div>
+                                <div style={{ fontSize: '10px', color: '#555' }}>Pago: EFECTIVO</div>
+                            </div>
+
+                            {/* Table exact replication */}
+                            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid #000' }}>
+                                        <th style={{ textAlign: 'left', width: '55%', fontSize: '12px' }}>Producto</th>
+                                        <th style={{ textAlign: 'right', width: '15%', fontSize: '12px' }}>Cant</th>
+                                        <th style={{ textAlign: 'right', width: '30%', fontSize: '12px' }}>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ padding: '4px 0', fontSize: '12px' }}>
+                                            CAMISA LINO
+                                            <br />
+                                            <small style={{ fontSize: '10px', color: '#555' }}>Desc: -$5.000,00</small>
+                                        </td>
+                                        <td style={{ textAlign: 'right', padding: '4px 0', fontSize: '12px' }}>1</td>
+                                        <td style={{ textAlign: 'right', padding: '4px 0', fontSize: '12px' }}>$82.500,00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            {/* Totals exact replication */}
+                            <div style={{ borderTop: '1px dashed #000', paddingTop: '10px', fontSize: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span>Subtotal:</span>
+                                    <span>$82.500,00</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span>Descuento:</span>
+                                    <span>-$5.000,00</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', marginTop: '5px' }}>
+                                    <span>TOTAL:</span>
+                                    <span>$77.500,00</span>
                                 </div>
                             </div>
 
-                            <div className="border-t border-b border-dashed border-slate-300 py-3 my-4">
-                                <div className="flex justify-between font-bold text-slate-700 mb-2">
-                                    <span>CANT. DESC.</span>
-                                    <span>TOTAL</span>
-                                </div>
-                                <div className="flex justify-between mb-1">
-                                    <span>1 x CAMISA LINO</span>
-                                    <span>$ 45.000</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>1 x PANTALON</span>
-                                    <span>$ 32.500</span>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-between items-center text-base font-bold text-slate-900 mb-6">
-                                <span>TOTAL</span>
-                                <span>$ 77.500</span>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="whitespace-pre-wrap mb-4 italic text-slate-400">
-                                    {settings.ticket_footer || '¡Gracias por su compra!'}
-                                </div>
-                                <div className="text-xxs text-slate-300 flex flex-col gap-1 items-center">
-                                    <span>*** COPIA CLIENTE ***</span>
-                                    <span>{new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', { hour12: false })}</span>
-                                </div>
-                                <div className="h-8 bg-slate-800 w-3/4 mx-auto mt-4 opacity-10"></div>
+                            {/* Footer exact replication */}
+                            <div className="text-center" style={{ marginTop: '20px', fontSize: '10px', whiteSpace: 'pre-wrap' }}>
+                                <p>{settings.ticket_footer || '¡Gracias por su compra!'}</p>
+                                <p style={{ marginTop: '5px', fontSize: '9px', color: '#777' }}>*** Copia Cliente ***</p>
                             </div>
                         </div>
                     </div>

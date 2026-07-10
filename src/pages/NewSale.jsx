@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState, useRef, memo } from '
 import { useLocation, useNavigate } from 'react-router-dom';
 import useMediaQuery from '../hooks/useMediaQuery';
 import useCart from '../hooks/useCart';
-import { Search, ShoppingCart, Tag, CreditCard, Trash2, Wrench, PackageX } from 'lucide-react';
+import { Search, ShoppingCart, Tag, CreditCard, Trash2, Wrench, PackageX, Printer, FileDown } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
@@ -13,6 +13,20 @@ import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
 import Select from '../components/ui/Select';
 import Skeleton from '../components/ui/Skeleton';
+
+const loadHtml2Pdf = () => {
+  return new Promise((resolve, reject) => {
+    if (window.html2pdf) {
+      resolve(window.html2pdf);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = () => resolve(window.html2pdf);
+    script.onerror = (err) => reject(err);
+    document.body.appendChild(script);
+  });
+};
 
 const PAGE_SIZE = 12;
 
@@ -173,19 +187,41 @@ const NewSale = () => {
     if (!lastSale) return;
 
     const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (!printWindow) return;
+    if (!printWindow) {
+      toast.error('El navegador bloqueó la ventana emergente de impresión. Por favor, habilita los pop-ups para este sitio.');
+      return;
+    }
 
+    const branchName = ticketConfigRef.current?.branch_name || 'TU NEGOCIO';
     const headerText = ticketConfigRef.current?.ticket_header || 'BALANCE 360';
     const footerText = ticketConfigRef.current?.ticket_footer || '¡Gracias por su compra!';
+    const address = ticketConfigRef.current?.ticket_address;
+    const cuit = ticketConfigRef.current?.ticket_cuit;
+    const iibb = ticketConfigRef.current?.ticket_iibb;
+    const iva = ticketConfigRef.current?.ticket_iva;
+    const phone = ticketConfigRef.current?.ticket_phone;
+    const email = ticketConfigRef.current?.ticket_email;
+
+    // Lógica corregida de descuentos
+    const itemsBaseSubtotal = lastSale.items.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
+    const itemsDiscountTotal = lastSale.items.reduce((acc, item) => acc + (parseFloat(item.discount) || 0), 0);
+    const globalDiscount = parseFloat(lastSale.discount) || 0;
+    const totalDiscount = itemsDiscountTotal + globalDiscount;
+    const finalTotal = parseFloat(lastSale.total);
 
     const htmlContent = `
       <html>
         <head>
           <title>Ticket de Venta #${lastSale.id}</title>
           <style>
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0.5cm; }
+            }
             body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 10px; font-size: 12px; }
             .header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-            .company { font-size: 16px; font-weight: bold; margin-bottom: 5px; white-space: pre-wrap; }
+            .branch-title { font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 3px; display: inline-block; margin-bottom: 8px; }
+            .company { font-size: 11px; color: #333; margin-bottom: 5px; white-space: pre-wrap; }
             .info { font-size: 10px; margin-bottom: 5px; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
             th { text-align: left; border-bottom: 1px solid #000; }
@@ -198,32 +234,37 @@ const NewSale = () => {
         </head>
         <body>
           <div class="header">
+            <div class="branch-title">${branchName}</div>
             <div class="company">${headerText}</div>
+            ${address ? `<div class="info">Dirección: ${address}</div>` : ''}
+            ${cuit ? `<div class="info">CUIT: ${cuit}</div>` : ''}
+            ${iibb ? `<div class="info">IIBB: ${iibb}</div>` : ''}
+            ${iva ? `<div class="info">IVA: ${iva}</div>` : ''}
+            ${phone ? `<div class="info">Tel: ${phone}</div>` : ''}
+            ${email ? `<div class="info">Email: ${email}</div>` : ''}
             <div class="info">Fecha: ${new Date(lastSale.date).toLocaleString('es-AR', { hour12: false })}</div>
-            <div class="info">Ticket #${lastSale.id}</div>
+            <div class="info">Ticket #${lastSale.sale_number || lastSale.id}</div>
             <div class="info">Pago: ${lastSale.payment_method}</div>
           </div>
           
           <table>
             <thead>
               <tr>
-                <th>Desc</th>
-                <th class="text-right">Cant</th>
-                <th class="text-right">Total</th>
+                <th style="width: 55%;">Producto</th>
+                <th class="text-right" style="width: 15%;">Cant</th>
+                <th class="text-right" style="width: 30%;">Total</th>
               </tr>
             </thead>
             <tbody>
               ${lastSale.items.map(item => {
                 const baseSub = (parseFloat(item.price) || 0) * item.quantity;
-                const dv = parseFloat(item.discountValue);
-                const descItem = !item.discountValue || isNaN(dv) ? 0
-                  : item.discountType === '%' ? baseSub * (dv / 100) : dv;
-                const itemTotal = baseSub - descItem;
+                const descItem = parseFloat(item.discount) || 0;
+                const itemLabel = item.item_type === 'SERVICIO' ? (item.description || 'Servicio') : (item.nombre || item.producto_nombre || 'Producto');
                 return `
                 <tr>
-                  <td>${item.nombre || item.description}${descItem > 0 ? `<br><small>Desc: ${item.discountType === '%' ? item.discountValue + '%' : '$' + parseFloat(item.discountValue).toFixed(2)}</small>` : ''}</td>
+                  <td>${itemLabel}${descItem > 0 ? `<br><small>Desc: -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</small>` : ''}</td>
                   <td class="text-right">${item.quantity}</td>
-                  <td class="text-right">$${itemTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">$${baseSub.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
                 </tr>
               `;
               }).join('')}
@@ -233,16 +274,16 @@ const NewSale = () => {
           <div class="totals">
             <div class="row">
               <span>Subtotal:</span>
-              <span>$${lastSale.subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
             </div>
-            ${lastSale.discount > 0 ? `
+            ${totalDiscount > 0 ? `
             <div class="row">
               <span>Descuento:</span>
-              <span>-$${lastSale.discount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
             </div>` : ''}
             <div class="row" style="font-weight: bold; font-size: 14px; margin-top: 5px;">
               <span>TOTAL:</span>
-              <span>$${lastSale.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
 
@@ -256,11 +297,124 @@ const NewSale = () => {
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
-    printWindow.focus();
     setTimeout(() => {
+      printWindow.focus();
       printWindow.print();
-      printWindow.close();
-    }, 250);
+      printWindow.onafterprint = () => {
+        printWindow.close();
+      };
+      // Fallback si onafterprint no dispara
+      setTimeout(() => {
+        try { printWindow.close(); } catch (e) {}
+      }, 2000);
+    }, 300);
+  }, [lastSale]);
+
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+
+  const handleDownloadPDF = useCallback(async () => {
+    if (!lastSale) return;
+    setDownloadingPDF(true);
+
+    const branchName = ticketConfigRef.current?.branch_name || 'TU NEGOCIO';
+    const headerText = ticketConfigRef.current?.ticket_header || 'BALANCE 360';
+    const footerText = ticketConfigRef.current?.ticket_footer || '¡Gracias por su compra!';
+    const address = ticketConfigRef.current?.ticket_address;
+    const cuit = ticketConfigRef.current?.ticket_cuit;
+    const iibb = ticketConfigRef.current?.ticket_iibb;
+    const iva = ticketConfigRef.current?.ticket_iva;
+    const phone = ticketConfigRef.current?.ticket_phone;
+    const email = ticketConfigRef.current?.ticket_email;
+
+    // Lógica corregida de descuentos
+    const itemsBaseSubtotal = lastSale.items.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
+    const itemsDiscountTotal = lastSale.items.reduce((acc, item) => acc + (parseFloat(item.discount) || 0), 0);
+    const globalDiscount = parseFloat(lastSale.discount) || 0;
+    const totalDiscount = itemsDiscountTotal + globalDiscount;
+    const finalTotal = parseFloat(lastSale.total);
+
+    const htmlContent = `
+      <div style="font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 15px; font-size: 12px; box-sizing: border-box; background: white; color: black;">
+        <div style="text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px;">
+          <div style="font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 3px; display: inline-block; margin-bottom: 8px;">${branchName}</div>
+          <div style="font-size: 11px; color: #333; margin-bottom: 5px; white-space: pre-wrap;">${headerText}</div>
+          ${address ? `<div style="font-size: 10px; color: #555;">Dirección: ${address}</div>` : ''}
+          ${cuit ? `<div style="font-size: 10px; color: #555;">CUIT: ${cuit}</div>` : ''}
+          ${iibb ? `<div style="font-size: 10px; color: #555;">IIBB: ${iibb}</div>` : ''}
+          ${iva ? `<div style="font-size: 10px; color: #555;">IVA: ${iva}</div>` : ''}
+          ${phone ? `<div style="font-size: 10px; color: #555;">Tel: ${phone}</div>` : ''}
+          ${email ? `<div style="font-size: 10px; color: #555;">Email: ${email}</div>` : ''}
+          <div style="font-size: 10px; margin-bottom: 5px; marginTop: 5px;">Fecha: ${new Date(lastSale.date).toLocaleString('es-AR', { hour12: false })}</div>
+          <div style="font-size: 10px; margin-bottom: 5px;">Ticket #${lastSale.sale_number || lastSale.id}</div>
+          <div style="font-size: 10px; margin-bottom: 5px;">Pago: ${lastSale.payment_method}</div>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+          <thead>
+            <tr>
+              <th style="text-align: left; border-bottom: 1px solid #000; width: 55%;">Producto</th>
+              <th style="text-align: right; border-bottom: 1px solid #000; width: 15%;">Cant</th>
+              <th style="text-align: right; border-bottom: 1px solid #000; width: 30%;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${lastSale.items.map(item => {
+              const baseSub = (parseFloat(item.price) || 0) * item.quantity;
+              const descItem = parseFloat(item.discount) || 0;
+              const itemLabel = item.item_type === 'SERVICIO' ? (item.description || 'Servicio') : (item.nombre || item.producto_nombre || 'Producto');
+              return `
+              <tr>
+                <td style="padding: 4px 0;">${itemLabel}${descItem > 0 ? `<br><small>Desc: -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</small>` : ''}</td>
+                <td style="padding: 4px 0; text-align: right;">${item.quantity}</td>
+                <td style="padding: 4px 0; text-align: right;">$${baseSub.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+              </tr>
+            `;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div style="border-top: 1px dashed #000; padding-top: 10px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Subtotal:</span>
+            <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+          </div>
+          ${totalDiscount > 0 ? `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Descuento:</span>
+            <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+          </div>` : ''}
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: bold; font-size: 14px; margin-top: 5px;">
+            <span>TOTAL:</span>
+            <span>$${lastSale.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 10px; white-space: pre-wrap;">
+          <p>${footerText}</p>
+          <p>*** Copia Cliente ***</p>
+        </div>
+      </div>
+    `;
+
+    try {
+      const html2pdf = await loadHtml2Pdf();
+      const element = document.createElement('div');
+      element.innerHTML = htmlContent;
+      const opt = {
+        margin:       0,
+        filename:     `Ticket_Venta_${lastSale.sale_number || lastSale.id}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 3, useCORS: true, logging: false },
+        jsPDF:        { unit: 'mm', format: [80, 220], orientation: 'portrait' }
+      };
+      await html2pdf().from(element).set(opt).save();
+      toast.success('PDF descargado con éxito');
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al generar el PDF');
+    } finally {
+      setDownloadingPDF(false);
+    }
   }, [lastSale]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -899,14 +1053,25 @@ const NewSale = () => {
             <p className="text-slate-600 mb-6">
               Venta #{lastSale?.sale_number || lastSale?.id} procesada por {formatARS(lastSale?.total || 0)}.
             </p>
-            <Button
-              variant="secondary"
-              fullWidth
-              icon={<span style={{ fontSize: 18 }}>🖨️</span>} // Using emoji as simple icon fallback or lucide Printer
-              onClick={handlePrintTicket}
-            >
-              Imprimir Ticket
-            </Button>
+            <div className="flex flex-col gap-sm w-full">
+              <Button
+                variant="secondary"
+                fullWidth
+                icon={<Printer size={18} />}
+                onClick={handlePrintTicket}
+              >
+                Imprimir Ticket
+              </Button>
+              <Button
+                variant="secondary"
+                fullWidth
+                icon={<FileDown size={18} />}
+                onClick={handleDownloadPDF}
+                disabled={downloadingPDF}
+              >
+                {downloadingPDF ? 'Descargando...' : 'Descargar PDF'}
+              </Button>
+            </div>
           </div>
         </Modal>
       )}
