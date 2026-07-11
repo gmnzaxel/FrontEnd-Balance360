@@ -5,6 +5,10 @@ import { Trash2, Edit, Plus, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 import Modal from '../components/ui/Modal';
+import ConfirmModal from '../components/ui/ConfirmModal';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
+import Select from '../components/ui/Select';
 
 const Users = () => {
     const { user: currentUser, isAdmin } = useContext(AuthContext);
@@ -19,6 +23,14 @@ const Users = () => {
         email: '',
         role: 'USER',
         is_active: true
+    });
+    const [confirmConfig, setConfirmConfig] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        confirmLabel: '',
+        variant: 'danger',
+        onConfirm: null
     });
 
     useEffect(() => {
@@ -71,44 +83,64 @@ const Users = () => {
         }
     };
 
-    const handleToggleStatus = async (user) => {
-        if (user.id === currentUser?.user_id) {
-            toast.error('No puedes desactivarte a ti mismo.');
-            return;
-        }
-        const newStatus = !user.is_active;
-        if (!newStatus) {
-            const confirmed = window.confirm(`¿Seguro que deseas desactivar a ${user.username}?`);
-            if (!confirmed) return;
-        }
+    const performToggleStatus = async (user, newStatus) => {
         try {
-            // Update UI optimistically
             setUsers(users.map(u => u.id === user.id ? { ...u, is_active: newStatus } : u));
             await api.patch(`users/${user.id}/`, { is_active: newStatus });
             toast.success(`Usuario ${newStatus ? 'activado' : 'desactivado'}`);
         } catch (error) {
             console.error(error);
             toast.error(getErrorMessage(error));
-            // Revert on error
             setUsers(users.map(u => u.id === user.id ? { ...u, is_active: user.is_active } : u));
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleToggleStatus = (user) => {
+        if (user.id === currentUser?.user_id) {
+            toast.error('No puedes desactivarte a ti mismo.');
+            return;
+        }
+        const newStatus = !user.is_active;
+        if (!newStatus) {
+            setConfirmConfig({
+                isOpen: true,
+                title: 'Desactivar usuario',
+                message: `¿Seguro que deseas desactivar a ${user.username}?`,
+                confirmLabel: 'Desactivar',
+                variant: 'warning',
+                onConfirm: () => {
+                    setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                    performToggleStatus(user, newStatus);
+                }
+            });
+        } else {
+            performToggleStatus(user, newStatus);
+        }
+    };
+
+    const handleDelete = (id) => {
         if (id === currentUser?.user_id) {
             toast.error('No puedes eliminar tu propio usuario.');
             return;
         }
-        if (window.confirm("¿Seguro que desea eliminar este usuario?")) {
-            try {
-                await api.delete(`users/${id}/`);
-                toast.success("Usuario eliminado");
-                fetchUsers();
-            } catch (error) {
-                console.error(error);
-                toast.error(getErrorMessage(error));
+        setConfirmConfig({
+            isOpen: true,
+            title: 'Eliminar usuario',
+            message: '¿Seguro que desea eliminar este usuario?',
+            confirmLabel: 'Eliminar',
+            variant: 'danger',
+            onConfirm: async () => {
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                try {
+                    await api.delete(`users/${id}/`);
+                    toast.success("Usuario eliminado");
+                    fetchUsers();
+                } catch (error) {
+                    console.error(error);
+                    toast.error(getErrorMessage(error));
+                }
             }
-        }
+        });
     };
 
     const handleEdit = (u) => {
@@ -136,9 +168,9 @@ const Users = () => {
                     <p className="page-subtitle">Administrá el acceso y los roles del sistema.</p>
                 </div>
                 <div className="page-header-actions">
-                    <button className="btn btn-primary" onClick={() => { setEditingUser(null); resetForm(); setShowModal(true); }}>
-                    <Plus size={18} /> Nuevo usuario
-                    </button>
+                    <Button variant="primary" icon={<Plus size={18} />} onClick={() => { setEditingUser(null); resetForm(); setShowModal(true); }}>
+                        Nuevo usuario
+                    </Button>
                 </div>
             </div>
 
@@ -157,7 +189,7 @@ const Users = () => {
                         <tbody>
                             {users.map(u => (
                                 <tr key={u.id}>
-                                    <td className="font-medium text-slate-800" data-label="Usuario">{u.username}</td>
+                                    <td className="font-medium" data-label="Usuario">{u.username}</td>
                                     <td data-label="Email">{u.email}</td>
                                     <td data-label="Rol">
                                         <span className={`badge ${u.role === 'ADMIN' ? 'badge-primary' : 'badge-neutral'}`}>
@@ -213,67 +245,67 @@ const Users = () => {
                     onClose={() => !submitting && setShowModal(false)}
                     size="md"
                 >
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label>Nombre de Usuario</label>
-                            <input
-                                className="input-control"
-                                name="username"
-                                value={formData.username}
+                    <form onSubmit={handleSubmit} className="form-stack">
+                        <Input
+                            label="Nombre de Usuario"
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
+                            required
+                            disabled={!!editingUser}
+                            placeholder="Ej. jperez"
+                        />
+                        <Input
+                            label="Email"
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="Ej. juan@empresa.com"
+                        />
+                        {!editingUser && (
+                            <Input
+                                label="Contraseña"
+                                type="password"
+                                name="password"
+                                value={formData.password}
                                 onChange={handleChange}
                                 required
-                                disabled={!!editingUser}
-                                placeholder="Ej. jperez"
+                                placeholder="••••••••"
                             />
-                        </div>
-                        <div className="form-group">
-                            <label>Email</label>
-                            <input
-                                className="input-control"
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder="Ej. juan@empresa.com"
-                            />
-                        </div>
-                        {!editingUser && (
-                            <div className="form-group">
-                                <label>Contraseña</label>
-                                <input
-                                    className="input-control"
-                                    type="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="••••••••"
-                                />
-                            </div>
                         )}
-                        <div className="form-group">
-                            <label>Rol de Acceso</label>
-                            <select
-                                className="select-control"
-                                name="role"
-                                value={formData.role}
-                                onChange={handleChange}
-                                disabled={editingUser?.id === currentUser?.user_id}
-                            >
-                                <option value="USER">Usuario (Vendedor)</option>
-                                <option value="ADMIN">Administrador</option>
-                            </select>
-                        </div>
+                        <Select
+                            label="Rol de Acceso"
+                            name="role"
+                            value={formData.role}
+                            onChange={handleChange}
+                            disabled={editingUser?.id === currentUser?.user_id}
+                        >
+                            <option value="USER">Usuario (Vendedor)</option>
+                            <option value="ADMIN">Administrador</option>
+                        </Select>
 
                         <div className="modal-actions mt-6">
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={submitting}>Cancelar</button>
-                            <button type="submit" className="btn btn-primary" disabled={submitting}>
-                                {submitting ? 'Guardando...' : 'Guardar usuario'}
-                            </button>
+                            <Button type="button" variant="secondary" onClick={() => setShowModal(false)} disabled={submitting}>
+                                Cancelar
+                            </Button>
+                            <Button type="submit" variant="primary" loading={submitting}>
+                                Guardar usuario
+                            </Button>
                         </div>
                     </form>
                 </Modal>
             )}
+
+            <ConfirmModal
+                isOpen={confirmConfig.isOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmLabel={confirmConfig.confirmLabel}
+                variant={confirmConfig.variant}
+                onConfirm={confirmConfig.onConfirm}
+                onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+            />
         </div>
     );
 };

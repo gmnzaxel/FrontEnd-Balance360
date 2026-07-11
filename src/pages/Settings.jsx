@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
-import { Save, Store, Eye } from 'lucide-react';
+import { Save, Store, Eye, ImageIcon, X, Upload } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import { AuthContext } from '../context/AuthContext';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
+import Select from '../components/ui/Select';
 
 const Settings = () => {
     const { isAdminActual, viewAsSeller, setViewAsSeller } = useContext(AuthContext);
@@ -21,6 +24,8 @@ const Settings = () => {
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [logoDataUrl, setLogoDataUrl] = useState(() => localStorage.getItem('ticket_logo') || '');
+    const logoInputRef = useRef(null);
 
     const [showPreview, setShowPreview] = useState(false);
 
@@ -53,6 +58,29 @@ const Settings = () => {
             setSaving(false);
         }
     };
+    const handleLogoChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 500 * 1024) {
+            toast.error('El logo no debe superar los 500 KB.');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const dataUrl = ev.target.result;
+            setLogoDataUrl(dataUrl);
+            localStorage.setItem('ticket_logo', dataUrl);
+            toast.success('Logo guardado correctamente.');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleRemoveLogo = () => {
+        setLogoDataUrl('');
+        localStorage.removeItem('ticket_logo');
+        if (logoInputRef.current) logoInputRef.current.value = '';
+        toast.info('Logo eliminado.');
+    };
 
 
     if (loading) return <div className="p-8 text-center text-muted">Cargando configuración…</div>;
@@ -66,13 +94,14 @@ const Settings = () => {
                     <p className="page-subtitle">Ajustes generales del negocio y del ticket.</p>
                 </div>
                 <div className="page-header-actions">
-                    <button
+                    <Button
                         onClick={handleSave}
-                        className="btn btn-primary"
-                        disabled={saving}
+                        variant="primary"
+                        loading={saving}
+                        icon={<Save size={18} />}
                     >
-                        <Save size={18} /> {saving ? 'Guardando…' : 'Guardar cambios'}
-                    </button>
+                        Guardar cambios
+                    </Button>
                 </div>
             </div>
 
@@ -80,7 +109,7 @@ const Settings = () => {
                 {isAdminActual && (
                     <div className="card settings-card">
                         <div className="card-header settings-card-header">
-                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
                                 <Eye size={20} className="text-primary-600" />
                                 Privacidad
                             </h3>
@@ -91,8 +120,8 @@ const Settings = () => {
                                 <div className="settings-row-content">
                                     <Eye size={18} className="text-primary-600" />
                                     <div>
-                                        <p className="font-semibold text-slate-800">Vista de vendedor</p>
-                                        <p className="text-sm text-slate-500">
+                                        <p className="font-semibold">Vista de vendedor</p>
+                                        <p className="text-sm text-muted">
                                             Oculta reportes, usuarios y accesos administrativos cuando usás una PC pública.
                                         </p>
                                     </div>
@@ -109,30 +138,25 @@ const Settings = () => {
                         </div>
                     </div>
                 )}
-
-                {/* Card 1: Branch & Inventory */}
+                              {/* Card 1: Branch & Inventory */}
                 <div className="card settings-card">
                     <div className="card-header settings-card-header">
-                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <h3 className="text-lg font-bold flex items-center gap-2">
                             <Store size={20} className="text-primary-600" />
                             Datos del negocio
                         </h3>
                     </div>
 
                     <div className="settings-section">
-                        <div className="form-group">
-                            <label className="font-semibold text-slate-700 mb-2 block">Nombre de la Sucursal</label>
-                            <input
-                                className="input-control"
-                                type="text"
-                                value={settings.branch_name}
-                                onChange={(e) => setSettings({ ...settings, branch_name: e.target.value })}
-                                required
-                                placeholder="Ej. Casa Central"
-                            />
-                            <p className="text-xs text-slate-500 mt-2">Se mostrará en el encabezado de tus comprobantes.</p>
-                        </div>
-
+                        <Input
+                            label="Nombre de la Sucursal"
+                            type="text"
+                            value={settings.branch_name}
+                            onChange={(e) => setSettings({ ...settings, branch_name: e.target.value })}
+                            required
+                            placeholder="Ej. Casa Central"
+                            helper="Se mostrará en el encabezado de tus comprobantes."
+                        />
                     </div>
                 </div>
 
@@ -140,112 +164,141 @@ const Settings = () => {
                 <div className="card settings-card">
                     <div className="card-header settings-card-header settings-card-header-split">
                         <div className="settings-ticket-head">
-                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
                                 <span className="text-xl">🧾</span>
                                 Diseño del ticket
                             </h3>
-                            <p className="text-sm text-slate-500 settings-ticket-subtitle">Edita el texto del comprobante.</p>
+                            <p className="text-sm text-muted settings-ticket-subtitle">Edita el texto del comprobante.</p>
                         </div>
-                        <button
+                        <Button
                             type="button"
                             onClick={() => setShowPreview(true)}
-                            className="btn btn-secondary settings-preview-btn"
+                            variant="secondary"
+                            className="settings-preview-btn"
+                            icon={<Eye size={18} />}
                         >
-                            <Eye size={18} /> Vista previa
-                        </button>
+                            Vista previa
+                        </Button>
                     </div>
 
-                    <div className="settings-section">
-                        <div className="form-group">
-                            <label className="font-semibold text-slate-700 mb-2 block">Encabezado</label>
-                            <textarea
-                                className="input-control w-full font-mono text-sm bg-slate-50 focus:bg-white transition-colors"
-                                rows={3}
-                                value={settings.ticket_header || ''}
-                                onChange={(e) => setSettings({ ...settings, ticket_header: e.target.value })}
-                                placeholder="Dirección del local&#10;Sitio web u otra información general"
-                                style={{ resize: 'vertical', minHeight: '80px' }}
-                            />
-                        </div>
-                        
-                        <div className="form-group" style={{ marginTop: '1rem' }}>
-                            <label className="font-semibold text-slate-700 mb-2 block">Dirección del Local (Ubicación)</label>
+                    <div className="settings-section form-stack">
+                        {/* Logo Upload Section */}
+                        <div className="settings-logo-section">
+                            <div className="settings-logo-label">
+                                <ImageIcon size={16} className="text-primary-500" />
+                                <div>
+                                    <p className="font-semibold text-sm">Logo del negocio <span className="text-muted font-normal">(opcional)</span></p>
+                                    <p className="text-xs text-muted">Se mostrará en la parte superior de tus tickets y presupuestos. Máx. 500 KB.</p>
+                                </div>
+                            </div>
+
+                            {logoDataUrl ? (
+                                <div className="settings-logo-preview">
+                                    <img src={logoDataUrl} alt="Logo del negocio" className="settings-logo-img" />
+                                    <button
+                                        type="button"
+                                        className="settings-logo-remove"
+                                        onClick={handleRemoveLogo}
+                                        aria-label="Eliminar logo"
+                                    >
+                                        <X size={14} /> Quitar logo
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className="settings-logo-upload-btn"
+                                    onClick={() => logoInputRef.current?.click()}
+                                >
+                                    <Upload size={18} />
+                                    <span>Subir imagen (PNG, JPG, SVG)</span>
+                                </button>
+                            )}
                             <input
-                                className="input-control w-full"
-                                type="text"
-                                value={settings.ticket_address || ''}
-                                onChange={(e) => setSettings({ ...settings, ticket_address: e.target.value })}
-                                placeholder="Ej: Av. Siempreviva 742, CABA"
+                                ref={logoInputRef}
+                                type="file"
+                                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                                style={{ display: 'none' }}
+                                onChange={handleLogoChange}
                             />
                         </div>
+
+                        <label className="ui-field">
+                            <span className="field-label">Encabezado</span>
+                            <div className="field-control">
+                                <textarea
+                                    className="textarea-control font-mono text-sm transition-colors"
+                                    rows={3}
+                                    value={settings.ticket_header || ''}
+                                    onChange={(e) => setSettings({ ...settings, ticket_header: e.target.value })}
+                                    placeholder="Dirección del local&#10;Sitio web u otra información general"
+                                    style={{ resize: 'vertical', minHeight: '80px' }}
+                                />
+                            </div>
+                        </label>
                         
-                        <div className="grid two-cols gap-sm" style={{ marginTop: '1rem', marginBottom: '1rem' }}>
-                            <div className="form-group">
-                                <label className="font-semibold text-slate-700 mb-2 block">CUIT</label>
-                                <input
-                                    className="input-control w-full"
-                                    type="text"
-                                    value={settings.ticket_cuit || ''}
-                                    onChange={(e) => setSettings({ ...settings, ticket_cuit: e.target.value })}
-                                    placeholder="Ej: 20-12345678-9"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label className="font-semibold text-slate-700 mb-2 block">Ingresos Brutos (IIBB)</label>
-                                <input
-                                    className="input-control w-full"
-                                    type="text"
-                                    value={settings.ticket_iibb || ''}
-                                    onChange={(e) => setSettings({ ...settings, ticket_iibb: e.target.value })}
-                                    placeholder="Ej: 123-45678-9"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid three-cols gap-sm" style={{ marginBottom: '1rem' }}>
-                            <div className="form-group">
-                                <label className="font-semibold text-slate-700 mb-2 block">Condición de IVA</label>
-                                <input
-                                    className="input-control w-full"
-                                    type="text"
-                                    value={settings.ticket_iva || ''}
-                                    onChange={(e) => setSettings({ ...settings, ticket_iva: e.target.value })}
-                                    placeholder="Ej: Responsable Inscripto"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label className="font-semibold text-slate-700 mb-2 block">Teléfono en Ticket</label>
-                                <input
-                                    className="input-control w-full"
-                                    type="text"
-                                    value={settings.ticket_phone || ''}
-                                    onChange={(e) => setSettings({ ...settings, ticket_phone: e.target.value })}
-                                    placeholder="Ej: 11-5555-5555"
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label className="font-semibold text-slate-700 mb-2 block">Email en Ticket</label>
-                                <input
-                                    className="input-control w-full"
-                                    type="email"
-                                    value={settings.ticket_email || ''}
-                                    onChange={(e) => setSettings({ ...settings, ticket_email: e.target.value })}
-                                    placeholder="Ej: contacto@tienda.com"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="font-semibold text-slate-700 mb-2 block">Pie de Página</label>
-                            <textarea
-                                className="input-control w-full font-mono text-sm bg-slate-50 focus:bg-white transition-colors"
-                                rows={3}
-                                value={settings.ticket_footer || ''}
-                                onChange={(e) => setSettings({ ...settings, ticket_footer: e.target.value })}
-                                placeholder="Mensaje de agradecimiento..."
-                                style={{ resize: 'vertical', minHeight: '80px' }}
+                        <Input
+                            label="Dirección del Local (Ubicación)"
+                            type="text"
+                            value={settings.ticket_address || ''}
+                            onChange={(e) => setSettings({ ...settings, ticket_address: e.target.value })}
+                            placeholder="Ej: Av. Siempreviva 742, CABA"
+                        />
+                        
+                        <div className="grid two-cols gap-sm">
+                            <Input
+                                label="CUIT"
+                                type="text"
+                                value={settings.ticket_cuit || ''}
+                                onChange={(e) => setSettings({ ...settings, ticket_cuit: e.target.value })}
+                                placeholder="Ej: 20-12345678-9"
+                            />
+                            <Input
+                                label="Ingresos Brutos (IIBB)"
+                                type="text"
+                                value={settings.ticket_iibb || ''}
+                                onChange={(e) => setSettings({ ...settings, ticket_iibb: e.target.value })}
+                                placeholder="Ej: 123-45678-9"
                             />
                         </div>
+
+                        <div className="grid three-cols gap-sm">
+                            <Input
+                                label="Condición de IVA"
+                                type="text"
+                                value={settings.ticket_iva || ''}
+                                onChange={(e) => setSettings({ ...settings, ticket_iva: e.target.value })}
+                                placeholder="Ej: Responsable Inscripto"
+                            />
+                            <Input
+                                label="Teléfono en Ticket"
+                                type="text"
+                                value={settings.ticket_phone || ''}
+                                onChange={(e) => setSettings({ ...settings, ticket_phone: e.target.value })}
+                                placeholder="Ej: 11-5555-5555"
+                            />
+                            <Input
+                                label="Email en Ticket"
+                                type="email"
+                                value={settings.ticket_email || ''}
+                                onChange={(e) => setSettings({ ...settings, ticket_email: e.target.value })}
+                                placeholder="Ej: contacto@tienda.com"
+                            />
+                        </div>
+
+                        <label className="ui-field">
+                            <span className="field-label">Pie de Página</span>
+                            <div className="field-control">
+                                <textarea
+                                    className="textarea-control font-mono text-sm transition-colors"
+                                    rows={3}
+                                    value={settings.ticket_footer || ''}
+                                    onChange={(e) => setSettings({ ...settings, ticket_footer: e.target.value })}
+                                    placeholder="Mensaje de agradecimiento..."
+                                    style={{ resize: 'vertical', minHeight: '80px' }}
+                                />
+                            </div>
+                        </label>
                     </div>
                 </div>
 
@@ -262,8 +315,17 @@ const Settings = () => {
                         <div className="settings-preview-ticket" style={{ background: 'white', color: 'black', padding: '15px', width: '80mm', maxWidth: '100%', boxSizing: 'border-box', border: '1px solid #ccc', margin: '0 auto', fontSize: '12px', fontFamily: "'Courier New', Courier, monospace" }}>
                             {/* Header exact replication */}
                             <div className="text-center" style={{ borderBottom: '1px dashed #000', paddingBottom: '10px', marginBottom: '10px' }}>
-                                <div className="branch-title" style={{ fontSize: '16px', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: '2px solid #000', paddingBottom: '3px', display: 'inline-block', marginBottom: '8px' }}>
-                                    {settings.branch_name || 'TU NEGOCIO'}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', borderBottom: '2px solid #000', paddingBottom: '8px', marginBottom: '8px' }}>
+                                    {logoDataUrl && (
+                                        <img
+                                            src={logoDataUrl}
+                                            alt="Logo"
+                                            style={{ maxHeight: '44px', maxWidth: '60px', objectFit: 'contain', flexShrink: 0 }}
+                                        />
+                                    )}
+                                    <div style={{ fontSize: '16px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                        {settings.branch_name || 'TU NEGOCIO'}
+                                    </div>
                                 </div>
                                 <div className="company" style={{ fontSize: '11px', color: '#333', marginBottom: '5px', whiteSpace: 'pre-wrap' }}>
                                     {settings.ticket_header || 'BALANCE 360'}
@@ -279,6 +341,7 @@ const Settings = () => {
                                 <div style={{ fontSize: '10px', color: '#555' }}>Pago: EFECTIVO</div>
                             </div>
 
+
                             {/* Table exact replication */}
                             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px' }}>
                                 <thead>
@@ -291,12 +354,14 @@ const Settings = () => {
                                 <tbody>
                                     <tr>
                                         <td style={{ padding: '4px 0', fontSize: '12px' }}>
-                                            CAMISA LINO
-                                            <br />
-                                            <small style={{ fontSize: '10px', color: '#555' }}>Desc: -$5.000,00</small>
+                                            <div style={{ fontWeight: 'bold' }}>CAMISA LINO</div>
+                                            <div style={{ fontSize: '10px', color: '#555', marginTop: '2px' }}>
+                                                Precio: $82.500,00
+                                                <span style={{ color: '#c2410c', fontWeight: 'bold', marginLeft: '6px' }}>(Desc. -$5.000,00)</span>
+                                            </div>
                                         </td>
-                                        <td style={{ textAlign: 'right', padding: '4px 0', fontSize: '12px' }}>1</td>
-                                        <td style={{ textAlign: 'right', padding: '4px 0', fontSize: '12px' }}>$82.500,00</td>
+                                        <td style={{ textAlign: 'right', padding: '4px 0', fontSize: '12px', verticalAlign: 'top' }}>1</td>
+                                        <td style={{ textAlign: 'right', padding: '4px 0', fontSize: '12px', verticalAlign: 'top' }}>$77.500,00</td>
                                     </tr>
                                 </tbody>
                             </table>

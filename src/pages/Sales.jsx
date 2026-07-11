@@ -29,6 +29,7 @@ const Sales = () => {
     const [selectedSale, setSelectedSale] = useState(null);
     const [showActionModal, setShowActionModal] = useState(null); // 'anular' or 'reembolsar'
     const [confirmText, setConfirmText] = useState('');
+    const [showAdminMenu, setShowAdminMenu] = useState(false);
     const [reason, setReason] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -44,6 +45,15 @@ const Sales = () => {
     const ticketConfigRef = useRef(null);
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const [downloadingPDF, setDownloadingPDF] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const media = window.matchMedia('(max-width: 640px)');
+        const handleChange = (event) => setIsMobile(event.matches);
+        setIsMobile(media.matches);
+        media.addEventListener('change', handleChange);
+        return () => media.removeEventListener('change', handleChange);
+    }, []);
 
     useEffect(() => {
         api.get('settings/')
@@ -277,9 +287,22 @@ const Sales = () => {
                   const itemLabel = item.item_type === 'SERVICIO' ? (item.description || 'Servicio') : (item.producto_nombre || item.nombre || 'Producto');
                   return `
                 <tr>
-                  <td>${itemLabel}${descItem > 0 ? `<br><small>Desc: -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</small>` : ''}</td>
-                  <td class="text-right">${item.quantity}</td>
-                  <td class="text-right">$${baseSub.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                  <td>
+                    <div style="font-weight: bold;">${itemLabel}</div>
+                    ${descItem > 0 ? `
+                      <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                        Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
+                        <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                      </div>
+                    ` : `
+                      <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                        Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                      </div>
+                    `}
+                  </td>
+                  <td class="text-right" style="vertical-align: top;">${item.quantity}</td>
+                  <td class="text-right" style="vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
                 </tr>
               `;
               }).join('')}
@@ -379,9 +402,22 @@ const Sales = () => {
                 const itemLabel = item.item_type === 'SERVICIO' ? (item.description || 'Servicio') : (item.producto_nombre || item.nombre || 'Producto');
                 return `
               <tr>
-                <td style="padding: 4px 0;">${itemLabel}${descItem > 0 ? `<br><small>Desc: -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</small>` : ''}</td>
-                <td style="padding: 4px 0; text-align: right;">${item.quantity}</td>
-                <td style="padding: 4px 0; text-align: right;">$${baseSub.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                <td style="padding: 4px 0;">
+                  <div style="font-weight: bold;">${itemLabel}</div>
+                  ${descItem > 0 ? `
+                    <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                      Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                      ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
+                      <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                    </div>
+                  ` : `
+                    <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                      Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    </div>
+                  `}
+                </td>
+                <td style="padding: 4px 0; text-align: right; vertical-align: top;">${item.quantity}</td>
+                <td style="padding: 4px 0; text-align: right; vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
               </tr>
             `;
             }).join('')}
@@ -436,6 +472,11 @@ const Sales = () => {
         if (!sale) return;
         navigate(`/new-sale?edit=${sale.id}`);
         setSelectedSale(null);
+    };
+
+    const handleCloseDetail = () => {
+        setSelectedSale(null);
+        setShowAdminMenu(false);
     };
 
     return (
@@ -579,14 +620,14 @@ const Sales = () => {
                                 <td data-label="Fecha">{formatDate(sale.date)}</td>
                                 <td data-label="Vendedor">
                                     <div className="flex items-center gap-1">
-                                        <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold">
+                                        <div className="seller-avatar" title={sale.user_name}>
                                             {sale.user_name?.charAt(0).toUpperCase()}
                                         </div>
                                         <span className="text-sm font-medium">{sale.user_name}</span>
                                     </div>
                                 </td>
                                 <td data-label="Método">{sale.payment_method}</td>
-                                <td className="font-bold text-slate-800" data-label="Total">{formatCurrency(sale.total)}</td>
+                                <td className="font-bold" data-label="Total">{formatCurrency(sale.total)}</td>
                                 <td data-label="Estado">
                                     {sale.is_voided ? (
                                         <span className="badge badge-danger">ANULADA</span>
@@ -636,72 +677,213 @@ const Sales = () => {
             {selectedSale && !showActionModal && (
                 <Modal
                     title={`Detalle de venta #${selectedSale.sale_number || selectedSale.id}`}
-                    onClose={() => setSelectedSale(null)}
+                    onClose={handleCloseDetail}
                     size="lg"
                     className="sale-detail-modal-container"
-                    footer={(
-                        <div className="flex-between w-full">
-                            {isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded && (
-                                <div className="flex-row gap-sm">
-                                    <button
-                                        onClick={() => setShowActionModal('reembolsar')}
-                                        className="ui-btn ui-btn-secondary text-warning"
-                                    >
-                                        <RotateCcw size={16} /> Reembolsar venta
-                                    </button>
-                                </div>
-                            )}
-                            {canEditSale(selectedSale) && (
-                                <div className="flex-row gap-sm">
-                                    <button
-                                        onClick={() => setShowActionModal('anular')}
-                                        className="ui-btn ui-btn-danger"
-                                    >
-                                        <Trash2 size={16} /> Anular venta
-                                    </button>
-                                    <button
-                                        onClick={() => handleEditSale(selectedSale)}
-                                        className="ui-btn ui-btn-secondary"
-                                    >
-                                        <Edit size={16} /> Editar venta
-                                    </button>
-                                </div>
-                            )}
-                            {isAdmin && selectedSale.is_voided && (
-                                <div className="flex-row gap-sm">
-                                    <button
-                                        onClick={handleHardDelete}
-                                        className="ui-btn ui-btn-danger"
-                                    >
-                                        <Trash2 size={16} /> Eliminar venta
-                                    </button>
-                                </div>
-                            )}
-                            <div className="flex-row gap-sm ml-auto">
+                    footer={isMobile ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                            {/* Acciones Dropdown */}
+                            <div style={{ position: 'relative', width: '100%' }}>
+                                <button
+                                    onClick={() => setShowAdminMenu(!showAdminMenu)}
+                                    className="ui-btn ui-btn-secondary"
+                                    style={{ height: '38px', minHeight: '38px', width: '100%', padding: '8px 16px', fontSize: '0.85rem', gap: '6px', justifyContent: 'center' }}
+                                >
+                                    <span>Acciones de administrador</span>
+                                    <span style={{ fontSize: '0.65rem' }}>▼</span>
+                                </button>
+                                {showAdminMenu && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        bottom: '100%',
+                                        left: 0,
+                                        right: 0,
+                                        marginBottom: '6px',
+                                        background: 'var(--surface-elevated)',
+                                        border: '1px solid var(--border-subtle)',
+                                        borderRadius: '8px',
+                                        boxShadow: 'var(--shadow-lg)',
+                                        padding: '6px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '4px',
+                                        zIndex: 100
+                                    }}>
+                                        {isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded && (
+                                            <button
+                                                onClick={() => { setShowActionModal('reembolsar'); setShowAdminMenu(false); }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--warning-text)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                            >
+                                                <RotateCcw size={14} /> Reembolsar venta
+                                            </button>
+                                        )}
+                                        {canEditSale(selectedSale) && (
+                                            <>
+                                                <button
+                                                    onClick={() => { setShowActionModal('anular'); setShowAdminMenu(false); }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--danger-text)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                                >
+                                                    <Trash2 size={14} /> Anular venta
+                                                </button>
+                                                <button
+                                                    onClick={() => { handleEditSale(selectedSale); setShowAdminMenu(false); }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                                >
+                                                    <Edit size={14} /> Editar venta
+                                                </button>
+                                            </>
+                                        )}
+                                        {isAdmin && selectedSale.is_voided && (
+                                            <button
+                                                onClick={() => { handleHardDelete(); setShowAdminMenu(false); }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--danger-text)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                            >
+                                                <Trash2 size={14} /> Eliminar venta
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Mobile action buttons stacked */}
+                            <button
+                                onClick={() => handleDownloadTicketPDF(selectedSale)}
+                                className="ui-btn ui-btn-secondary"
+                                disabled={downloadingPDF}
+                                style={{ height: '38px', minHeight: '38px', width: '100%', padding: '8px 16px', fontSize: '0.85rem', gap: '6px', justifyContent: 'center' }}
+                            >
+                                <FileDown size={14} /> Descargar PDF
+                            </button>
+                            <button
+                                onClick={() => handlePrintTicket(selectedSale)}
+                                className="ui-btn ui-btn-secondary"
+                                style={{ height: '38px', minHeight: '38px', width: '100%', padding: '8px 16px', fontSize: '0.85rem', gap: '6px', justifyContent: 'center' }}
+                            >
+                                <Printer size={14} /> Imprimir Ticket
+                            </button>
+                            <button 
+                                className="ui-btn ui-btn-primary" 
+                                onClick={handleCloseDetail}
+                                style={{ height: '38px', minHeight: '38px', width: '100%', padding: '8px 16px', fontSize: '0.85rem', justifyContent: 'center' }}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '8px' }}>
+                            {/* Actions Dropdown for Desktop */}
+                            <div style={{ position: 'relative' }}>
+                                <button
+                                    onClick={() => setShowAdminMenu(!showAdminMenu)}
+                                    className="ui-btn ui-btn-secondary"
+                                    style={{ height: '34px', minHeight: '34px', padding: '6px 12px', fontSize: '0.8rem', gap: '6px' }}
+                                >
+                                    <span>Acciones</span>
+                                    <span style={{ fontSize: '0.65rem' }}>▼</span>
+                                </button>
+                                {showAdminMenu && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        bottom: '100%',
+                                        left: 0,
+                                        marginBottom: '6px',
+                                        background: 'var(--surface-elevated)',
+                                        border: '1px solid var(--border-subtle)',
+                                        borderRadius: '8px',
+                                        boxShadow: 'var(--shadow-lg)',
+                                        padding: '6px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '4px',
+                                        zIndex: 100,
+                                        minWidth: '160px'
+                                    }}>
+                                        {isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded && (
+                                            <button
+                                                onClick={() => { setShowActionModal('reembolsar'); setShowAdminMenu(false); }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', color: 'var(--warning-text)', fontSize: '0.8rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                            >
+                                                <RotateCcw size={14} /> Reembolsar
+                                            </button>
+                                        )}
+                                        {canEditSale(selectedSale) && (
+                                            <>
+                                                <button
+                                                    onClick={() => { setShowActionModal('anular'); setShowAdminMenu(false); }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', color: 'var(--danger-text)', fontSize: '0.8rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                                >
+                                                    <Trash2 size={14} /> Anular
+                                                </button>
+                                                <button
+                                                    onClick={() => { handleEditSale(selectedSale); setShowAdminMenu(false); }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.8rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                                >
+                                                    <Edit size={14} /> Editar
+                                                </button>
+                                            </>
+                                        )}
+                                        {isAdmin && selectedSale.is_voided && (
+                                            <button
+                                                onClick={() => { handleHardDelete(); setShowAdminMenu(false); }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', border: 'none', background: 'transparent', color: 'var(--danger-text)', fontSize: '0.8rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                            >
+                                                <Trash2 size={14} /> Eliminar
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Secondary Output Actions & Close for Desktop */}
+                            <div style={{ display: 'flex', flexDirection: 'row', gap: '6px', alignItems: 'center' }}>
                                 <button
                                     onClick={() => handleDownloadTicketPDF(selectedSale)}
                                     className="ui-btn ui-btn-secondary"
                                     disabled={downloadingPDF}
+                                    style={{ height: '34px', minHeight: '34px', padding: '6px 12px', fontSize: '0.8rem', gap: '6px' }}
                                 >
-                                    <FileDown size={16} /> {downloadingPDF ? 'Descargando...' : 'Descargar PDF'}
+                                    <FileDown size={14} /> PDF
                                 </button>
                                 <button
                                     onClick={() => handlePrintTicket(selectedSale)}
                                     className="ui-btn ui-btn-secondary"
+                                    style={{ height: '34px', minHeight: '34px', padding: '6px 12px', fontSize: '0.8rem', gap: '6px' }}
                                 >
-                                    <Printer size={16} /> Imprimir Ticket
+                                    <Printer size={14} /> Ticket
                                 </button>
-                                <button className="ui-btn ui-btn-primary" onClick={() => setSelectedSale(null)}>Cerrar</button>
+                                <button 
+                                    className="ui-btn ui-btn-primary" 
+                                    onClick={handleCloseDetail}
+                                    style={{ height: '34px', minHeight: '34px', padding: '6px 12px', fontSize: '0.85rem' }}
+                                >
+                                    Cerrar
+                                </button>
                             </div>
                         </div>
                     )}
                 >
                     <div className="sale-detail-modal stack gap-md">
                         {/* Summary Header */}
-                        <div className="sale-detail-summary grid four-cols gap-md p-md bg-slate-50 rounded-lg border border-slate-200">
+                        <div className="sale-detail-summary grid four-cols gap-md p-md" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' }}>
                             <div className="stack gap-xs">
                                 <span className="eyebrow">Fecha</span>
-                                <span className="font-medium text-slate-700">{formatDate(selectedSale.date)}</span>
+                                <span className="font-medium">{formatDate(selectedSale.date)}</span>
                             </div>
                             <div className="stack gap-xs">
                                 <span className="eyebrow">Vendedor</span>
@@ -709,12 +891,12 @@ const Sales = () => {
                                     <div className="avatar" style={{ width: 24, height: 24, fontSize: '0.7rem' }}>
                                         {selectedSale.user_name?.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="font-medium text-slate-700">{selectedSale.user_name}</span>
+                                    <span className="font-medium">{selectedSale.user_name}</span>
                                 </div>
                             </div>
                             <div className="stack gap-xs">
                                 <span className="eyebrow">Método</span>
-                                <span className="font-medium text-slate-700">{selectedSale.payment_method}</span>
+                                <span className="font-medium">{selectedSale.payment_method}</span>
                             </div>
                             <div className="stack gap-xs">
                                 <span className="eyebrow">Estado</span>
@@ -760,14 +942,14 @@ const Sales = () => {
                         </div>
 
                         {/* Totals */}
-                        <div className="flex-col items-end gap-xs pt-sm border-t border-slate-200">
+                        <div className="flex-col items-end gap-xs pt-sm" style={{ borderTop: '1px solid var(--border-subtle)' }}>
                             {selectedSale.discount > 0 && (
                                 <div className="flex-row gap-lg text-sm text-danger-text">
                                     <span>Descuento:</span>
                                     <span>- {formatCurrency(selectedSale.discount)}</span>
                                 </div>
                             )}
-                            <div className="flex-row gap-lg text-lg font-bold text-slate-900">
+                            <div className="flex-row gap-lg text-lg font-bold">
                                 <span>Total:</span>
                                 <span>{formatCurrency(selectedSale.total)}</span>
                             </div>
@@ -784,7 +966,7 @@ const Sales = () => {
                     size="md"
                 >
                     <form onSubmit={handleAction}>
-                        <p className="text-sm text-slate-600 mb-4">
+                        <p className="text-sm text-muted mb-4">
                             Para confirmar esta acción irreversible, escribí <strong>{showActionModal === 'anular' ? 'borrar' : 'reembolsar'}</strong> en el campo de abajo.
                         </p>
                         <div className="form-group mb-4">

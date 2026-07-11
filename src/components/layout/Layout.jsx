@@ -173,7 +173,9 @@ const Layout = () => {
               <p>Cargando módulo...</p>
             </div>
           }>
-            <Outlet />
+            <div key={location.pathname} className="page-transition-wrapper">
+              <Outlet />
+            </div>
           </Suspense>
         </main>
       </div>

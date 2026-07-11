@@ -168,14 +168,16 @@
     font-weight: 600;
   }
 
-  .products-page .table-container .styled-table tbody td[data-label="Producto / Proveedor"] {
+  .products-page .table-container .styled-table tbody td[data-label="Producto / Proveedor"],
+  .products-page .table-container .styled-table tbody td[data-label="Producto"] {
     grid-column: 1 / -1;
     display: block;
     padding-bottom: 6px;
     border-bottom: 1px dashed rgba(148, 163, 184, 0.2);
   }
 
-  .products-page .table-container .styled-table tbody td[data-label="Producto / Proveedor"]::before {
+  .products-page .table-container .styled-table tbody td[data-label="Producto / Proveedor"]::before,
+  .products-page .table-container .styled-table tbody td[data-label="Producto"]::before {
     display: none;
   }
 

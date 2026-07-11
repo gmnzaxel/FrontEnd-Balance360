@@ -374,3 +374,48 @@ textarea {
 [data-theme="light"] .Toastify__toast-body {
   color: var(--text-primary) !important;
 }
+
+/* ─── Page Transition Wrapper ─────────────────────────────────── */
+.page-transition-wrapper {
+  animation: pageEnter 220ms var(--ease-out-expo) both;
+  display: contents; /* keeps layout unchanged */
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Export Progress Bar ─────────────────────────────────────── */
+@keyframes progressSlide {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(60%); }
+  100% { transform: translateX(300%); }
+}
+
+.export-progress-bar {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.export-progress-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  animation: progressSlide 1.4s ease-in-out infinite;
+}

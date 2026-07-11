@@ -130,38 +130,44 @@ const Reports = () => {
                 </div>
                 <div className="page-header-actions">
                     <div className="reports-date-filters">
-                        <Calendar size={16} className="text-slate-400" />
-                        <span className="text-slate-400 text-sm font-medium">Desde:</span>
-                        <input
-                            type="date"
-                            className="bg-transparent text-sm text-slate-700 outline-none w-auto font-medium"
-                            value={startDate}
-                            max={endDate}
-                            onChange={e => setStartDate(e.target.value)}
-                        />
-                        <span className="text-slate-500 mx-1">|</span>
-                        <span className="text-slate-400 text-sm font-medium">Hasta:</span>
-                        <input
-                            type="date"
-                            className="bg-transparent text-sm text-slate-700 outline-none w-auto font-medium"
-                            value={endDate}
-                            min={startDate}
-                            onChange={e => setEndDate(e.target.value)}
-                        />
+                        <Calendar size={16} className="reports-calendar-icon" />
+                        <div className="reports-date-group">
+                            <span className="text-muted text-sm font-medium">Desde:</span>
+                            <input
+                                type="date"
+                                className="bg-transparent text-sm outline-none w-auto font-medium"
+                                value={startDate}
+                                max={endDate}
+                                onChange={e => setStartDate(e.target.value)}
+                            />
+                        </div>
+                        <span className="reports-date-separator">|</span>
+                        <div className="reports-date-group">
+                            <span className="text-muted text-sm font-medium">Hasta:</span>
+                            <input
+                                type="date"
+                                className="bg-transparent text-sm outline-none w-auto font-medium"
+                                value={endDate}
+                                min={startDate}
+                                onChange={e => setEndDate(e.target.value)}
+                            />
+                        </div>
                     </div>
                     <button
                         className="btn btn-primary"
                         onClick={handleExport}
                         disabled={exporting}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '12px' }}
+                        style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '12px', overflow: 'hidden' }}
                     >
-                        <FileSpreadsheet size={16} /> {exporting ? 'Generando...' : 'Exportar'}
+                        {exporting && <span className="export-progress-bar" aria-hidden="true" />}
+                        <FileSpreadsheet size={16} />
+                        {exporting ? 'Generando...' : 'Exportar'}
                     </button>
                 </div>
             </div>
 
             {loading && !stats ? (
-                <div className="p-12 text-center text-slate-400">Cargando reportes…</div>
+                <div className="p-12 text-center text-muted">Cargando reportes…</div>
             ) : stats && (
                 <div className="stack gap-lg page-section">
                     {/* KPIs Row */}
@@ -216,8 +222,8 @@ const Reports = () => {
                         <div className="card reports-chart-card">
                             <div className="card-header reports-card-header flex-between" style={{ paddingBottom: '20px' }}>
                                 <div className="flex items-center gap-3">
-                                    <TrendingUp size={20} className="text-slate-400" />
-                                    <h3 className="text-lg font-bold text-slate-800">Evolución de ingresos</h3>
+                                    <TrendingUp size={20} className="text-muted" />
+                                    <h3 className="text-lg font-bold">Evolución de ingresos</h3>
                                 </div>
                                 <div className="reports-chart-selector flex">
                                     <button

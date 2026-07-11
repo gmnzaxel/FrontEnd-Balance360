@@ -121,3 +121,84 @@
     align-items: flex-start;
   }
 }
+
+/* ─── Logo Upload Section ───────────────────────────────────── */
+.settings-logo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  transition: border-color var(--duration-md) var(--ease-smooth);
+}
+
+.settings-logo-section:hover {
+  border-color: var(--primary-500);
+}
+
+.settings-logo-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.settings-logo-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px dashed var(--border-strong);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--duration-md) var(--ease-smooth);
+}
+
+.settings-logo-upload-btn:hover {
+  border-color: var(--primary-500);
+  color: var(--primary-400);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.settings-logo-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.settings-logo-img {
+  max-height: 64px;
+  max-width: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: white;
+  padding: 6px;
+}
+
+.settings-logo-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--danger-500, #ef4444);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--danger-500, #ef4444);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-md) var(--ease-smooth);
+}
+
+.settings-logo-remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+}

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef, memo } from 'react';
 import useCart from '../hooks/useCart';
-import { Search, Trash2, Wrench, PackageX, FileDown, CreditCard, Printer } from 'lucide-react';
+import useMediaQuery from '../hooks/useMediaQuery';
+import { Search, Trash2, Wrench, PackageX, FileDown, CreditCard, Printer, ShoppingCart } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
@@ -10,6 +11,7 @@ import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import Select from '../components/ui/Select';
 import Skeleton from '../components/ui/Skeleton';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 const loadHtml2Pdf = () => {
   return new Promise((resolve, reject) => {
@@ -56,7 +58,7 @@ const ProductRow = memo(({ product, onAdd, isFocused, onMouseEnter }) => {
     );
 });
 
-const CartItem = memo(({ item, onRemove, onUpdatePrice, onUpdateDiscount }) => {
+const CartItem = memo(({ item, onRemove, onUpdatePrice, onUpdateDiscount, onUpdateQuantity }) => {
     const base = (parseFloat(item.price) || 0) * item.quantity;
     const dvs = parseFloat(item.discountValue);
     const desc = isNaN(dvs) ? 0 : (item.discountType === '%' ? base * (dvs / 100) : dvs);
@@ -76,8 +78,31 @@ const CartItem = memo(({ item, onRemove, onUpdatePrice, onUpdateDiscount }) => {
                 </button>
             </div>
             <div className="flex-row between items-center gap-sm">
-                <div className="badge badge-neutral" style={{ fontSize: '0.75rem', padding: '4px 8px', flexShrink: 0 }}>
-                    {item.quantity} un.
+                <div className="quantity-stepper flex-row items-center" style={{ gap: '2px', background: 'var(--surface-muted)', borderRadius: '6px', padding: '1px', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => onUpdateQuantity(item.id, (parseInt(item.quantity, 10) || 1) - 1)}
+                    disabled={(parseInt(item.quantity, 10) || 1) <= 1}
+                    className="stepper-btn"
+                    style={{ border: 'none', background: 'transparent', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 'bold', fontSize: '0.8rem' }}
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) => onUpdateQuantity(item.id, e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                    className="stepper-input"
+                    style={{ width: '24px', border: 'none', background: 'transparent', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-primary)', outline: 'none', padding: 0 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onUpdateQuantity(item.id, (parseInt(item.quantity, 10) || 0) + 1)}
+                    className="stepper-btn"
+                    style={{ border: 'none', background: 'transparent', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 'bold', fontSize: '0.8rem' }}
+                  >
+                    +
+                  </button>
                 </div>
                 <div style={{ flex: 1, position: 'relative' }}>
                     <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-500)' }}>$</span>
@@ -125,6 +150,13 @@ const CartItem = memo(({ item, onRemove, onUpdatePrice, onUpdateDiscount }) => {
 // ─── Componente principal ───────────────────────────────────────────────────────
 
 const Quotes = () => {
+    const isMobile = useMediaQuery('(max-width: 768px)');
+    const [showCartModal, setShowCartModal] = useState(false);
+    const [cartPulse, setCartPulse] = useState(false);
+    const [cartAnimKey, setCartAnimKey] = useState(0);
+    const cartPulseTimerRef = useRef(null);
+    const [multiplier, setMultiplier] = useState(1);
+
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const [products, setProducts]           = useState([]);
     const [loading, setLoading]             = useState(false);
@@ -142,6 +174,7 @@ const Quotes = () => {
 
     const [showServiceModal, setShowServiceModal] = useState(false);
     const [serviceForm, setServiceForm]           = useState({ description: '', price: '' });
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
 
     // ─── Hook de carrito compartido ─────────────────────────────────────────────
     const {
@@ -205,15 +238,22 @@ const Quotes = () => {
 
     const totalPages = useMemo(() => Math.max(1, Math.ceil(totalCount / PAGE_SIZE)), [totalCount]);
 
+    const triggerCartPulse = useCallback(() => {
+        clearTimeout(cartPulseTimerRef.current);
+        setCartPulse(true);
+        cartPulseTimerRef.current = setTimeout(() => setCartPulse(false), 450);
+    }, []);
+
     // ─── Handlers del carrito ───────────────────────────────────────────────────
 
     const addToCart = useCallback((product) => {
+        const qty = multiplier;
         setCart(prev => {
             const exists = prev.find(i => i.item_type === 'PRODUCTO' && i.product === product.id);
             if (exists) {
                 return prev.map(i =>
                     i.item_type === 'PRODUCTO' && i.product === product.id
-                        ? { ...i, quantity: i.quantity + 1 }
+                        ? { ...i, quantity: i.quantity + qty }
                         : i
                 );
             }
@@ -223,12 +263,15 @@ const Quotes = () => {
                 product: product.id,
                 nombre: product.nombre,
                 price: parseFloat(product.precio_venta) || 0,
-                quantity: 1,
+                quantity: qty,
                 discountType: '$',
                 discountValue: '',
             }];
         });
-    }, [setCart]);
+        setMultiplier(1);
+        setCartAnimKey(k => k + 1);
+        triggerCartPulse();
+    }, [setCart, triggerCartPulse, multiplier]);
 
     const addService = useCallback(() => {
         if (!serviceForm.description || !serviceForm.price) {
@@ -238,7 +281,9 @@ const Quotes = () => {
         addServiceItem(serviceForm.description, serviceForm.price);
         setServiceForm({ description: '', price: '' });
         setShowServiceModal(false);
-    }, [serviceForm, addServiceItem]);
+        setCartAnimKey(k => k + 1);
+        triggerCartPulse();
+    }, [serviceForm, addServiceItem, triggerCartPulse]);
 
     const updatePrice = useCallback((id, newPrice) => {
         setCart(prev => prev.map(item =>
@@ -246,11 +291,25 @@ const Quotes = () => {
         ));
     }, [setCart]);
 
-    const handleClearCart = useCallback(() => {
-        if (window.confirm('¿Seguro que deseas vaciar el presupuesto actual?')) {
-            clearCart();
-            setClientName('');
+    const updateQuantity = useCallback((id, quantity) => {
+        if (quantity === '') {
+            setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: '' } : item));
+            return;
         }
+        const val = parseInt(quantity, 10);
+        if (Number.isNaN(val)) return;
+        const value = Math.max(1, val);
+        setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: value } : item));
+    }, [setCart]);
+
+    const handleClearCart = useCallback(() => {
+        setShowClearConfirm(true);
+    }, []);
+
+    const confirmClearCart = useCallback(() => {
+        setShowClearConfirm(false);
+        clearCart();
+        setClientName('');
     }, [clearCart]);
 
     // ─── Generar / imprimir presupuesto ─────────────────────────────────────────
@@ -273,6 +332,7 @@ const Quotes = () => {
         const phone = ticketConfigRef.current?.ticket_phone;
         const email = ticketConfigRef.current?.ticket_email;
         const dateStr = new Date().toLocaleString('es-AR', { hour12: false });
+        const logoDataUrl = localStorage.getItem('ticket_logo') || '';
 
         // Lógica corregida de descuentos para presupuesto
         const itemsBaseSubtotal = cart.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -296,6 +356,7 @@ const Quotes = () => {
       <html>
         <head>
           <title>Presupuesto${clientName ? ` - ${clientName}` : ''}</title>
+          <meta charset="UTF-8">
           <style>
             @media print {
               @page { margin: 0; }
@@ -303,7 +364,7 @@ const Quotes = () => {
             }
             body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 10px; font-size: 12px; }
             .header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-            .branch-title { font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 3px; display: inline-block; margin-bottom: 8px; }
+            .branch-title { font-size: 16px; font-weight: bold; text-transform: uppercase; }
             .company { font-size: 11px; color: #333; margin-bottom: 5px; white-space: pre-wrap; }
             .info { font-size: 10px; margin-bottom: 5px; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
@@ -317,7 +378,10 @@ const Quotes = () => {
         </head>
         <body>
           <div class="header">
-            <div class="branch-title">${branchName}</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
+              ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:44px;max-width:60px;object-fit:contain;flex-shrink:0;" />` : ''}
+              <div class="branch-title">${branchName}</div>
+            </div>
             <div class="company">${headerText}</div>
             ${address ? `<div class="info">Dirección: ${address}</div>` : ''}
             ${cuit ? `<div class="info">CUIT: ${cuit}</div>` : ''}
@@ -338,16 +402,29 @@ const Quotes = () => {
               </tr>
             </thead>
             <tbody>
-              ${cart.map(item => {
+               ${cart.map(item => {
                   const baseSub = (parseFloat(item.price) || 0) * item.quantity;
                   const dv = parseFloat(item.discountValue);
                   const descItem = !item.discountValue || isNaN(dv) ? 0
                       : item.discountType === '%' ? baseSub * (dv / 100) : dv;
                   return `
                 <tr>
-                  <td>${item.nombre} ${descItem > 0 ? `<br><small>Desc: -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</small>` : ''}</td>
-                  <td class="text-right">${item.quantity}</td>
-                  <td class="text-right">$${baseSub.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                  <td>
+                    <div style="font-weight: bold;">${item.nombre}</div>
+                    ${descItem > 0 ? `
+                      <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
+                        <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                      </div>
+                    ` : item.quantity > 1 ? `
+                      <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })} x ${item.quantity} un.
+                      </div>
+                    ` : ''}
+                  </td>
+                  <td class="text-right" style="vertical-align: top;">${item.quantity}</td>
+                  <td class="text-right" style="vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
                 </tr>
               `;
               }).join('')}
@@ -397,6 +474,7 @@ const Quotes = () => {
         const phone = ticketConfigRef.current?.ticket_phone;
         const email = ticketConfigRef.current?.ticket_email;
         const dateStr = new Date().toLocaleString('es-AR', { hour12: false });
+        const logoDataUrl = localStorage.getItem('ticket_logo') || '';
 
         // Lógica corregida de descuentos para presupuesto en PDF
         const itemsBaseSubtotal = cart.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -419,7 +497,10 @@ const Quotes = () => {
         const htmlContent = `
       <div style="font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 15px; font-size: 12px; box-sizing: border-box; background: white; color: black;">
         <div style="text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px;">
-          <div style="font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 3px; display: inline-block; margin-bottom: 8px;">${branchName}</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
+            ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:44px;max-width:60px;object-fit:contain;flex-shrink:0;" />` : ''}
+            <div style="font-size: 16px; font-weight: bold; text-transform: uppercase;">${branchName}</div>
+          </div>
           <div style="font-size: 11px; color: #333; margin-bottom: 5px; white-space: pre-wrap;">${headerText}</div>
           ${address ? `<div style="font-size: 10px; color: #555;">Dirección: ${address}</div>` : ''}
           ${cuit ? `<div style="font-size: 10px; color: #555;">CUIT: ${cuit}</div>` : ''}
@@ -427,7 +508,7 @@ const Quotes = () => {
           ${iva ? `<div style="font-size: 10px; color: #555;">IVA: ${iva}</div>` : ''}
           ${phone ? `<div style="font-size: 10px; color: #555;">Tel: ${phone}</div>` : ''}
           ${email ? `<div style="font-size: 10px; color: #555;">Email: ${email}</div>` : ''}
-          <div style="font-size: 10px; margin-bottom: 5px; marginTop: 5px;">Validez: ${validityDays} días</div>
+          <div style="font-size: 10px; margin-bottom: 5px; margin-top: 5px;">Validez: ${validityDays} días</div>
           ${clientName ? `<div style="font-size: 10px; margin-bottom: 5px;">Cliente: ${clientName}</div>` : ''}
           <div style="font-size: 10px; margin-bottom: 5px;">Fecha: ${dateStr}</div>
         </div>
@@ -448,9 +529,22 @@ const Quotes = () => {
                     : item.discountType === '%' ? baseSub * (dv / 100) : dv;
                 return `
               <tr>
-                <td style="padding: 4px 0;">${item.nombre} ${descItem > 0 ? `<br><small>Desc: -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</small>` : ''}</td>
-                <td style="padding: 4px 0; text-align: right;">${item.quantity}</td>
-                <td style="padding: 4px 0; text-align: right;">$${baseSub.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                <td style="padding: 4px 0;">
+                  <div style="font-weight: bold;">${item.nombre}</div>
+                  ${descItem > 0 ? `
+                    <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                      Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                      ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
+                      <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                    </div>
+                  ` : item.quantity > 1 ? `
+                    <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                      Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })} x ${item.quantity} un.
+                    </div>
+                  ` : ''}
+                </td>
+                <td style="padding: 4px 0; text-align: right; vertical-align: top;">${item.quantity}</td>
+                <td style="padding: 4px 0; text-align: right; vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
               </tr>
             `;
             }).join('')}
@@ -555,16 +649,62 @@ const Quotes = () => {
             {/* ── Panel catálogo ── */}
             <div className="catalog-panel">
                 <div className="flex-row between">
-                    <Input
-                        ref={searchInputRef}
-                        placeholder="Buscar producto… [F2]"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        icon={<Search size={18} />}
-                    />
+                    <div style={{ position: 'relative', flex: 1, marginRight: '16px' }}>
+                        <Input
+                            ref={searchInputRef}
+                            placeholder="Buscar producto… [F2]"
+                            value={search}
+                            onChange={(e) => {
+                                let val = e.target.value;
+                                const match = val.match(/^(\d+)\*(.*)$/);
+                                if (match) {
+                                    setMultiplier(parseInt(match[1], 10));
+                                    val = match[2];
+                                }
+                                setSearch(val);
+                            }}
+                            icon={<Search size={18} />}
+                        />
+                        {search && (
+                          <button
+                            onClick={() => { setSearch(''); searchInputRef.current?.focus(); }}
+                            aria-label="Limpiar búsqueda"
+                            style={{
+                              position: 'absolute',
+                              right: multiplier > 1 ? '52px' : '12px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: 'var(--slate-400)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: '2px',
+                              borderRadius: '50%',
+                              transition: 'color 0.15s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.color = 'var(--slate-700)'}
+                            onMouseLeave={e => e.currentTarget.style.color = 'var(--slate-400)'}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                          </button>
+                        )}
+                        {multiplier > 1 && (
+                            <span className="badge badge-primary" style={{ position: 'absolute', right: '12px', top: '10px' }}>
+                                {multiplier}x
+                            </span>
+                        )}
+                    </div>
                     <Button variant="secondary" icon={<Wrench size={16} />} onClick={() => setShowServiceModal(true)}>
                         + Servicio Libre
                     </Button>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '6px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ fontSize: '1rem' }}>💡</span>
+                  <span>Tip: Podés escribir <code>cantidad*</code> (ej: <code>5*coca</code>) en el buscador para cargar múltiples unidades.</span>
                 </div>
                 <div className="muted small mb-2">Catálogo</div>
                 <div className="pos-table-wrapper">
@@ -634,108 +774,111 @@ const Quotes = () => {
             </div>
 
             {/* ── Panel carrito ── */}
-            <div className="cart-panel">
-                <div className="card-head" style={{ padding: '14px 16px', borderBottom: '1px solid var(--slate-200)' }}>
-                    <div>
-                        <p className="eyebrow">Armado de</p>
-                        <div className="flex-row gap-sm items-center">
-                            <h3>Presupuesto</h3>
-                        </div>
-                    </div>
-                    <div className="badge badge-neutral">{cartCount} items</div>
-                </div>
-
-                <div className="cart-body">
-                    {!cart.length && (
-                        <div className="empty-state">
-                            <FileDown size={42} className="muted" />
-                            <p>Agregá productos o servicios al presupuesto</p>
-                        </div>
-                    )}
-                    {cart.map(item => (
-                        <CartItem
-                            key={item.id}
-                            item={item}
-                            onRemove={removeItem}
-                            onUpdatePrice={updatePrice}
-                            onUpdateDiscount={updateItemDiscount}
-                        />
-                    ))}
-                </div>
-
-                <div className="cart-footer">
-                    <Input
-                        placeholder="Nombre del cliente (Opcional)"
-                        value={clientName}
-                        onChange={(e) => setClientName(e.target.value)}
-                        style={{ marginBottom: '12px' }}
-                    />
-                    <div className="grid two-cols">
-                        <div className="ui-field">
-                            <span className="field-label">Descuento Global</span>
-                            <div className="flex-row gap-xs">
-                                <div className="field-control" style={{ flex: 1 }}>
-                                    <input
-                                        type="number"
-                                        value={discount}
-                                        onChange={(e) => setDiscount(e.target.value)}
-                                        placeholder="0"
-                                    />
-                                </div>
-                                <div className="field-control">
-                                    <select
-                                        style={{ width: '60px', paddingLeft: '8px', paddingRight: '8px' }}
-                                        value={discountType}
-                                        onChange={(e) => setDiscountType(e.target.value)}
-                                    >
-                                        <option value="$">$</option>
-                                        <option value="%">%</option>
-                                    </select>
-                                </div>
+            {!isMobile && (
+                <div className="cart-panel">
+                    <div className="card-head" style={{ padding: '14px 16px', borderBottom: '1px solid var(--slate-200)' }}>
+                        <div>
+                            <p className="eyebrow">Armado de</p>
+                            <div className="flex-row gap-sm items-center">
+                                <h3>Presupuesto</h3>
                             </div>
                         </div>
-                        <Select
-                            label="Validez (Días)"
-                            value={validityDays}
-                            onChange={(e) => setValidityDays(e.target.value)}
-                        >
-                            <option value="1">1 Día</option>
-                            <option value="7">7 Días</option>
-                            <option value="15">15 Días</option>
-                            <option value="30">30 Días</option>
-                        </Select>
+                        <div className="badge badge-neutral">{cartCount} items</div>
                     </div>
-                    <div className="flex-row between" style={{ marginTop: 12, marginBottom: 12 }}>
-                        <div className="muted">Total Presupuestado</div>
-                        <div className="title-xl text-primary">{formatARS(total)}</div>
+
+                    <div className="cart-body">
+                        {!cart.length && (
+                            <div className="empty-state">
+                                <FileDown size={42} className="muted" />
+                                <p>Agregá productos o servicios al presupuesto</p>
+                            </div>
+                        )}
+                        {cart.map(item => (
+                            <CartItem
+                                key={item.id}
+                                item={item}
+                                onRemove={removeItem}
+                                onUpdatePrice={updatePrice}
+                                onUpdateDiscount={updateItemDiscount}
+                                onUpdateQuantity={updateQuantity}
+                            />
+                        ))}
                     </div>
-                    <div className="stack gap-sm" style={{ marginTop: 12 }}>
-                        <div className="grid two-cols gap-sm">
-                            <Button variant="secondary" onClick={handleClearCart} disabled={!cart.length} fullWidth>
-                                Limpiar todo
-                            </Button>
-                            <Button
-                                variant="primary"
-                                fullWidth
-                                onClick={handleGenerateQuote}
-                                disabled={!cart.length}
-                                icon={<Printer size={18} />}
+
+                    <div className="cart-footer">
+                        <Input
+                            placeholder="Nombre del cliente (Opcional)"
+                            value={clientName}
+                            onChange={(e) => setClientName(e.target.value)}
+                            style={{ marginBottom: '12px' }}
+                        />
+                        <div className="grid two-cols">
+                            <div className="ui-field">
+                                <span className="field-label">Descuento Global</span>
+                                <div className="flex-row gap-xs">
+                                    <div className="field-control" style={{ flex: 1 }}>
+                                        <input
+                                            type="number"
+                                            value={discount}
+                                            onChange={(e) => setDiscount(e.target.value)}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div className="field-control">
+                                        <select
+                                            style={{ width: '60px', paddingLeft: '8px', paddingRight: '8px' }}
+                                            value={discountType}
+                                            onChange={(e) => setDiscountType(e.target.value)}
+                                        >
+                                            <option value="$">$</option>
+                                            <option value="%">%</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <Select
+                                label="Validez (Días)"
+                                value={validityDays}
+                                onChange={(e) => setValidityDays(e.target.value)}
                             >
-                                Imprimir
+                                <option value="1">1 Día</option>
+                                <option value="7">7 Días</option>
+                                <option value="15">15 Días</option>
+                                <option value="30">30 Días</option>
+                            </Select>
+                        </div>
+                        <div className="flex-row between" style={{ marginTop: 12, marginBottom: 12 }}>
+                            <div className="muted">Total Presupuestado</div>
+                            <div className="title-xl text-primary">{formatARS(total)}</div>
+                        </div>
+                        <div className="stack gap-sm" style={{ marginTop: 12 }}>
+                            <div className="grid two-cols gap-sm">
+                                <Button variant="secondary" onClick={handleClearCart} disabled={!cart.length} fullWidth>
+                                    Limpiar todo
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    fullWidth
+                                    onClick={handleGenerateQuote}
+                                    disabled={!cart.length}
+                                    icon={<Printer size={18} />}
+                                >
+                                    Imprimir
+                                </Button>
+                            </div>
+                            <Button
+                                variant="secondary"
+                                fullWidth
+                                onClick={handleDownloadQuotePDF}
+                                disabled={!cart.length || downloadingPDF}
+                                icon={<FileDown size={18} />}
+                            >
+                                {downloadingPDF ? 'Descargando...' : 'Descargar PDF'}
                             </Button>
                         </div>
-                        <Button
-                            variant="secondary"
-                            fullWidth
-                            onClick={handleDownloadQuotePDF}
-                            disabled={!cart.length || downloadingPDF}
-                            icon={<FileDown size={18} />}
-                        >
-                            {downloadingPDF ? 'Descargando...' : 'Descargar PDF'}
-                        </Button>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* ── Modal servicio libre ── */}
             {showServiceModal && (
@@ -764,6 +907,132 @@ const Quotes = () => {
                     />
                 </Modal>
             )}
+
+            {/* FAB móvil */}
+            {isMobile && (
+                <button
+                    className={`pos-cart-fab ${cartPulse ? 'pulse' : ''}`}
+                    onClick={() => setShowCartModal(true)}
+                    aria-label="Abrir presupuesto"
+                >
+                    <ShoppingCart size={20} />
+                    {cartCount > 0 && <span className="pos-cart-count">{cartCount}</span>}
+                    <span key={cartAnimKey} className="pos-cart-fly" aria-hidden="true" />
+                </button>
+            )}
+
+            {/* Carrito Móvil Modal */}
+            {showCartModal && (
+                <Modal
+                    title="Armar presupuesto"
+                    onClose={() => setShowCartModal(false)}
+                    size="md"
+                >
+                    <div className="cart-modal-content">
+                        <div className="cart-body">
+                            {!cart.length && (
+                                <div className="empty-state">
+                                    <FileDown size={42} className="muted" />
+                                    <p>Agregá productos o servicios al presupuesto</p>
+                                </div>
+                            )}
+                            {cart.map(item => (
+                                <CartItem
+                                    key={item.id}
+                                    item={item}
+                                    onRemove={removeItem}
+                                    onUpdatePrice={updatePrice}
+                                    onUpdateDiscount={updateItemDiscount}
+                                    onUpdateQuantity={updateQuantity}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="cart-footer">
+                            <Input
+                                placeholder="Nombre del cliente (Opcional)"
+                                value={clientName}
+                                onChange={(e) => setClientName(e.target.value)}
+                                style={{ marginBottom: '12px' }}
+                            />
+                            <div className="grid two-cols">
+                                <div className="ui-field">
+                                    <span className="field-label">Descuento Global</span>
+                                    <div className="flex-row gap-xs">
+                                        <div className="field-control" style={{ flex: 1 }}>
+                                            <input
+                                                type="number"
+                                                value={discount}
+                                                onChange={(e) => setDiscount(e.target.value)}
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                        <div className="field-control">
+                                            <select
+                                                style={{ width: '60px', paddingLeft: '8px', paddingRight: '8px' }}
+                                                value={discountType}
+                                                onChange={(e) => setDiscountType(e.target.value)}
+                                            >
+                                                <option value="$">$</option>
+                                                <option value="%">%</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Select
+                                    label="Validez (Días)"
+                                    value={validityDays}
+                                    onChange={(e) => setValidityDays(e.target.value)}
+                                >
+                                    <option value="1">1 Día</option>
+                                    <option value="7">7 Días</option>
+                                    <option value="15">15 Días</option>
+                                    <option value="30">30 Días</option>
+                                </Select>
+                            </div>
+                            <div className="flex-row between" style={{ marginTop: 12, marginBottom: 12 }}>
+                                <div className="muted">Total Presupuestado</div>
+                                <div className="title-xl text-primary">{formatARS(total)}</div>
+                            </div>
+                            <div className="stack gap-sm" style={{ marginTop: 12 }}>
+                                <div className="grid two-cols gap-sm">
+                                    <Button variant="secondary" onClick={handleClearCart} disabled={!cart.length} fullWidth>
+                                        Limpiar todo
+                                    </Button>
+                                    <Button
+                                        variant="primary"
+                                        fullWidth
+                                        onClick={handleGenerateQuote}
+                                        disabled={!cart.length}
+                                        icon={<Printer size={18} />}
+                                    >
+                                        Imprimir
+                                    </Button>
+                                </div>
+                                <Button
+                                    variant="secondary"
+                                    fullWidth
+                                    onClick={handleDownloadQuotePDF}
+                                    disabled={!cart.length || downloadingPDF}
+                                    icon={<FileDown size={18} />}
+                                >
+                                    {downloadingPDF ? 'Descargando...' : 'Descargar PDF'}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            <ConfirmModal
+                isOpen={showClearConfirm}
+                title="Vaciar presupuesto"
+                message="¿Seguro que deseas vaciar el presupuesto actual?"
+                confirmLabel="Vaciar"
+                variant="danger"
+                onConfirm={confirmClearCart}
+                onClose={() => setShowClearConfirm(false)}
+            />
         </div>
     );
 };

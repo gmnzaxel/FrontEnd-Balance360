@@ -74,6 +74,7 @@ const SuperDashboard = () => {
       setGlobalMetrics(response.data);
     } catch (error) {
       console.error('Error al cargar métricas globales:', error);
+      toast.error('Error al cargar métricas globales');
     } finally {
       setLoadingMetrics(false);
     }
@@ -372,21 +373,21 @@ const SuperDashboard = () => {
                       </td>
 
                       {/* Phone */}
-                      <td data-label="Contacto" className="text-slate-500">
+                      <td data-label="Contacto" className="text-muted">
                         <div className="flex-row gap-xs items-center">
                           <Phone size={12} /> {company.phone || '—'}
                         </div>
                       </td>
 
                       {/* Address */}
-                      <td data-label="Ubicación" className="text-slate-500">
+                      <td data-label="Ubicación" className="text-muted">
                         <div className="flex-row gap-xs items-center">
                           <MapPin size={12} /> {company.address || '—'}
                         </div>
                       </td>
 
                       {/* Created at */}
-                      <td data-label="Alta" className="text-slate-500">
+                      <td data-label="Alta" className="text-muted">
                         {new Date(company.created_at).toLocaleDateString('es-AR')}
                       </td>
 
@@ -499,7 +500,7 @@ const SuperDashboard = () => {
                               Cuentas de usuario registradas:
                             </p>
                             {loadingUsers[company.id] ? (
-                              <div className="flex-row gap-xs items-center text-slate-500">
+                              <div className="flex-row gap-xs items-center text-muted">
                                 <Loader2 className="spin" size={14} /> Cargando usuarios...
                               </div>
                             ) : companyUsers[company.id]?.length > 0 ? (

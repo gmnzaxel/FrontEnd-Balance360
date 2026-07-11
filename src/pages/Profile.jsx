@@ -4,6 +4,8 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
 import { User, Key, Building, ShieldCheck } from 'lucide-react';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
 
 const Profile = () => {
     const { user: currentUser } = useContext(AuthContext);
@@ -68,7 +70,7 @@ const Profile = () => {
                 <div className="profile-card-icon">
                     {icon}
                 </div>
-                <h3 className="text-lg font-semibold text-slate-800 m-0">{title}</h3>
+                <h3 className="text-lg font-semibold m-0">{title}</h3>
             </div>
             <div className="profile-card-body">
                 {children}
@@ -78,11 +80,11 @@ const Profile = () => {
 
     const InfoRow = ({ label, value, badge }) => (
         <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">{label}</label>
+            <label className="text-xs font-semibold text-muted uppercase tracking-wide block mb-1">{label}</label>
             {badge ? (
                 <span className={`badge ${badge === 'primary' ? 'badge-primary' : 'badge-neutral'}`}>{value}</span>
             ) : (
-                <p className="text-slate-800 font-medium m-0">{value}</p>
+                <p className="font-medium m-0">{value}</p>
             )}
         </div>
     );
@@ -114,41 +116,32 @@ const Profile = () => {
 
                 {/* Password Change Card */}
                 <InfoCard icon={<ShieldCheck size={20} />} title="Seguridad" innerRef={securityRef}>
-                    <form onSubmit={handlePasswordChange}>
-                        <div className="form-group">
-                            <label>Contraseña actual</label>
-                            <input
-                                className="input-control"
-                                type="password"
-                                value={passwordData.old_password}
-                                onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Nueva contraseña</label>
-                            <input
-                                className="input-control"
-                                type="password"
-                                value={passwordData.new_password}
-                                onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                                required
-                                placeholder="Mínimo 8 caracteres"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Confirmar nueva contraseña</label>
-                            <input
-                                className="input-control"
-                                type="password"
-                                value={passwordData.confirm_password}
-                                onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <button type="submit" className="btn btn-primary w-full mt-2" disabled={loading}>
-                            {loading ? 'Procesando…' : 'Actualizar contraseña'}
-                        </button>
+                    <form onSubmit={handlePasswordChange} className="form-stack">
+                        <Input
+                            label="Contraseña actual"
+                            type="password"
+                            value={passwordData.old_password}
+                            onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
+                            required
+                        />
+                        <Input
+                            label="Nueva contraseña"
+                            type="password"
+                            value={passwordData.new_password}
+                            onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                            required
+                            placeholder="Mínimo 8 caracteres"
+                        />
+                        <Input
+                            label="Confirmar nueva contraseña"
+                            type="password"
+                            value={passwordData.confirm_password}
+                            onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                            required
+                        />
+                        <Button type="submit" variant="primary" fullWidth loading={loading} style={{ marginTop: '8px' }}>
+                            Actualizar contraseña
+                        </Button>
                     </form>
                 </InfoCard>
             </div>

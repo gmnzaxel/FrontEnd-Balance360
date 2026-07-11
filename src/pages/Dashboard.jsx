@@ -17,6 +17,7 @@ import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 import Select from '../components/ui/Select';
 import { AuthContext } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -73,6 +74,7 @@ const Dashboard = () => {
         setStats(response.data);
       } catch (error) {
         console.error("Error fetching stats:", error);
+        toast.error("No se pudieron cargar las estadísticas del mes.");
       } finally {
         setLoading(false);
       }
@@ -184,7 +186,7 @@ const Dashboard = () => {
                       <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(203, 213, 225, 0.5)" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
                   <XAxis
                     dataKey="day"
                     tickFormatter={(str) => str.slice(8)}
@@ -243,8 +245,8 @@ const Dashboard = () => {
                   <tbody>
                     {stats.low_stock_products.map((p) => (
                       <tr key={p.id}>
-                        <td className="font-medium text-slate-700" data-label="Producto">{p.nombre}</td>
-                        {isAdmin && <td className="text-sm text-slate-500" data-label="Proveedor">{p.supplier_name || '-'}</td>}
+                        <td className="font-medium" data-label="Producto">{p.nombre}</td>
+                        {isAdmin && <td className="text-sm text-muted" data-label="Proveedor">{p.supplier_name || '-'}</td>}
                         <td className="text-center" data-label="Min">
                           <span className="badge badge-neutral">{p.stock_minimo}</span>
                         </td>
@@ -313,7 +315,7 @@ const Dashboard = () => {
         showSupplierModal && (
           <Modal title="Generar pedido a proveedor" onClose={() => setShowSupplierModal(false)} size="lg">
             <div className="supplier-order-modal flex flex-col gap-4">
-              <div className="supplier-order-controls flex items-end gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="supplier-order-controls flex items-end gap-4 p-4 rounded-lg" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border-subtle)' }}>
                 <div className="flex-1">
                   <Select
                     label="Proveedor"
@@ -336,7 +338,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <div className="supplier-order-actions flex items-center justify-between text-sm text-slate-600">
+              <div className="supplier-order-actions flex items-center justify-between text-sm text-muted">
                 <span>Seleccioná los productos a incluir en el Excel.</span>
                 <Button variant="secondary" size="sm" onClick={toggleAllFiltered}>
                   {allFilteredSelected ? 'Quitar selección' : 'Seleccionar todos'}
@@ -357,7 +359,7 @@ const Dashboard = () => {
                   </thead>
                   <tbody>
                     {filteredStock.length === 0 ? (
-                      <tr><td colSpan="6" className="text-center py-8 text-slate-500">No hay productos para este proveedor.</td></tr>
+                      <tr><td colSpan="6" className="text-center py-8 text-muted">No hay productos para este proveedor.</td></tr>
                     ) : (
                       filteredStock.map(p => {
                         const target = p.stock_maximo > 0 ? p.stock_maximo : p.stock_minimo;
@@ -371,9 +373,9 @@ const Dashboard = () => {
                                 onChange={() => toggleProductSelection(p.id)}
                               />
                             </td>
-                            <td className="text-xs font-mono text-slate-500" data-label="Código">{p.codigo}</td>
+                            <td className="text-xs font-mono text-muted" data-label="Código">{p.codigo}</td>
                             <td className="font-medium" data-label="Producto">{p.nombre}</td>
-                            <td className="text-center text-slate-500" data-label="Stock Mínimo">{p.stock_minimo}</td>
+                            <td className="text-center text-muted" data-label="Stock Mínimo">{p.stock_minimo}</td>
                             <td className="text-center font-bold text-red-600" data-label="Stock Actual">{p.stock_actual}</td>
                             <td className="text-center" data-label="A Reponer">
                               <span className="badge badge-primary">{suggestedOrder} u.</span>

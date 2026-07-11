@@ -331,11 +331,12 @@
   }
 }
 
-@media (max-width: 390px) {
+@media (max-width: 640px) {
   .reports-page .page-header-actions {
     display: grid;
     grid-template-columns: 1fr;
     gap: 10px;
+    width: 100%;
   }
 
   .reports-period {
@@ -346,18 +347,56 @@
   .reports-page .page-header-actions .btn {
     width: 100%;
   }
+
+  .reports-date-filters {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px 16px !important;
+    width: 100%;
+  }
+
+  .reports-date-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .reports-date-separator {
+    display: none !important;
+  }
+
+  .reports-calendar-icon {
+    display: none !important;
+  }
 }
 
 .reports-date-filters {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: rgba(30, 41, 59, 0.5);
   padding: 6px 12px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+}
+
+.reports-date-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reports-date-separator {
+  color: var(--text-muted);
+  margin: 0 4px;
+}
+
+.reports-calendar-icon {
+  color: var(--text-muted);
 }
 
 .reports-date-filters input {

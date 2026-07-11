@@ -13,6 +13,7 @@ import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
 import Select from '../components/ui/Select';
 import Skeleton from '../components/ui/Skeleton';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 const loadHtml2Pdf = () => {
   return new Promise((resolve, reject) => {
@@ -76,6 +77,7 @@ const NewSale = () => {
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [showChangeModal, setShowChangeModal] = useState(false);
   const [amountPaid, setAmountPaid] = useState('');
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -122,6 +124,19 @@ const NewSale = () => {
     items.map((item) => {
       const isService = item.item_type === 'SERVICIO';
       const description = item.description || 'Servicio';
+      
+      let calculatedDiscount = 0;
+      if (item.discount !== undefined) {
+        calculatedDiscount = parseFloat(item.discount) || 0;
+      } else if (item.discountValue) {
+        const val = parseFloat(item.discountValue);
+        if (!isNaN(val)) {
+          const base = parseFloat(item.price) || 0;
+          const qty = parseInt(item.quantity, 10) || 1;
+          calculatedDiscount = item.discountType === '%' ? (base * qty * (val / 100)) : val;
+        }
+      }
+
       return {
         id: `sale-${item.id || Math.random().toString(36).slice(2)}`,
         item_type: item.item_type,
@@ -130,8 +145,9 @@ const NewSale = () => {
         nombre: isService ? `[Servicio] ${description}` : (item.producto_nombre || item.nombre || 'Producto'),
         price: parseFloat(item.price),
         quantity: item.quantity,
-        discountType: '$',
-        discountValue: parseFloat(item.discount) || ''
+        discountType: item.discountType || '$',
+        discountValue: item.discountValue !== undefined ? item.discountValue : (parseFloat(item.discount) || ''),
+        discount: calculatedDiscount
       };
     })
   ), []);
@@ -166,6 +182,7 @@ const NewSale = () => {
         setDiscount('');
         setDiscountType('$');
         setPaymentMethod('EFECTIVO');
+        setAmountPaid('');
       }
       setEditingSaleId(null);
       setEditingSaleNumber(null);
@@ -194,13 +211,14 @@ const NewSale = () => {
 
     const branchName = ticketConfigRef.current?.branch_name || 'TU NEGOCIO';
     const headerText = ticketConfigRef.current?.ticket_header || 'BALANCE 360';
-    const footerText = ticketConfigRef.current?.ticket_footer || '¡Gracias por su compra!';
+    const footerText = ticketConfigRef.current?.ticket_footer || '\u00a1Gracias por su compra!';
     const address = ticketConfigRef.current?.ticket_address;
     const cuit = ticketConfigRef.current?.ticket_cuit;
     const iibb = ticketConfigRef.current?.ticket_iibb;
     const iva = ticketConfigRef.current?.ticket_iva;
     const phone = ticketConfigRef.current?.ticket_phone;
     const email = ticketConfigRef.current?.ticket_email;
+    const logoDataUrl = localStorage.getItem('ticket_logo') || '';
 
     // Lógica corregida de descuentos
     const itemsBaseSubtotal = lastSale.items.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -213,6 +231,7 @@ const NewSale = () => {
       <html>
         <head>
           <title>Ticket de Venta #${lastSale.id}</title>
+          <meta charset="UTF-8">
           <style>
             @media print {
               @page { margin: 0; }
@@ -220,7 +239,7 @@ const NewSale = () => {
             }
             body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 10px; font-size: 12px; }
             .header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-            .branch-title { font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 3px; display: inline-block; margin-bottom: 8px; }
+            .branch-title { font-size: 16px; font-weight: bold; text-transform: uppercase; }
             .company { font-size: 11px; color: #333; margin-bottom: 5px; white-space: pre-wrap; }
             .info { font-size: 10px; margin-bottom: 5px; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
@@ -234,7 +253,10 @@ const NewSale = () => {
         </head>
         <body>
           <div class="header">
-            <div class="branch-title">${branchName}</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
+              ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:44px;max-width:60px;object-fit:contain;flex-shrink:0;" />` : ''}
+              <div class="branch-title">${branchName}</div>
+            </div>
             <div class="company">${headerText}</div>
             ${address ? `<div class="info">Dirección: ${address}</div>` : ''}
             ${cuit ? `<div class="info">CUIT: ${cuit}</div>` : ''}
@@ -262,9 +284,22 @@ const NewSale = () => {
                 const itemLabel = item.item_type === 'SERVICIO' ? (item.description || 'Servicio') : (item.nombre || item.producto_nombre || 'Producto');
                 return `
                 <tr>
-                  <td>${itemLabel}${descItem > 0 ? `<br><small>Desc: -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</small>` : ''}</td>
-                  <td class="text-right">${item.quantity}</td>
-                  <td class="text-right">$${baseSub.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                  <td>
+                    <div style="font-weight: bold;">${itemLabel}</div>
+                    ${descItem > 0 ? `
+                      <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
+                        <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                      </div>
+                    ` : item.quantity > 1 ? `
+                      <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })} x ${item.quantity} un.
+                      </div>
+                    ` : ''}
+                  </td>
+                  <td class="text-right" style="vertical-align: top;">${item.quantity}</td>
+                  <td class="text-right" style="vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
                 </tr>
               `;
               }).join('')}
@@ -289,7 +324,7 @@ const NewSale = () => {
 
           <div class="footer">
             <p>${footerText}</p>
-            <p>*** Copia Cliente ***</p>
+            <p style="border-top: 1px dashed #000; padding-top: 6px; margin-top: 8px; font-size: 9px; color: #555;">*** Copia Cliente ***</p>
           </div>
         </body>
       </html>
@@ -325,6 +360,7 @@ const NewSale = () => {
     const iva = ticketConfigRef.current?.ticket_iva;
     const phone = ticketConfigRef.current?.ticket_phone;
     const email = ticketConfigRef.current?.ticket_email;
+    const logoDataUrl = localStorage.getItem('ticket_logo') || '';
 
     // Lógica corregida de descuentos
     const itemsBaseSubtotal = lastSale.items.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -336,7 +372,10 @@ const NewSale = () => {
     const htmlContent = `
       <div style="font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 15px; font-size: 12px; box-sizing: border-box; background: white; color: black;">
         <div style="text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px;">
-          <div style="font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 3px; display: inline-block; margin-bottom: 8px;">${branchName}</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
+            ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:44px;max-width:60px;object-fit:contain;flex-shrink:0;" />` : ''}
+            <div style="font-size: 16px; font-weight: bold; text-transform: uppercase;">${branchName}</div>
+          </div>
           <div style="font-size: 11px; color: #333; margin-bottom: 5px; white-space: pre-wrap;">${headerText}</div>
           ${address ? `<div style="font-size: 10px; color: #555;">Dirección: ${address}</div>` : ''}
           ${cuit ? `<div style="font-size: 10px; color: #555;">CUIT: ${cuit}</div>` : ''}
@@ -344,7 +383,7 @@ const NewSale = () => {
           ${iva ? `<div style="font-size: 10px; color: #555;">IVA: ${iva}</div>` : ''}
           ${phone ? `<div style="font-size: 10px; color: #555;">Tel: ${phone}</div>` : ''}
           ${email ? `<div style="font-size: 10px; color: #555;">Email: ${email}</div>` : ''}
-          <div style="font-size: 10px; margin-bottom: 5px; marginTop: 5px;">Fecha: ${new Date(lastSale.date).toLocaleString('es-AR', { hour12: false })}</div>
+          <div style="font-size: 10px; margin-bottom: 5px; margin-top: 5px;">Fecha: ${new Date(lastSale.date).toLocaleString('es-AR', { hour12: false })}</div>
           <div style="font-size: 10px; margin-bottom: 5px;">Ticket #${lastSale.sale_number || lastSale.id}</div>
           <div style="font-size: 10px; margin-bottom: 5px;">Pago: ${lastSale.payment_method}</div>
         </div>
@@ -358,18 +397,31 @@ const NewSale = () => {
             </tr>
           </thead>
           <tbody>
-            ${lastSale.items.map(item => {
-              const baseSub = (parseFloat(item.price) || 0) * item.quantity;
-              const descItem = parseFloat(item.discount) || 0;
-              const itemLabel = item.item_type === 'SERVICIO' ? (item.description || 'Servicio') : (item.nombre || item.producto_nombre || 'Producto');
-              return `
-              <tr>
-                <td style="padding: 4px 0;">${itemLabel}${descItem > 0 ? `<br><small>Desc: -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</small>` : ''}</td>
-                <td style="padding: 4px 0; text-align: right;">${item.quantity}</td>
-                <td style="padding: 4px 0; text-align: right;">$${baseSub.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-              </tr>
-            `;
-            }).join('')}
+             ${lastSale.items.map(item => {
+               const baseSub = (parseFloat(item.price) || 0) * item.quantity;
+               const descItem = parseFloat(item.discount) || 0;
+               const itemLabel = item.item_type === 'SERVICIO' ? (item.description || 'Servicio') : (item.nombre || item.producto_nombre || 'Producto');
+               return `
+               <tr>
+                 <td style="padding: 4px 0;">
+                   <div style="font-weight: bold;">${itemLabel}</div>
+                   ${descItem > 0 ? `
+                     <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                       Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                       ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
+                       <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                     </div>
+                   ` : item.quantity > 1 ? `
+                     <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                       Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })} x ${item.quantity} un.
+                     </div>
+                   ` : ''}
+                 </td>
+                 <td style="padding: 4px 0; text-align: right; vertical-align: top;">${item.quantity}</td>
+                 <td style="padding: 4px 0; text-align: right; vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+               </tr>
+             `;
+             }).join('')}
           </tbody>
         </table>
 
@@ -385,13 +437,13 @@ const NewSale = () => {
           </div>` : ''}
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: bold; font-size: 14px; margin-top: 5px;">
             <span>TOTAL:</span>
-            <span>$${lastSale.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
           </div>
         </div>
 
         <div style="text-align: center; margin-top: 20px; font-size: 10px; white-space: pre-wrap;">
           <p>${footerText}</p>
-          <p>*** Copia Cliente ***</p>
+          <p style="border-top: 1px dashed #000; padding-top: 6px; margin-top: 8px; font-size: 9px; color: #555;">*** Copia Cliente ***</p>
         </div>
       </div>
     `;
@@ -466,8 +518,13 @@ const NewSale = () => {
   }, [serviceForm, addServiceItem, triggerCartPulse]);
 
   const updateQuantity = useCallback((id, quantity) => {
-    if (!quantity || Number.isNaN(quantity)) return;
-    const value = Math.max(1, parseInt(quantity, 10));
+    if (quantity === '') {
+      setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: '' } : item));
+      return;
+    }
+    const val = parseInt(quantity, 10);
+    if (Number.isNaN(val)) return;
+    const value = Math.max(1, val);
     setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: value } : item));
   }, []);
 
@@ -530,6 +587,7 @@ const NewSale = () => {
       setDiscount('');
       setDiscountType('$');
       setPaymentMethod('EFECTIVO');
+      setAmountPaid('');
       setEditingSaleId(null);
       setEditingSaleNumber(null);
       navigate('/new-sale', { replace: true });
@@ -562,9 +620,7 @@ const NewSale = () => {
       }
       if (e.key === 'Escape' && cart.length > 0 && !showCartModal && !showServiceModal && !showSuccessModal) {
         e.preventDefault();
-        if (window.confirm('¿Vaciar el carrito actual?')) {
-          clearCart();
-        }
+        setShowClearConfirm(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -651,6 +707,10 @@ const NewSale = () => {
           <Button variant="secondary" icon={<Wrench size={16} />} onClick={() => setShowServiceModal(true)}>
             + Servicio
           </Button>
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '6px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ fontSize: '1rem' }}>💡</span>
+          <span>Tip: Podés escribir <code>cantidad*</code> (ej: <code>5*coca</code>) en el buscador para cargar múltiples unidades.</span>
         </div>
         <div className="muted small mb-2">Catálogo (Más Vendidos)</div>
         <div className="pos-table-wrapper">
@@ -785,8 +845,31 @@ const NewSale = () => {
                 </button>
               </div>
               <div className="flex-row between items-center">
-                <div className="badge badge-neutral" style={{ fontSize: '0.75rem', padding: '4px 8px' }}>
-                  {item.quantity} un.
+                <div className="quantity-stepper flex-row items-center" style={{ gap: '2px', background: 'var(--surface-muted)', borderRadius: '6px', padding: '1px', border: '1px solid var(--border-subtle)' }}>
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(item.id, (parseInt(item.quantity, 10) || 1) - 1)}
+                    disabled={(parseInt(item.quantity, 10) || 1) <= 1}
+                    className="stepper-btn"
+                    style={{ border: 'none', background: 'transparent', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 'bold', fontSize: '0.8rem' }}
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) => updateQuantity(item.id, e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                    className="stepper-input"
+                    style={{ width: '24px', border: 'none', background: 'transparent', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-primary)', outline: 'none', padding: 0 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(item.id, (parseInt(item.quantity, 10) || 0) + 1)}
+                    className="stepper-btn"
+                    style={{ border: 'none', background: 'transparent', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 'bold', fontSize: '0.8rem' }}
+                  >
+                    +
+                  </button>
                 </div>
                 <div className="flex-row items-center gap-xs">
                   <span className="muted tiny">Desc.</span>
@@ -844,10 +927,13 @@ const NewSale = () => {
                 </div>
               </div>
             </div>
-            <Select
+             <Select
               label="Método de pago"
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => {
+                setPaymentMethod(e.target.value);
+                if (e.target.value !== 'EFECTIVO') setAmountPaid('');
+              }}
             >
               <option value="EFECTIVO">Efectivo</option>
               <option value="DEBITO">Tarjeta Débito</option>
@@ -857,6 +943,32 @@ const NewSale = () => {
               <option value="OTRO">Otro</option>
             </Select>
           </div>
+
+          {paymentMethod === 'EFECTIVO' && (
+            <div className="cash-calculator" style={{ background: 'var(--surface-muted)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', marginTop: '12px', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <div style={{ flex: 1 }}>
+                <span className="field-label" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Paga con</span>
+                <div style={{ position: 'relative', marginTop: '4px' }}>
+                  <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>$</span>
+                  <input
+                    type="number"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(e.target.value)}
+                    placeholder="0.00"
+                    style={{ paddingLeft: '24px', height: '36px', width: '100%', fontSize: '0.9rem', outline: 'none', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-app)', color: 'var(--text-primary)' }}
+                  />
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', flex: 1 }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vuelto a entregar</span>
+                <div className="title-md mt-1" style={{ color: (parseFloat(amountPaid) >= total) ? 'var(--success-text)' : 'var(--text-primary)', fontWeight: 'bold', fontSize: '1.25rem' }}>
+                  {parseFloat(amountPaid) >= total 
+                    ? formatARS(parseFloat(amountPaid) - total) 
+                    : (amountPaid ? 'Falta cubrir' : '$0,00')}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex-row between" style={{ marginTop: 12, marginBottom: 12 }}>
             <div className="muted">Total a pagar</div>
@@ -939,16 +1051,51 @@ const NewSale = () => {
                       <Trash2 size={16} />
                     </button>
                   </div>
-                  <div className="flex-row between items-center">
-                    <div className="badge badge-neutral" style={{ fontSize: '0.75rem', padding: '4px 8px' }}>
-                      {item.quantity} un.
-                    </div>
-                    <div className="flex-row items-center gap-xs">
-                      <span className="muted tiny">Desc.</span>
-                      <div className="field-control">
+                  <div className="flex-col gap-xs mt-2" style={{ width: '100%' }}>
+                    <div className="flex-row between items-center gap-sm">
+                      <div className="quantity-stepper flex-row items-center" style={{ gap: '2px', background: 'var(--surface-muted)', borderRadius: '6px', padding: '1px', border: '1px solid var(--border-subtle)' }}>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, (parseInt(item.quantity, 10) || 1) - 1)}
+                          disabled={(parseInt(item.quantity, 10) || 1) <= 1}
+                          className="stepper-btn"
+                          style={{ border: 'none', background: 'transparent', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 'bold', fontSize: '0.8rem' }}
+                        >
+                          -
+                        </button>
                         <input
                           type="number"
-                          style={{ width: '90px', padding: '4px 6px', height: '28px', fontSize: '0.8rem' }}
+                          value={item.quantity}
+                          onChange={(e) => updateQuantity(item.id, e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                          className="stepper-input"
+                          style={{ width: '24px', border: 'none', background: 'transparent', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-primary)', outline: 'none', padding: 0 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, (parseInt(item.quantity, 10) || 0) + 1)}
+                          className="stepper-btn"
+                          style={{ border: 'none', background: 'transparent', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 'bold', fontSize: '0.8rem' }}
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="muted tiny" style={{ fontSize: '0.7rem' }}>Unitario {formatARS(item.price)}</div>
+                        <div className="title-sm" style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                          {formatARS((item.price * item.quantity) - (
+                            item.discountValue ? (item.discountType === '%' ? (item.price * item.quantity * parseFloat(item.discountValue) / 100) : parseFloat(item.discountValue)) : 0
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex-row items-center gap-xs mt-2" style={{ borderTop: '1px dashed var(--border-subtle)', paddingTop: '8px' }}>
+                      <span className="muted tiny">Desc.</span>
+                      <div className="field-control" style={{ flex: 1 }}>
+                        <input
+                          type="number"
+                          style={{ width: '100%', padding: '4px 6px', height: '28px', fontSize: '0.8rem' }}
                           value={item.discountValue || ''}
                           onChange={(e) => updateItemDiscount(item.id, e.target.value, item.discountType)}
                           placeholder="0"
@@ -956,21 +1103,13 @@ const NewSale = () => {
                       </div>
                       <div className="field-control">
                         <select
-                          style={{ width: '40px', padding: '0 4px', height: '28px', fontSize: '0.8rem', outline: 'none' }}
+                          style={{ width: '50px', padding: '0 4px', height: '28px', fontSize: '0.8rem', outline: 'none' }}
                           value={item.discountType || '$'}
                           onChange={(e) => updateItemDiscount(item.id, item.discountValue || '', e.target.value)}
                         >
                           <option value="$">$</option>
                           <option value="%">%</option>
                         </select>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="muted tiny">Unitario {formatARS(item.price)}</div>
-                      <div className="title-sm">
-                        {formatARS((item.price * item.quantity) - (
-                          item.discountValue ? (item.discountType === '%' ? (item.price * item.quantity * parseFloat(item.discountValue) / 100) : parseFloat(item.discountValue)) : 0
-                        ))}
                       </div>
                     </div>
                   </div>
@@ -999,10 +1138,13 @@ const NewSale = () => {
                     </div>
                   </div>
                 </div>
-                <Select
+                 <Select
                   label="Método de pago"
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  onChange={(e) => {
+                    setPaymentMethod(e.target.value);
+                    if (e.target.value !== 'EFECTIVO') setAmountPaid('');
+                  }}
                 >
                   <option value="EFECTIVO">Efectivo</option>
                   <option value="DEBITO">Tarjeta Débito</option>
@@ -1012,6 +1154,32 @@ const NewSale = () => {
                   <option value="OTRO">Otro</option>
                 </Select>
               </div>
+
+              {paymentMethod === 'EFECTIVO' && (
+                <div className="cash-calculator" style={{ background: 'var(--surface-muted)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', marginTop: '12px', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <span className="field-label" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Paga con</span>
+                    <div style={{ position: 'relative', marginTop: '4px' }}>
+                      <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>$</span>
+                      <input
+                        type="number"
+                        value={amountPaid}
+                        onChange={(e) => setAmountPaid(e.target.value)}
+                        placeholder="0.00"
+                        style={{ paddingLeft: '24px', height: '36px', width: '100%', fontSize: '0.9rem', outline: 'none', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-app)', color: 'var(--text-primary)' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', flex: 1 }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vuelto a entregar</span>
+                    <div className="title-md mt-1" style={{ color: (parseFloat(amountPaid) >= total) ? 'var(--success-text)' : 'var(--text-primary)', fontWeight: 'bold', fontSize: '1.25rem' }}>
+                      {parseFloat(amountPaid) >= total 
+                        ? formatARS(parseFloat(amountPaid) - total) 
+                        : (amountPaid ? 'Falta cubrir' : '$0,00')}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex-row between" style={{ marginTop: 12, marginBottom: 12 }}>
                 <div className="muted">Total a pagar</div>
@@ -1044,13 +1212,13 @@ const NewSale = () => {
           )}
         >
           <div className="flex flex-col items-center justify-center p-4 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>
               <CreditCard size={32} />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">
+            <h3 className="text-xl font-bold mb-2">
               ¡Operación exitosa!
             </h3>
-            <p className="text-slate-600 mb-6">
+            <p className="text-muted mb-6">
               Venta #{lastSale?.sale_number || lastSale?.id} procesada por {formatARS(lastSale?.total || 0)}.
             </p>
             <div className="flex flex-col gap-sm w-full">
@@ -1076,7 +1244,18 @@ const NewSale = () => {
         </Modal>
       )}
 
-
+      <ConfirmModal
+        isOpen={showClearConfirm}
+        title="Vaciar carrito"
+        message="¿Seguro que deseas vaciar el carrito de ventas?"
+        confirmLabel="Vaciar"
+        variant="danger"
+        onConfirm={() => {
+          setShowClearConfirm(false);
+          clearCart();
+        }}
+        onClose={() => setShowClearConfirm(false)}
+      />
     </div>
   );
 };

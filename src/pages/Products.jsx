@@ -12,6 +12,7 @@ import Select from '../components/ui/Select';
 import Badge from '../components/ui/Badge';
 import Skeleton from '../components/ui/Skeleton';
 import { AuthContext } from '../context/AuthContext';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 const Products = () => {
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -48,6 +49,14 @@ const Products = () => {
   });
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [supplierForm, setSupplierForm] = useState({ name: '', contact_phone: '' });
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmLabel: '',
+    variant: 'danger',
+    onConfirm: null
+  });
 
   // --- Carga Inicial ---
   const loadData = async () => {
@@ -164,21 +173,29 @@ const Products = () => {
   }, [products, focusedIndex, totalPages, isAdmin]);
 
   // --- Acciones de Producto ---
-  const handleArchive = async (id) => {
+  const handleArchive = (id) => {
     if (!isAdmin) {
       toast.error('Solo los administradores pueden archivar productos');
       return;
     }
-    if (!window.confirm('¿Archivar este producto? Podrás restaurarlo luego.')) return;
-
-    try {
-      await productService.delete(id);
-      toast.success('Producto archivado correctamente');
-      loadData(); // Recarga completa para actualizar lowStock también
-    } catch (error) {
-      console.error(error); // Log para debug
-      toast.error(getErrorMessage(error));
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Archivar producto',
+      message: '¿Archivar este producto? Podrás restaurarlo luego.',
+      confirmLabel: 'Archivar',
+      variant: 'warning',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        try {
+          await productService.delete(id);
+          toast.success('Producto archivado correctamente');
+          loadData();
+        } catch (error) {
+          console.error(error);
+          toast.error(getErrorMessage(error));
+        }
+      }
+    });
   };
 
   const handleRestore = async (id) => {
@@ -195,19 +212,28 @@ const Products = () => {
     }
   };
 
-  const handleHardDelete = async (product) => {
+  const handleHardDelete = (product) => {
     if (!isAdmin) {
       toast.error('Solo los administradores pueden eliminar productos');
       return;
     }
-    if (!window.confirm(`Eliminar definitivamente "${product.nombre}"? Esta acción no se puede deshacer.`)) return;
-    try {
-      await productService.hardDelete(product.id);
-      toast.success('Producto eliminado definitivamente');
-      loadData();
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Eliminar producto',
+      message: `¿Eliminar definitivamente "${product.nombre}"? Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        try {
+          await productService.hardDelete(product.id);
+          toast.success('Producto eliminado definitivamente');
+          loadData();
+        } catch (error) {
+          toast.error(getErrorMessage(error));
+        }
+      }
+    });
   };
 
   const toggleProductSelection = (productId) => {
@@ -237,15 +263,24 @@ const Products = () => {
       return;
     }
     if (!selectedProductIds.length) return;
-    if (!window.confirm(`¿Archivar ${selectedProductIds.length} productos seleccionados?`)) return;
-    const targets = products.filter((p) => selectedProductIds.includes(p.id) && !p.is_archived);
-    const results = await Promise.allSettled(targets.map((p) => productService.delete(p.id)));
-    const failed = results.filter((r) => r.status === 'rejected').length;
-    const archived = targets.length - failed;
-    if (failed) toast.error(`Archivados: ${archived}. Fallaron: ${failed}.`);
-    if (archived) toast.success(`Archivados: ${archived}`);
-    setSelectedProductIds([]);
-    loadData();
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Archivar productos',
+      message: `¿Archivar ${selectedProductIds.length} productos seleccionados?`,
+      confirmLabel: 'Archivar',
+      variant: 'warning',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        const targets = products.filter((p) => selectedProductIds.includes(p.id) && !p.is_archived);
+        const results = await Promise.allSettled(targets.map((p) => productService.delete(p.id)));
+        const failed = results.filter((r) => r.status === 'rejected').length;
+        const archived = targets.length - failed;
+        if (failed) toast.error(`Archivados: ${archived}. Fallaron: ${failed}.`);
+        if (archived) toast.success(`Archivados: ${archived}`);
+        setSelectedProductIds([]);
+        loadData();
+      }
+    });
   };
 
   const handleBulkRestore = async () => {
@@ -254,15 +289,24 @@ const Products = () => {
       return;
     }
     if (!selectedProductIds.length) return;
-    if (!window.confirm(`¿Desarchivar/Restaurar ${selectedProductIds.length} productos seleccionados?`)) return;
-    const targets = products.filter((p) => selectedProductIds.includes(p.id) && p.is_archived);
-    const results = await Promise.allSettled(targets.map((p) => productService.restore(p.id)));
-    const failed = results.filter((r) => r.status === 'rejected').length;
-    const restored = targets.length - failed;
-    if (failed) toast.error(`Restaurados: ${restored}. Fallaron: ${failed}.`);
-    if (restored) toast.success(`Restaurados: ${restored}`);
-    setSelectedProductIds([]);
-    loadData();
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Restaurar productos',
+      message: `¿Desarchivar/Restaurar ${selectedProductIds.length} productos seleccionados?`,
+      confirmLabel: 'Restaurar',
+      variant: 'primary',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        const targets = products.filter((p) => selectedProductIds.includes(p.id) && p.is_archived);
+        const results = await Promise.allSettled(targets.map((p) => productService.restore(p.id)));
+        const failed = results.filter((r) => r.status === 'rejected').length;
+        const restored = targets.length - failed;
+        if (failed) toast.error(`Restaurados: ${restored}. Fallaron: ${failed}.`);
+        if (restored) toast.success(`Restaurados: ${restored}`);
+        setSelectedProductIds([]);
+        loadData();
+      }
+    });
   };
 
   const handleBulkDelete = async () => {
@@ -271,15 +315,24 @@ const Products = () => {
       return;
     }
     if (!selectedProductIds.length) return;
-    if (!window.confirm(`Eliminar definitivamente ${selectedProductIds.length} productos? Esta acción no se puede deshacer.`)) return;
-    const targets = products.filter((p) => selectedProductIds.includes(p.id));
-    const results = await Promise.allSettled(targets.map((p) => productService.hardDelete(p.id)));
-    const failed = results.filter((r) => r.status === 'rejected').length;
-    const deleted = targets.length - failed;
-    if (failed) toast.error(`Eliminados: ${deleted}. Fallaron: ${failed}.`);
-    if (deleted) toast.success(`Eliminados: ${deleted}`);
-    setSelectedProductIds([]);
-    loadData();
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Eliminar productos',
+      message: `¿Eliminar definitivamente ${selectedProductIds.length} productos? Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        const targets = products.filter((p) => selectedProductIds.includes(p.id));
+        const results = await Promise.allSettled(targets.map((p) => productService.hardDelete(p.id)));
+        const failed = results.filter((r) => r.status === 'rejected').length;
+        const deleted = targets.length - failed;
+        if (failed) toast.error(`Eliminados: ${deleted}. Fallaron: ${failed}.`);
+        if (deleted) toast.success(`Eliminados: ${deleted}`);
+        setSelectedProductIds([]);
+        loadData();
+      }
+    });
   };
 
   const handleDownloadTemplate = () => {
@@ -440,22 +493,31 @@ const Products = () => {
     setSupplierForm({ name: '', contact_phone: '' });
   };
 
-  const handleDeleteSupplier = async (supplier) => {
+  const handleDeleteSupplier = (supplier) => {
     if (!isAdmin) {
       toast.error('Solo los administradores pueden archivar proveedores');
       return;
     }
-    if (!window.confirm(`Eliminar definitivamente "${supplier.name}"? Esta acción no se puede deshacer.`)) return;
-    setSubmitting(true);
-    try {
-      await productService.deleteSupplier(supplier.id);
-      toast.success('Proveedor eliminado definitivamente');
-      setSuppliers((prev) => prev.filter((s) => s.id !== supplier.id));
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setSubmitting(false);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Eliminar proveedor',
+      message: `¿Eliminar definitivamente "${supplier.name}"? Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        setSubmitting(true);
+        try {
+          await productService.deleteSupplier(supplier.id);
+          toast.success('Proveedor eliminado definitivamente');
+          setSuppliers((prev) => prev.filter((s) => s.id !== supplier.id));
+        } catch (error) {
+          toast.error(getErrorMessage(error));
+        } finally {
+          setSubmitting(false);
+        }
+      }
+    });
   };
 
 
@@ -618,19 +680,19 @@ const Products = () => {
                         ? <Badge tone="warning">{p.stock_actual} un.</Badge>
                         : <Badge tone="success">{p.stock_actual} un.</Badge>}
                   </td>
-                  <td className="text-slate-500" data-label="Min">{p.stock_minimo}</td>
-                  <td className="text-slate-500" data-label="Max">{p.stock_maximo || '-'}</td>
-                  <td className="text-slate-500" data-label="Costo">{formatARS(p.costo_compra)}</td>
-                  <td className="font-bold text-slate-700" data-label="Precio Venta">{formatARS(p.precio_venta)}</td>
+                  <td className="text-muted" data-label="Min">{p.stock_minimo}</td>
+                  <td className="text-muted" data-label="Max">{p.stock_maximo || '-'}</td>
+                  <td className="text-muted" data-label="Costo">{formatARS(p.costo_compra)}</td>
+                  <td className="font-bold" data-label="Precio Venta">{formatARS(p.precio_venta)}</td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td colSpan={columnCount}>
                   <div className="empty-state">
-                    <Package size={48} strokeWidth={1.5} className="text-slate-300 mb-2" />
-                    <p className="font-medium text-slate-600">No se encontraron productos.</p>
-                    <p className="text-sm text-slate-400">Probá con otra búsqueda o creá un producto.</p>
+                    <Package size={48} strokeWidth={1.5} className="text-muted mb-2" style={{ opacity: 0.5 }} />
+                    <p className="font-medium">No se encontraron productos.</p>
+                    <p className="text-sm text-muted">Probá con otra búsqueda o creá un producto.</p>
                   </div>
                 </td>
               </tr>
@@ -696,41 +758,41 @@ const Products = () => {
           <div className="form-stack">
             <div className={isAdmin ? "grid two-cols" : "grid one-col"}>
               <div>
-                <p className="text-xs text-slate-500">Código</p>
+                <p className="text-xs muted">Código</p>
                 <p className="font-medium">{selectedProduct.codigo || '—'}</p>
               </div>
               {isAdmin && (
                 <div>
-                  <p className="text-xs text-slate-500">Proveedor</p>
+                  <p className="text-xs muted">Proveedor</p>
                   <p className="font-medium">{selectedProduct.supplier_name || 'General'}</p>
                 </div>
               )}
             </div>
             <div>
-              <p className="text-xs text-slate-500">Nombre</p>
+              <p className="text-xs muted">Nombre</p>
               <p className="font-medium">{selectedProduct.nombre}</p>
             </div>
             <div className="grid three-cols">
               <div>
-                <p className="text-xs text-slate-500">Stock actual</p>
+                <p className="text-xs muted">Stock actual</p>
                 <p className="font-medium">{selectedProduct.stock_actual}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500">Stock mínimo</p>
+                <p className="text-xs muted">Stock mínimo</p>
                 <p className="font-medium">{selectedProduct.stock_minimo}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500">Stock máximo</p>
+                <p className="text-xs muted">Stock máximo</p>
                 <p className="font-medium">{selectedProduct.stock_maximo || '—'}</p>
               </div>
             </div>
             <div className="grid two-cols">
               <div>
-                <p className="text-xs text-slate-500">Costo</p>
+                <p className="text-xs muted">Costo</p>
                 <p className="font-medium">{formatARS(selectedProduct.costo_compra)}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500">Precio venta</p>
+                <p className="text-xs muted">Precio venta</p>
                 <p className="font-medium">{formatARS(selectedProduct.precio_venta)}</p>
               </div>
             </div>
@@ -834,6 +896,58 @@ const Products = () => {
                 required
               />
             </div>
+
+            {parseFloat(formData.precio_venta) > 0 && (
+              (() => {
+                const costVal = parseFloat(formData.costo_compra) || 0;
+                const sellVal = parseFloat(formData.precio_venta) || 0;
+                const marginPercent = ((sellVal - costVal) / sellVal) * 100;
+                const markupPercent = costVal > 0 ? ((sellVal - costVal) / costVal) * 100 : 0;
+                
+                return (
+                  <div 
+                    className="rentabilidad-indicator" 
+                    style={{ 
+                      background: 'var(--surface-muted)', 
+                      padding: '10px 14px', 
+                      borderRadius: 'var(--radius-md)', 
+                      border: '1px solid var(--border-subtle)',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '0.85rem',
+                      marginTop: '12px'
+                    }}
+                  >
+                    <div>
+                      <span style={{ color: 'var(--text-secondary)' }}>Margen Neto: </span>
+                      <strong style={{ 
+                        color: marginPercent > 20 
+                          ? 'var(--success-text)' 
+                          : marginPercent > 0 
+                            ? 'var(--warning-text)' 
+                            : 'var(--danger-text)'
+                      }}>
+                        {marginPercent.toFixed(1)}%
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-secondary)' }}>Recargo (Markup): </span>
+                      <strong style={{ 
+                        color: markupPercent > 25 
+                          ? 'var(--success-text)' 
+                          : markupPercent > 0 
+                            ? 'var(--warning-text)' 
+                            : 'var(--danger-text)'
+                      }}>
+                        {costVal > 0 ? `+${markupPercent.toFixed(1)}%` : 'N/A'}
+                      </strong>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
           </form>
         </Modal>
       )}
@@ -845,7 +959,7 @@ const Products = () => {
           size="md"
         >
           <div className="form-stack">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted">
               Estas filas no se importaron. Corregilas y volvé a subir el archivo.
             </p>
             <div className="table-container compact" style={{ maxHeight: 260, overflowY: 'auto' }}>
@@ -984,6 +1098,16 @@ const Products = () => {
           </div>
         </Modal>
       )}
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmLabel={confirmConfig.confirmLabel}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.onConfirm}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
