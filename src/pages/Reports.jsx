@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
 import { FileSpreadsheet, TrendingUp, DollarSign, Package, AlertTriangle, Calendar, ShoppingBag, CreditCard, HelpCircle } from 'lucide-react';
@@ -26,19 +26,7 @@ const Reports = () => {
     const [endDate, setEndDate] = useState(formatDateObj(today));
     const [chartType, setChartType] = useState('monthly'); // 'monthly' o 'daily'
 
-    useEffect(() => {
-        fetchData();
-    }, [months, startDate, endDate]);
-
-    useEffect(() => {
-        const media = window.matchMedia('(max-width: 640px)');
-        const handleChange = (event) => setIsMobile(event.matches);
-        setIsMobile(media.matches);
-        media.addEventListener('change', handleChange);
-        return () => media.removeEventListener('change', handleChange);
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const [seriesRes, statsRes] = await Promise.all([
@@ -52,7 +40,19 @@ const Reports = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [months, startDate, endDate]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    useEffect(() => {
+        const media = window.matchMedia('(max-width: 640px)');
+        const handleChange = (event) => setIsMobile(event.matches);
+        setIsMobile(media.matches);
+        media.addEventListener('change', handleChange);
+        return () => media.removeEventListener('change', handleChange);
+    }, []);
 
     const handleExport = async () => {
         if (exporting) return;

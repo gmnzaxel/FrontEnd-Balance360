@@ -332,7 +332,7 @@ const Quotes = () => {
         const phone = ticketConfigRef.current?.ticket_phone;
         const email = ticketConfigRef.current?.ticket_email;
         const dateStr = new Date().toLocaleString('es-AR', { hour12: false });
-        const logoDataUrl = localStorage.getItem('ticket_logo') || '';
+        const logoDataUrl = ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || '';
 
         // Lógica corregida de descuentos para presupuesto
         const itemsBaseSubtotal = cart.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -413,28 +413,28 @@ const Quotes = () => {
                     <div style="font-weight: bold;">${item.nombre}</div>
                     ${descItem > 0 ? `
                       <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
-                        <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                        <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
                       </div>
                     ` : item.quantity > 1 ? `
                       <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })} x ${item.quantity} un.
+                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} x ${item.quantity} un.
                       </div>
                     ` : ''}
                   </td>
                   <td class="text-right" style="vertical-align: top;">${item.quantity}</td>
-                  <td class="text-right" style="vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right" style="vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                 </tr>
               `;
               }).join('')}
             </tbody>
           </table>
           <div class="totals">
-            <div class="row"><span>Subtotal:</span><span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div>
-            ${totalDiscount > 0 ? `<div class="row"><span>Descuento:</span><span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></div>` : ''}
+            <div class="row"><span>Subtotal:</span><span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span></div>
+            ${totalDiscount > 0 ? `<div class="row"><span>Descuento:</span><span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span></div>` : ''}
             <div class="row" style="font-weight:bold;font-size:14px;margin-top:5px;">
-              <span>TOTAL PREVISTO:</span><span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>TOTAL PREVISTO:</span><span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
           </div>
           <div class="footer">
@@ -474,7 +474,7 @@ const Quotes = () => {
         const phone = ticketConfigRef.current?.ticket_phone;
         const email = ticketConfigRef.current?.ticket_email;
         const dateStr = new Date().toLocaleString('es-AR', { hour12: false });
-        const logoDataUrl = localStorage.getItem('ticket_logo') || '';
+        const logoDataUrl = ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || '';
 
         // Lógica corregida de descuentos para presupuesto en PDF
         const itemsBaseSubtotal = cart.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -533,18 +533,18 @@ const Quotes = () => {
                   <div style="font-weight: bold;">${item.nombre}</div>
                   ${descItem > 0 ? `
                     <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                      Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                      Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
-                      <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                      <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
                     </div>
                   ` : item.quantity > 1 ? `
                     <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                      Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })} x ${item.quantity} un.
+                      Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} x ${item.quantity} un.
                     </div>
                   ` : ''}
                 </td>
                 <td style="padding: 4px 0; text-align: right; vertical-align: top;">${item.quantity}</td>
-                <td style="padding: 4px 0; text-align: right; vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                <td style="padding: 4px 0; text-align: right; vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
               </tr>
             `;
             }).join('')}
@@ -554,16 +554,16 @@ const Quotes = () => {
         <div style="border-top: 1px dashed #000; padding-top: 10px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span>Subtotal:</span>
-            <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           </div>
           ${totalDiscount > 0 ? `
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span>Descuento:</span>
-            <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           </div>` : ''}
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: bold; font-size: 14px; margin-top: 5px;">
             <span>TOTAL PREVISTO:</span>
-            <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           </div>
         </div>
 

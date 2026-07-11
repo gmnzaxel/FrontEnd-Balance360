@@ -15,6 +15,7 @@ const Settings = () => {
         currency: 'ARS',
         ticket_header: '',
         ticket_footer: '',
+        ticket_logo: '',
         ticket_address: '',
         ticket_cuit: '',
         ticket_iibb: '',
@@ -37,6 +38,10 @@ const Settings = () => {
         try {
             const response = await api.get('settings/');
             setSettings(response.data);
+            if (response.data.ticket_logo) {
+                setLogoDataUrl(response.data.ticket_logo);
+                localStorage.setItem('ticket_logo', response.data.ticket_logo);
+            }
         } catch (error) {
             console.error(error);
             toast.error("Error al cargar configuración");
@@ -46,7 +51,7 @@ const Settings = () => {
     };
 
     const handleSave = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setSaving(true);
         try {
             await api.patch('settings/', settings);
@@ -58,28 +63,79 @@ const Settings = () => {
             setSaving(false);
         }
     };
-    const handleLogoChange = (e) => {
+
+    const compressImage = (file) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.src = ev.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 200;
+                    const MAX_HEIGHT = 200;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Export as PNG to preserve transparent backgrounds
+                    const dataUrl = canvas.toDataURL('image/png');
+                    resolve(dataUrl);
+                };
+                img.onerror = () => {
+                    resolve(ev.target.result); // fallback to original
+                };
+            };
+            reader.onerror = () => {
+                resolve('');
+            };
+        });
+    };
+
+    const handleLogoChange = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.size > 500 * 1024) {
-            toast.error('El logo no debe superar los 500 KB.');
-            return;
+        
+        try {
+            const compressedDataUrl = await compressImage(file);
+            if (!compressedDataUrl) {
+                toast.error('Error al procesar la imagen.');
+                return;
+            }
+            setLogoDataUrl(compressedDataUrl);
+            setSettings(prev => ({ ...prev, ticket_logo: compressedDataUrl }));
+            localStorage.setItem('ticket_logo', compressedDataUrl);
+            toast.success('Logo cargado correctamente. Recuerda guardar los cambios.');
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al cargar el logo.');
         }
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const dataUrl = ev.target.result;
-            setLogoDataUrl(dataUrl);
-            localStorage.setItem('ticket_logo', dataUrl);
-            toast.success('Logo guardado correctamente.');
-        };
-        reader.readAsDataURL(file);
     };
 
     const handleRemoveLogo = () => {
         setLogoDataUrl('');
+        setSettings(prev => ({ ...prev, ticket_logo: '' }));
         localStorage.removeItem('ticket_logo');
         if (logoInputRef.current) logoInputRef.current.value = '';
-        toast.info('Logo eliminado.');
+        toast.info('Logo removido. Recuerda guardar los cambios.');
     };
 
 

@@ -187,7 +187,7 @@ const NewSale = () => {
       setEditingSaleId(null);
       setEditingSaleNumber(null);
     }
-  }, [location.search, loadSaleForEdit, editingSaleId]);
+  }, [location.search, loadSaleForEdit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // isMobile ahora viene de useMediaQuery — se eliminó el useEffect duplicado
 
@@ -218,7 +218,7 @@ const NewSale = () => {
     const iva = ticketConfigRef.current?.ticket_iva;
     const phone = ticketConfigRef.current?.ticket_phone;
     const email = ticketConfigRef.current?.ticket_email;
-    const logoDataUrl = localStorage.getItem('ticket_logo') || '';
+    const logoDataUrl = ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || '';
 
     // Lógica corregida de descuentos
     const itemsBaseSubtotal = lastSale.items.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -288,18 +288,18 @@ const NewSale = () => {
                     <div style="font-weight: bold;">${itemLabel}</div>
                     ${descItem > 0 ? `
                       <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
-                        <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                        <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
                       </div>
                     ` : item.quantity > 1 ? `
                       <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })} x ${item.quantity} un.
+                        Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} x ${item.quantity} un.
                       </div>
                     ` : ''}
                   </td>
                   <td class="text-right" style="vertical-align: top;">${item.quantity}</td>
-                  <td class="text-right" style="vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right" style="vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                 </tr>
               `;
               }).join('')}
@@ -309,16 +309,16 @@ const NewSale = () => {
           <div class="totals">
             <div class="row">
               <span>Subtotal:</span>
-              <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
             ${totalDiscount > 0 ? `
             <div class="row">
               <span>Descuento:</span>
-              <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>` : ''}
             <div class="row" style="font-weight: bold; font-size: 14px; margin-top: 5px;">
               <span>TOTAL:</span>
-              <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
           </div>
 
@@ -360,7 +360,7 @@ const NewSale = () => {
     const iva = ticketConfigRef.current?.ticket_iva;
     const phone = ticketConfigRef.current?.ticket_phone;
     const email = ticketConfigRef.current?.ticket_email;
-    const logoDataUrl = localStorage.getItem('ticket_logo') || '';
+    const logoDataUrl = ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || '';
 
     // Lógica corregida de descuentos
     const itemsBaseSubtotal = lastSale.items.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -407,18 +407,18 @@ const NewSale = () => {
                    <div style="font-weight: bold;">${itemLabel}</div>
                    ${descItem > 0 ? `
                      <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                       Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                       Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                        ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
-                       <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                       <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
                      </div>
                    ` : item.quantity > 1 ? `
                      <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                       Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })} x ${item.quantity} un.
+                       Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} x ${item.quantity} un.
                      </div>
                    ` : ''}
                  </td>
                  <td style="padding: 4px 0; text-align: right; vertical-align: top;">${item.quantity}</td>
-                 <td style="padding: 4px 0; text-align: right; vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                 <td style="padding: 4px 0; text-align: right; vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                </tr>
              `;
              }).join('')}
@@ -428,16 +428,16 @@ const NewSale = () => {
         <div style="border-top: 1px dashed #000; padding-top: 10px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span>Subtotal:</span>
-            <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           </div>
           ${totalDiscount > 0 ? `
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span>Descuento:</span>
-            <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           </div>` : ''}
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: bold; font-size: 14px; margin-top: 5px;">
             <span>TOTAL:</span>
-            <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           </div>
         </div>
 
@@ -540,8 +540,8 @@ const NewSale = () => {
     try {
       const wasEditing = Boolean(editingSaleId);
       const finalGlobalDiscount = discountType === '%'
-        ? parseFloat((subtotal * (parseFloat(discount) / 100)).toFixed(2)) || 0
-        : parseFloat(discount) || 0;
+        ? Math.round(subtotal * (parseFloat(discount) / 100)) || 0
+        : Math.round(parseFloat(discount)) || 0;
 
       const payload = {
         payment_method: paymentMethod,
@@ -556,8 +556,8 @@ const NewSale = () => {
             product: item.product,
             description: item.item_type === 'SERVICIO' ? item.description : undefined,
             quantity: item.quantity,
-            price: item.price,
-            discount: parseFloat(descItem.toFixed(2)) || 0
+            price: Math.round(parseFloat(item.price)) || 0,
+            discount: Math.round(descItem) || 0
           };
         }),
       };

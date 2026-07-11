@@ -6,6 +6,7 @@ import { Eye, RotateCcw, Trash2, AlertCircle, X, Search, Calendar, Filter, Edit,
 import { toast } from 'react-toastify';
 import { formatCurrency, formatDate } from '../utils/format';
 import Modal from '../components/ui/Modal';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 const loadHtml2Pdf = () => {
   return new Promise((resolve, reject) => {
@@ -27,6 +28,8 @@ const Sales = () => {
     const [sales, setSales] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedSale, setSelectedSale] = useState(null);
+    const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
     const [showActionModal, setShowActionModal] = useState(null); // 'anular' or 'reembolsar'
     const [confirmText, setConfirmText] = useState('');
     const [showAdminMenu, setShowAdminMenu] = useState(false);
@@ -184,21 +187,26 @@ const Sales = () => {
         }
     };
 
-    const handleHardDelete = async () => {
+    const handleHardDelete = () => {
         if (!selectedSale) return;
-        if (!window.confirm('Eliminar definitivamente esta venta anulada? Esta acción no se puede deshacer.')) return;
+        setShowConfirmDeleteModal(true);
+    };
+
+    const confirmHardDelete = async () => {
+        setDeleteLoading(true);
         try {
             await api.delete(`sales/sales/${selectedSale.id}/hard-delete/`);
             toast.success('Venta eliminada definitivamente');
+            setShowConfirmDeleteModal(false);
             setShowActionModal(null);
             setSelectedSale(null);
             fetchSales();
         } catch (error) {
             toast.error(error.response?.data?.error || 'No se pudo eliminar la venta');
+        } finally {
+            setDeleteLoading(false);
         }
     };
-
-    if (loading) return <div className="p-8 text-center text-muted">Cargando ventas…</div>;
 
     const canEditSale = (sale) => {
         if (!sale || sale.is_voided || sale.is_refunded) return false;
@@ -207,6 +215,8 @@ const Sales = () => {
         const currentId = user.user_id || user.id;
         return String(sale.user) === String(currentId);
     };
+
+    if (loading) return <div className="p-8 text-center text-muted">Cargando ventas…</div>;
 
     const handlePrintTicket = (sale) => {
         if (!sale) return;
@@ -225,6 +235,7 @@ const Sales = () => {
         const iva = ticketConfigRef.current?.ticket_iva;
         const phone = ticketConfigRef.current?.ticket_phone;
         const email = ticketConfigRef.current?.ticket_email;
+        const logoDataUrl = ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || '';
 
         // Lógica corregida de descuentos
         const itemsBaseSubtotal = sale.items.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -258,7 +269,10 @@ const Sales = () => {
         </head>
         <body>
           <div class="header">
-            <div class="branch-title">${branchName}</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
+              ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:44px;max-width:60px;object-fit:contain;flex-shrink:0;" />` : ''}
+              <div class="branch-title">${branchName}</div>
+            </div>
             <div class="company">${headerText}</div>
             ${address ? `<div class="info">Dirección: ${address}</div>` : ''}
             ${cuit ? `<div class="info">CUIT: ${cuit}</div>` : ''}
@@ -291,18 +305,18 @@ const Sales = () => {
                     <div style="font-weight: bold;">${itemLabel}</div>
                     ${descItem > 0 ? `
                       <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                        Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
-                        <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                        <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
                       </div>
                     ` : `
                       <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                        Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                        Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </div>
                     `}
                   </td>
                   <td class="text-right" style="vertical-align: top;">${item.quantity}</td>
-                  <td class="text-right" style="vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right" style="vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                 </tr>
               `;
               }).join('')}
@@ -312,16 +326,16 @@ const Sales = () => {
           <div class="totals">
             <div class="row">
               <span>Subtotal:</span>
-              <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
             ${totalDiscount > 0 ? `
             <div class="row">
               <span>Descuento:</span>
-              <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>` : ''}
             <div class="row" style="font-weight: bold; font-size: 14px; margin-top: 5px;">
               <span>TOTAL:</span>
-              <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
           </div>
 
@@ -362,6 +376,7 @@ const Sales = () => {
         const iva = ticketConfigRef.current?.ticket_iva;
         const phone = ticketConfigRef.current?.ticket_phone;
         const email = ticketConfigRef.current?.ticket_email;
+        const logoDataUrl = ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || '';
 
         // Lógica corregida de descuentos
         const itemsBaseSubtotal = sale.items.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -373,7 +388,10 @@ const Sales = () => {
         const htmlContent = `
       <div style="font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 15px; font-size: 12px; box-sizing: border-box; background: white; color: black;">
         <div style="text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px;">
-          <div style="font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 3px; display: inline-block; margin-bottom: 8px;">${branchName}</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
+            ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:44px;max-width:60px;object-fit:contain;flex-shrink:0;" />` : ''}
+            <div style="font-size: 16px; font-weight: bold; text-transform: uppercase;">${branchName}</div>
+          </div>
           <div style="font-size: 11px; color: #333; margin-bottom: 5px; white-space: pre-wrap;">${headerText}</div>
           ${address ? `<div style="font-size: 10px; color: #555;">Dirección: ${address}</div>` : ''}
           ${cuit ? `<div style="font-size: 10px; color: #555;">CUIT: ${cuit}</div>` : ''}
@@ -406,18 +424,18 @@ const Sales = () => {
                   <div style="font-weight: bold;">${itemLabel}</div>
                   ${descItem > 0 ? `
                     <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                      Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                      Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
-                      <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 2 })})</span>
+                      <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
                     </div>
                   ` : `
                     <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                      Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                      Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </div>
                   `}
                 </td>
                 <td style="padding: 4px 0; text-align: right; vertical-align: top;">${item.quantity}</td>
-                <td style="padding: 4px 0; text-align: right; vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+                <td style="padding: 4px 0; text-align: right; vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
               </tr>
             `;
             }).join('')}
@@ -427,16 +445,16 @@ const Sales = () => {
         <div style="border-top: 1px dashed #000; padding-top: 10px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span>Subtotal:</span>
-            <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           </div>
           ${totalDiscount > 0 ? `
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span>Descuento:</span>
-            <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           </div>` : ''}
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: bold; font-size: 14px; margin-top: 5px;">
             <span>TOTAL:</span>
-            <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+            <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           </div>
         </div>
 
@@ -478,6 +496,12 @@ const Sales = () => {
         setSelectedSale(null);
         setShowAdminMenu(false);
     };
+
+    const hasActions = selectedSale && (
+        (isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded) ||
+        canEditSale(selectedSale) ||
+        (isAdmin && selectedSale.is_voided)
+    );
 
     return (
         <div className="sales-page page">
@@ -683,76 +707,77 @@ const Sales = () => {
                     footer={isMobile ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                             {/* Acciones Dropdown */}
-                            <div style={{ position: 'relative', width: '100%' }}>
-                                <button
-                                    onClick={() => setShowAdminMenu(!showAdminMenu)}
-                                    className="ui-btn ui-btn-secondary"
-                                    style={{ height: '38px', minHeight: '38px', width: '100%', padding: '8px 16px', fontSize: '0.85rem', gap: '6px', justifyContent: 'center' }}
-                                >
-                                    <span>Acciones de administrador</span>
-                                    <span style={{ fontSize: '0.65rem' }}>▼</span>
-                                </button>
-                                {showAdminMenu && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        bottom: '100%',
-                                        left: 0,
-                                        right: 0,
-                                        marginBottom: '6px',
-                                        background: 'var(--surface-elevated)',
-                                        border: '1px solid var(--border-subtle)',
-                                        borderRadius: '8px',
-                                        boxShadow: 'var(--shadow-lg)',
-                                        padding: '6px',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '4px',
-                                        zIndex: 100
-                                    }}>
-                                        {isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded && (
-                                            <button
-                                                onClick={() => { setShowActionModal('reembolsar'); setShowAdminMenu(false); }}
-                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
-                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--warning-text)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
-                                            >
-                                                <RotateCcw size={14} /> Reembolsar venta
-                                            </button>
-                                        )}
-                                        {canEditSale(selectedSale) && (
-                                            <>
+                            {hasActions && (
+                                <div style={{ position: 'relative', width: '100%' }}>
+                                    <button
+                                        onClick={() => setShowAdminMenu(!showAdminMenu)}
+                                        className="ui-btn ui-btn-secondary"
+                                        style={{ height: '38px', minHeight: '38px', width: '100%', padding: '8px 16px', fontSize: '0.85rem', gap: '6px', justifyContent: 'center' }}
+                                    >
+                                        <span>Acciones de administrador</span>
+                                        <span style={{ fontSize: '0.65rem' }}>▼</span>
+                                    </button>
+                                    {showAdminMenu && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: '100%',
+                                            left: 0,
+                                            right: 0,
+                                            marginBottom: '6px',
+                                            background: 'var(--surface-elevated)',
+                                            border: '1px solid var(--border-subtle)',
+                                            borderRadius: '8px',
+                                            boxShadow: 'var(--shadow-lg)',
+                                            padding: '6px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '4px',
+                                            zIndex: 100
+                                        }}>
+                                            {isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded && (
                                                 <button
-                                                    onClick={() => { setShowActionModal('anular'); setShowAdminMenu(false); }}
+                                                    onClick={() => { setShowActionModal('reembolsar'); setShowAdminMenu(false); }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--warning-text)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                                >
+                                                    <RotateCcw size={14} /> Reembolsar venta
+                                                </button>
+                                            )}
+                                            {canEditSale(selectedSale) && (
+                                                <>
+                                                    <button
+                                                        onClick={() => { setShowActionModal('anular'); setShowAdminMenu(false); }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--danger-text)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                                    >
+                                                        <Trash2 size={14} /> Anular venta
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { handleEditSale(selectedSale); setShowAdminMenu(false); }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
+                                                    >
+                                                        <Edit size={14} /> Editar venta
+                                                    </button>
+                                                </>
+                                            )}
+                                            {isAdmin && selectedSale.is_voided && (
+                                                <button
+                                                    onClick={() => { handleHardDelete(); setShowAdminMenu(false); }}
                                                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
                                                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                                     style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--danger-text)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
                                                 >
-                                                    <Trash2 size={14} /> Anular venta
-                                                </button>
-                                                <button
-                                                    onClick={() => { handleEditSale(selectedSale); setShowAdminMenu(false); }}
-                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
-                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
-                                                >
-                                                    <Edit size={14} /> Editar venta
-                                                </button>
-                                            </>
-                                        )}
-                                        {isAdmin && selectedSale.is_voided && (
-                                            <button
-                                                onClick={() => { handleHardDelete(); setShowAdminMenu(false); }}
-                                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-hover)'}
-                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                                style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: 'var(--danger-text)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', borderRadius: '6px', fontWeight: 'bold', transition: 'background 0.15s' }}
-                                            >
-                                                <Trash2 size={14} /> Eliminar venta
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
+                                                    <Trash2 size={14} /> Eliminar venta
+                                                 </button>
+                                             )}
+                                         </div>
+                                     )}
+                                 </div>
+                             )}
                             {/* Mobile action buttons stacked */}
                             <button
                                 onClick={() => handleDownloadTicketPDF(selectedSale)}
@@ -780,12 +805,13 @@ const Sales = () => {
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '8px' }}>
                             {/* Actions Dropdown for Desktop */}
-                            <div style={{ position: 'relative' }}>
-                                <button
-                                    onClick={() => setShowAdminMenu(!showAdminMenu)}
-                                    className="ui-btn ui-btn-secondary"
-                                    style={{ height: '34px', minHeight: '34px', padding: '6px 12px', fontSize: '0.8rem', gap: '6px' }}
-                                >
+                            {hasActions ? (
+                                <div style={{ position: 'relative' }}>
+                                    <button
+                                        onClick={() => setShowAdminMenu(!showAdminMenu)}
+                                        className="ui-btn ui-btn-secondary"
+                                        style={{ height: '34px', minHeight: '34px', padding: '6px 12px', fontSize: '0.8rem', gap: '6px' }}
+                                    >
                                     <span>Acciones</span>
                                     <span style={{ fontSize: '0.65rem' }}>▼</span>
                                 </button>
@@ -849,6 +875,9 @@ const Sales = () => {
                                     </div>
                                 )}
                             </div>
+                            ) : (
+                                <div />
+                            )}
 
                             {/* Secondary Output Actions & Close for Desktop */}
                             <div style={{ display: 'flex', flexDirection: 'row', gap: '6px', alignItems: 'center' }}>
@@ -932,8 +961,8 @@ const Sales = () => {
                                                     {itemDiscount > 0 && <><br /><span className="muted tiny">Desc: -{formatCurrency(itemDiscount)}</span></>}
                                                 </td>
                                                 <td style={{ textAlign: 'right' }} data-label="Cant.">{item.quantity}</td>
-                                                <td style={{ textAlign: 'right' }} data-label="Precio">{formatCurrency(item.price)}</td>
-                                                <td style={{ textAlign: 'right', fontWeight: 600 }} data-label="Total">{formatCurrency(item.quantity * item.price - itemDiscount)}</td>
+                                                <td style={{ textAlign: 'right' }} data-label="Precio">{formatCurrency(parseFloat(item.price) || 0)}</td>
+                                                <td style={{ textAlign: 'right', fontWeight: 600 }} data-label="Total">{formatCurrency((parseFloat(item.quantity) || 1) * (parseFloat(item.price) || 0) - itemDiscount)}</td>
                                             </tr>
                                         );
                                     })}
@@ -943,7 +972,7 @@ const Sales = () => {
 
                         {/* Totals */}
                         <div className="flex-col items-end gap-xs pt-sm" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-                            {selectedSale.discount > 0 && (
+                            {parseFloat(selectedSale.discount) > 0 && (
                                 <div className="flex-row gap-lg text-sm text-danger-text">
                                     <span>Descuento:</span>
                                     <span>- {formatCurrency(selectedSale.discount)}</span>
@@ -1010,6 +1039,20 @@ const Sales = () => {
                         </div>
                     </form>
                 </Modal>
+            )}
+
+            {showConfirmDeleteModal && (
+                <ConfirmModal
+                    isOpen={showConfirmDeleteModal}
+                    onClose={() => setShowConfirmDeleteModal(false)}
+                    onConfirm={confirmHardDelete}
+                    title="Eliminar venta definitivamente"
+                    message="¿Estás seguro de que deseas eliminar definitivamente esta venta anulada? Esta acción no se puede deshacer y borrará todos los movimientos asociados."
+                    confirmLabel="Eliminar definitivamente"
+                    cancelLabel="Cancelar"
+                    variant="danger"
+                    loading={deleteLoading}
+                />
             )}
         </div>
     );

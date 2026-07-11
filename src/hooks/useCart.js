@@ -55,16 +55,16 @@ const useCart = ({
         const dv = parseFloat(item.discountValue);
         const descItem = !item.discountValue || isNaN(dv)
             ? 0
-            : item.discountType === '%' ? baseSub * (dv / 100) : dv;
-        return acc + (baseSub - descItem);
+            : item.discountType === '%' ? Math.round(baseSub * (dv / 100)) : Math.round(dv);
+        return acc + Math.round(baseSub - descItem);
     }, 0), [cart]);
 
     const total = useMemo(() => {
-        if (!discount) return subtotal;
+        if (!discount) return Math.round(subtotal);
         const dv = parseFloat(discount);
-        if (isNaN(dv) || dv <= 0) return subtotal;
-        const descTotal = discountType === '%' ? subtotal * (dv / 100) : dv;
-        return Math.max(0, subtotal - descTotal);
+        if (isNaN(dv) || dv <= 0) return Math.round(subtotal);
+        const descTotal = discountType === '%' ? Math.round(subtotal * (dv / 100)) : Math.round(dv);
+        return Math.max(0, Math.round(subtotal - descTotal));
     }, [subtotal, discount, discountType]);
 
     const cartCount = useMemo(
