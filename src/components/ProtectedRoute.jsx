@@ -1,9 +1,10 @@
 import React, { useContext } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const ProtectedRoute = () => {
   const { user, loading } = useContext(AuthContext);
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -18,13 +19,11 @@ const ProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect superuser to super-dashboard if they haven't impersonated a company yet
   const isSuperUser = user?.is_superuser === true;
-  const hasImpersonated = !!localStorage.getItem('impersonated_company_id');
-  const isSuperDashboard = window.location.pathname === '/super-dashboard';
-  const isProfile = window.location.pathname === '/mi-perfil';
+  const hasImpersonated = Boolean(localStorage.getItem('impersonated_company_id'));
+  const isAllowedPath = location.pathname === '/super-dashboard' || location.pathname === '/mi-perfil';
 
-  if (isSuperUser && !hasImpersonated && !isSuperDashboard && !isProfile) {
+  if (isSuperUser && !hasImpersonated && !isAllowedPath) {
     return <Navigate to="/super-dashboard" replace />;
   }
 

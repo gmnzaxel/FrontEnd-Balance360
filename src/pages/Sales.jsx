@@ -251,9 +251,9 @@ const Sales = () => {
           <style>
             @media print {
               @page { margin: 0; }
-              body { margin: 0.5cm; }
+              body { margin: 0; padding: 4px; }
             }
-            body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 10px; font-size: 12px; }
+            body { font-family: 'Courier New', Courier, monospace; width: 100%; max-width: 100%; margin: 0; padding: 6px; font-size: 11px; box-sizing: border-box; }
             .header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
             .branch-title { font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 3px; display: inline-block; margin-bottom: 8px; }
             .company { font-size: 11px; color: #333; margin-bottom: 5px; white-space: pre-wrap; }

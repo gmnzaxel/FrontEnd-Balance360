@@ -20,6 +20,16 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
 const SuperDashboard = lazy(() => import('./pages/SuperDashboard'));
 
+import { AuthContext } from './context/AuthContext';
+
+const HomeRedirect = () => {
+  const { user } = React.useContext(AuthContext);
+  if (user?.is_superuser && !localStorage.getItem('impersonated_company_id')) {
+    return <Navigate to="/super-dashboard" replace />;
+  }
+  return <Navigate to="/new-sale" replace />;
+};
+
 const SuspenseFallback = <div className="page-fallback">Cargando módulo...</div>;
 
 function App() {
@@ -37,7 +47,7 @@ function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
-                <Route path="/" element={<Navigate to="/new-sale" replace />} />
+                <Route path="/" element={<HomeRedirect />} />
                 <Route path="/super-dashboard" element={<SuperUserOnly><SuperDashboard /></SuperUserOnly>} />
                 <Route path="/dashboard" element={<AdminOnly><Dashboard /></AdminOnly>} />
                 <Route path="/products" element={<Products />} />

@@ -93,15 +93,14 @@ export const AuthProvider = ({ children }) => {
       const decoded = parseToken(access);
       setUser(decoded);
       toast.success('Bienvenido de nuevo');
-      return true;
+      return decoded;
     } catch (error) {
-      // Specialized message for 401 on login
       if (error.response && error.response.status === 401) {
         toast.error('Credenciales inválidas');
       } else {
         toast.error(getErrorMessage(error));
       }
-      return false;
+      return null;
     }
   }, []);
 

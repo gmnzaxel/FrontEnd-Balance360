@@ -87,6 +87,13 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
   };
 
   const quickActions = useMemo(() => {
+    const isImpersonating = Boolean(localStorage.getItem('impersonated_company_id'));
+    if (user?.is_superuser && !isImpersonating) {
+      return [
+        { label: 'Panel SuperAdmin', path: '/super-dashboard', icon: <LayoutDashboard size={16} /> },
+      ];
+    }
+
     const actions = [
       ...(isAdmin ? [{ label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={16} /> }] : []),
       { label: 'Inventario', path: '/products', icon: <Package size={16} /> },
@@ -96,9 +103,16 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
       ...(isAdmin ? [{ label: 'Reportes', path: '/reports', icon: <FileText size={16} /> }] : []),
     ];
     return actions;
-  }, [isAdmin]);
+  }, [isAdmin, user]);
 
   const secondaryActions = useMemo(() => {
+    const isImpersonating = Boolean(localStorage.getItem('impersonated_company_id'));
+    if (user?.is_superuser && !isImpersonating) {
+      return [
+        { label: 'Soporte', path: 'support', icon: <LifeBuoy size={16} /> },
+      ];
+    }
+
     const actions = [
       ...(user?.is_superuser ? [{ label: 'Panel SuperAdmin', path: '/super-dashboard', icon: <LayoutDashboard size={16} /> }] : []),
       ...(isAdmin ? [{ label: 'Usuarios', path: '/users', icon: <Briefcase size={16} /> }] : []),

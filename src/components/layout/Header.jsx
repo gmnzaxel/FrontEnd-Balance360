@@ -1,5 +1,6 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
 
 const Header = ({ title, onToggleSidebar, menuSlot }) => {
   return (
@@ -13,7 +14,8 @@ const Header = ({ title, onToggleSidebar, menuSlot }) => {
           <h1 className="page-title">{title}</h1>
         </div>
       </div>
-      <div className="header-right">
+      <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <NotificationCenter />
         {menuSlot}
       </div>
     </header>

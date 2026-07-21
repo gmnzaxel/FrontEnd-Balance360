@@ -25,6 +25,15 @@ const Layout = () => {
   }, [location.pathname]);
 
   const navItems = useMemo(() => {
+    const isImpersonating = Boolean(localStorage.getItem('impersonated_company_id'));
+
+    // Si es superusuario y NO está auditando/impersonando ninguna empresa, solo ve el Panel SuperAdmin
+    if (user?.is_superuser && !isImpersonating) {
+      return [
+        { path: '/super-dashboard', label: 'Panel SuperAdmin' },
+      ];
+    }
+
     const items = [
       { path: '/products', label: 'Inventario' },
       { path: '/sales', label: 'Ventas' },
@@ -43,7 +52,7 @@ const Layout = () => {
     }
 
     return items;
-  }, [isAdmin, user]);
+  }, [isAdmin, user, location.pathname]);
 
   const pageTitle = useMemo(() => {
     const current = navItems.find((item) => item.path === location.pathname);

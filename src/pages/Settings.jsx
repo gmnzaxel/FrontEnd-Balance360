@@ -21,7 +21,8 @@ const Settings = () => {
         ticket_iibb: '',
         ticket_iva: '',
         ticket_phone: '',
-        ticket_email: ''
+        ticket_email: '',
+        daily_sales_goal: 100000.00
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);

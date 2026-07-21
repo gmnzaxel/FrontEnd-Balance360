@@ -25,11 +25,14 @@ const Login = () => {
       setErrors(nextErrors);
       return;
     }
-    setLoading(true);
-    const success = await login(username.trim(), password);
+    const loggedUser = await login(username.trim(), password);
     setLoading(false);
-    if (success) {
-      navigate('/');
+    if (loggedUser) {
+      if (loggedUser.is_superuser && !localStorage.getItem('impersonated_company_id')) {
+        navigate('/super-dashboard');
+      } else {
+        navigate('/');
+      }
     } else {
       setErrors((prev) => ({
         ...prev,
