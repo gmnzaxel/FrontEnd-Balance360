@@ -115,14 +115,14 @@ const Layout = () => {
           <div style={{
             background: 'linear-gradient(90deg, rgba(245, 158, 11, 0.12) 0%, rgba(251, 191, 36, 0.08) 100%)',
             borderBottom: '1px solid rgba(245, 158, 11, 0.2)',
-            padding: '10px 20px',
+            padding: '8px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '12px',
+            gap: '8px',
             flexWrap: 'wrap',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
               <div style={{
                 width: '8px',
                 height: '8px',
@@ -132,14 +132,11 @@ const Layout = () => {
                 animation: 'pulseDot 2s infinite',
                 flexShrink: 0,
               }} />
-              <span style={{ fontSize: '0.875rem', color: '#d97706', fontWeight: '600', lineHeight: 1.4 }}>
-                Modo auditoría activo:{' '}
+              <span style={{ fontSize: '0.82rem', color: '#d97706', fontWeight: '600', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                Auditoría:{' '}
                 <strong style={{ color: '#f59e0b' }}>
-                  {localStorage.getItem('impersonated_company_name') || 'Empresa seleccionada'}
+                  {localStorage.getItem('impersonated_company_name') || 'Empresa'}
                 </strong>
-                <span style={{ fontWeight: '400', color: '#9ca3af', marginLeft: '6px' }}>
-                  — Los cambios que realices afectan a esta empresa.
-                </span>
               </span>
             </div>
             <button
@@ -152,11 +149,11 @@ const Layout = () => {
                 background: 'rgba(245, 158, 11, 0.15)',
                 color: '#d97706',
                 border: '1px solid rgba(245, 158, 11, 0.3)',
-                padding: '6px 14px',
+                padding: '5px 12px',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 fontWeight: '700',
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
                 transition: 'all 0.2s',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
@@ -170,7 +167,7 @@ const Layout = () => {
                 e.target.style.borderColor = 'rgba(245, 158, 11, 0.3)';
               }}
             >
-              ← Salir de empresa
+              ← Salir
             </button>
           </div>
         )}

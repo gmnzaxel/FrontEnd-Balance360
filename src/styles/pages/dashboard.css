@@ -121,7 +121,12 @@
 
 @media (max-width: 640px) {
   .kpi-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .kpi-value {
+    font-size: 1.2rem;
   }
 
   .charts-grid {
@@ -130,6 +135,16 @@
 
   .dashboard-chart-body {
     height: 240px;
+  }
+}
+
+@media (max-width: 390px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-value {
+    font-size: 1.35rem;
   }
 }
 

@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, AlertTriangle, ShieldAlert, RefreshCw, ArrowRight, Package } from 'lucide-react';
 import api from '../../api/axios';
+import { AuthContext } from '../../context/AuthContext';
 
 const NotificationCenter = () => {
+  const { user, isAdminActual } = useContext(AuthContext);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('stock'); // 'stock' o 'security'
@@ -12,48 +14,54 @@ const NotificationCenter = () => {
   const [securityAlerts, setSecurityAlerts] = useState([]);
   const popoverRef = useRef(null);
 
+  // Administradores y Superusuarios pueden ver el centro de notificaciones
+  const isAllowedToSeeAlerts = user?.is_superuser || isAdminActual || user?.role === 'ADMIN';
+
   const fetchAlerts = async () => {
+    if (!isAllowedToSeeAlerts) return;
     setLoading(true);
     try {
-      // 1. Fetch low stock products
+      // 1. Fetch low stock products (strictly less than stock_minimo)
       const prodRes = await api.get('inventory/products/?include_archived=false');
       const allProds = prodRes.data?.results || prodRes.data || [];
-      const lowStock = allProds.filter((p) => Number(p.stock_actual) <= Number(p.stock_minimo));
+      const lowStock = allProds.filter((p) => Number(p.stock_actual) < Number(p.stock_minimo));
       setLowStockProducts(lowStock);
 
-      // 2. Fetch security alerts (login logs & voided sales)
+      // 2. Fetch security alerts ONLY for SuperUsers
       const secAlerts = [];
-      try {
-        const logsRes = await api.get('users/login-logs/');
-        const logs = logsRes.data || [];
-        const failedLogs = logs.filter((l) => l.status !== 'SUCCESS').slice(0, 5);
-        failedLogs.forEach((l) => {
-          secAlerts.push({
-            id: `log-${l.id}`,
-            type: 'failed_login',
-            title: `Intento de login fallido: ${l.username}`,
-            detail: `IP: ${l.ip_address || '—'} - ${new Date(l.fecha).toLocaleString('es-AR')}`,
-            time: new Date(l.fecha),
+      if (user?.is_superuser) {
+        try {
+          const logsRes = await api.get('users/login-logs/');
+          const logs = logsRes.data || [];
+          const failedLogs = logs.filter((l) => l.status !== 'SUCCESS').slice(0, 5);
+          failedLogs.forEach((l) => {
+            secAlerts.push({
+              id: `log-${l.id}`,
+              type: 'failed_login',
+              title: `Intento de login fallido: ${l.username}`,
+              detail: `IP: ${l.ip_address || '—'} - ${new Date(l.fecha).toLocaleString('es-AR')}`,
+              time: new Date(l.fecha),
+            });
           });
-        });
-      } catch (_e) {}
+        } catch (_e) {}
 
-      try {
-        const salesRes = await api.get('sales/sales/');
-        const sales = salesRes.data?.results || salesRes.data || [];
-        const voidedOrRefunded = sales.filter((s) => s.is_voided || s.is_refunded).slice(0, 5);
-        voidedOrRefunded.forEach((s) => {
-          secAlerts.push({
-            id: `sale-${s.id}`,
-            type: 'sale_action',
-            title: s.is_voided ? `Venta #${s.id} Anulada` : `Venta #${s.id} Reembolsada`,
-            detail: `Monto: $${Number(s.total).toLocaleString('es-AR')} - ${s.reason || 'Sin motivo'}`,
-            time: new Date(s.created_at || s.fecha),
+        try {
+          const salesRes = await api.get('sales/sales/');
+          const sales = salesRes.data?.results || salesRes.data || [];
+          const voidedOrRefunded = sales.filter((s) => s.is_voided || s.is_refunded).slice(0, 5);
+          voidedOrRefunded.forEach((s) => {
+            secAlerts.push({
+              id: `sale-${s.id}`,
+              type: 'sale_action',
+              title: s.is_voided ? `Venta #${s.id} Anulada` : `Venta #${s.id} Reembolsada`,
+              detail: `Monto: $${Number(s.total).toLocaleString('es-AR')} - ${s.reason || 'Sin motivo'}`,
+              time: new Date(s.created_at || s.fecha),
+            });
           });
-        });
-      } catch (_e) {}
+        } catch (_e) {}
 
-      secAlerts.sort((a, b) => b.time - a.time);
+        secAlerts.sort((a, b) => b.time - a.time);
+      }
       setSecurityAlerts(secAlerts);
     } catch (error) {
       console.error('Error al cargar centro de notificaciones:', error);
@@ -78,7 +86,9 @@ const NotificationCenter = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const totalBadges = lowStockProducts.length + securityAlerts.length;
+  if (!isAllowedToSeeAlerts) return null;
+
+  const totalBadges = lowStockProducts.length + (user?.is_superuser ? securityAlerts.length : 0);
 
   return (
     <div style={{ position: 'relative' }} ref={popoverRef}>
@@ -152,45 +162,47 @@ const NotificationCenter = () => {
             </button>
           </div>
 
-          {/* Sub-tabs */}
-          <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.2)', borderBottom: '1px solid var(--border-color)' }}>
-            <button
-              onClick={() => setActiveTab('stock')}
-              style={{
-                flex: 1,
-                padding: '8px 4px',
-                border: 'none',
-                background: 'none',
-                color: activeTab === 'stock' ? 'var(--warning-text)' : 'var(--text-secondary)',
-                borderBottom: activeTab === 'stock' ? '2px solid var(--warning-text)' : 'none',
-                fontSize: '0.82rem',
-                fontWeight: activeTab === 'stock' ? '600' : '400',
-                cursor: 'pointer',
-              }}
-            >
-              ⚠️ Bajo Stock ({lowStockProducts.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('security')}
-              style={{
-                flex: 1,
-                padding: '8px 4px',
-                border: 'none',
-                background: 'none',
-                color: activeTab === 'security' ? '#f87171' : 'var(--text-secondary)',
-                borderBottom: activeTab === 'security' ? '2px solid #f87171' : 'none',
-                fontSize: '0.82rem',
-                fontWeight: activeTab === 'security' ? '600' : '400',
-                cursor: 'pointer',
-              }}
-            >
-              🛡️ Alertas de Seguridad ({securityAlerts.length})
-            </button>
-          </div>
+          {/* Sub-tabs only for SuperUser */}
+          {user?.is_superuser && (
+            <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.2)', borderBottom: '1px solid var(--border-color)' }}>
+              <button
+                onClick={() => setActiveTab('stock')}
+                style={{
+                  flex: 1,
+                  padding: '8px 4px',
+                  border: 'none',
+                  background: 'none',
+                  color: activeTab === 'stock' ? 'var(--warning-text)' : 'var(--text-secondary)',
+                  borderBottom: activeTab === 'stock' ? '2px solid var(--warning-text)' : 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: activeTab === 'stock' ? '600' : '400',
+                  cursor: 'pointer',
+                }}
+              >
+                ⚠️ Bajo Stock ({lowStockProducts.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('security')}
+                style={{
+                  flex: 1,
+                  padding: '8px 4px',
+                  border: 'none',
+                  background: 'none',
+                  color: activeTab === 'security' ? '#f87171' : 'var(--text-secondary)',
+                  borderBottom: activeTab === 'security' ? '2px solid #f87171' : 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: activeTab === 'security' ? '600' : '400',
+                  cursor: 'pointer',
+                }}
+              >
+                🛡️ Alertas de Seguridad ({securityAlerts.length})
+              </button>
+            </div>
+          )}
 
           {/* Tab Contents */}
           <div style={{ maxHeight: '320px', overflowY: 'auto', padding: '12px' }}>
-            {activeTab === 'stock' && (
+            {(!user?.is_superuser || activeTab === 'stock') && (
               lowStockProducts.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {lowStockProducts.map((p) => (
@@ -243,7 +255,7 @@ const NotificationCenter = () => {
               )
             )}
 
-            {activeTab === 'security' && (
+            {user?.is_superuser && activeTab === 'security' && (
               securityAlerts.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {securityAlerts.map((s) => (

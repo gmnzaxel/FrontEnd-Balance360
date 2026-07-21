@@ -676,7 +676,7 @@ const Products = () => {
                   <td data-label="Stock">
                     {p.stock_actual < p.stock_minimo
                       ? <Badge tone="danger">Bajo ({p.stock_actual})</Badge>
-                      : p.stock_actual === p.stock_minimo
+                      : (p.stock_actual === p.stock_minimo && (p.stock_maximo === 0 || p.stock_actual < p.stock_maximo))
                         ? <Badge tone="warning">{p.stock_actual} un.</Badge>
                         : <Badge tone="success">{p.stock_actual} un.</Badge>}
                   </td>

@@ -656,6 +656,14 @@
     font-size: 1rem;
   }
 
+  .app-main {
+    padding: calc(var(--header-height) + 12px) var(--space-2) var(--space-6);
+    /* Support for notch and home indicator */
+    padding-left: max(var(--space-2), env(safe-area-inset-left));
+    padding-right: max(var(--space-2), env(safe-area-inset-right));
+    padding-bottom: max(var(--space-6), env(safe-area-inset-bottom));
+  }
+
   .sidebar.mobile-mode .sidebar-inner,
   .sidebar.mobile-mode .sidebar-visual {
     width: min(88vw, 340px);
@@ -668,6 +676,11 @@
 
   .nav-link {
     padding: 9px 0;
+  }
+
+  /* ─── Small phone header: compact spacing ─── */
+  .header-right {
+    gap: 6px;
   }
 }
 

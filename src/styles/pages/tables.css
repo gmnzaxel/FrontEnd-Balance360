@@ -1,5 +1,7 @@
 /* Responsive stacked tables for mobile */
-@media (max-width: 768px) {
+/* NOTE: Only applies when no page-specific override is present. */
+/* Products, Sales, etc. have their own 640px overrides. */
+@media (max-width: 640px) {
   .table-container {
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -9,11 +11,12 @@
     min-width: 100%;
   }
 
-  .styled-table thead {
+  /* Generic stacked layout — pages override with their own styles */
+  .styled-table:not(.no-stack) thead {
     display: none;
   }
 
-  .styled-table tbody tr {
+  .styled-table:not(.no-stack) tbody tr {
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
@@ -22,7 +25,7 @@
     background: var(--surface-0);
   }
 
-  .styled-table td {
+  .styled-table:not(.no-stack) td {
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -31,11 +34,12 @@
     font-size: 0.95rem;
   }
 
-  .styled-table td::before {
+  .styled-table:not(.no-stack) td::before {
     content: attr(data-label);
     font-weight: 600;
     color: var(--text-secondary);
     font-size: 0.82rem;
+    flex-shrink: 0;
   }
 
   .styled-table td.text-right {
@@ -64,3 +68,4 @@
     box-shadow: var(--shadow-xs);
   }
 }
+

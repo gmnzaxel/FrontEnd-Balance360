@@ -144,6 +144,21 @@
   .catalog-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
+
+  .catalog-panel {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .cart-footer {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  .catalog-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (min-width: 1101px) {

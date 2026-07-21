@@ -186,6 +186,8 @@
 @media (max-width: 640px) {
   .auth-shell {
     padding: 18px;
+    /* Support for iPhone home indicator */
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
   }
 
   .auth-aside {
@@ -194,5 +196,27 @@
 
   .auth-list {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-shell {
+    padding: 12px 10px;
+    align-items: flex-start;
+    padding-top: max(20px, env(safe-area-inset-top));
+  }
+
+  /* On very small phones, hide the aside entirely */
+  .auth-aside {
+    display: none;
+  }
+
+  .auth-layout {
+    gap: 0;
+  }
+
+  .auth-panel .ui-card {
+    padding: 22px 18px;
+    border-radius: var(--radius-lg);
   }
 }

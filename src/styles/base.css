@@ -48,6 +48,38 @@ textarea {
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25);
 }
 
+/* ─── Mobile global fixes ─────────────────────────────────────── */
+/* Prevent iOS tap highlight */
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent input zoom on iOS (font-size must be >= 16px) */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Minimum 44px touch target (Apple HIG / Material Design accessibility) */
+  button:not([aria-hidden="true"]),
+  .ghost-icon,
+  .btn-icon,
+  .nav-link,
+  .dropdown-item {
+    min-height: 44px;
+  }
+
+  /* Ghost icon inherits size so override padding to ensure 44px */
+  .ghost-icon,
+  .btn-icon {
+    padding: 10px;
+  }
+}
+
 .no-scroll {
   overflow: hidden;
 }
@@ -285,6 +317,23 @@ textarea {
   padding: 14px 16px !important;
   min-height: unset !important;
   align-items: flex-start !important;
+}
+
+/* ─── Mobile: Toastify container fixes ────────── */
+@media (max-width: 640px) {
+  .Toastify__toast-container {
+    width: calc(100vw - 24px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    top: auto !important;
+    padding: 0 !important;
+  }
+
+  .Toastify__toast {
+    margin-bottom: 8px !important;
+    border-radius: 12px !important;
+  }
 }
 
 .Toastify__toast-body {

@@ -84,7 +84,7 @@
   .pos-cart-fab {
     position: fixed;
     right: 16px;
-    bottom: 20px;
+    bottom: max(20px, env(safe-area-inset-bottom, 20px));
     width: 56px;
     height: 56px;
     border-radius: 999px;
