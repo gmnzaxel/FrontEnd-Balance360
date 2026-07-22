@@ -193,13 +193,14 @@ a,
 }
 
 @keyframes modalPop {
-  from { opacity: 0; transform: translateY(12px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  0% { opacity: 0; transform: scale(0.9) translateY(15px); }
+  65% { opacity: 1; transform: scale(1.025) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes overlayFadeIn {
-  from { opacity: 0; backdrop-filter: blur(0px); }
-  to { opacity: 1; backdrop-filter: blur(var(--blur-sm)); }
+  from { opacity: 0; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 }
 
 /* ─── Emphasis & Micro-interactions ────────────────────────────── */
@@ -467,4 +468,27 @@ a,
     transparent 100%
   );
   animation: progressSlide 1.4s ease-in-out infinite;
+}
+
+/* ─── Fluid Theme Transition (Circular Expansion) ───────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* El tema nuevo se dibuja sobre el anterior usando clip-path circular */
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+/* Ajuste inverso para cuando pasamos a modo claro */
+[data-theme="light"]::view-transition-old(root) {
+  z-index: 9999;
+}
+[data-theme="light"]::view-transition-new(root) {
+  z-index: 1;
 }

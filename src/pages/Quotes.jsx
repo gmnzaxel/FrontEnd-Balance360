@@ -610,7 +610,7 @@ const Quotes = () => {
                 return;
             }
 
-            if (e.key === 'F2') {
+            if (e.key === 'F2' || e.key === '/') {
                 e.preventDefault();
                 searchInputRef.current?.focus();
             } else if (e.key === 'F8') {
@@ -652,7 +652,7 @@ const Quotes = () => {
                     <div style={{ position: 'relative', flex: 1, marginRight: '16px' }}>
                         <Input
                             ref={searchInputRef}
-                            placeholder="Buscar producto… [F2]"
+                            placeholder="Buscar producto (Presione /)…"
                             value={search}
                             onChange={(e) => {
                                 let val = e.target.value;
@@ -664,6 +664,7 @@ const Quotes = () => {
                                 setSearch(val);
                             }}
                             icon={<Search size={18} />}
+                            suffix={!search && <kbd className="search-kbd">/</kbd>}
                         />
                         {search && (
                           <button

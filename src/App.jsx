@@ -66,23 +66,26 @@ function App() {
         </Suspense>
       </Router>
       <ToastContainer
-        position="bottom-right"
+        position="top-center"
         autoClose={3500}
-        hideProgressBar={false}
+        hideProgressBar={true}
         newestOnTop
         closeOnClick
         pauseOnHover
         draggable
         theme="dark"
         toastStyle={{
-          background: 'var(--surface-1)',
-          border: '1px solid var(--border-strong)',
-          borderRadius: '14px',
+          background: 'rgba(15, 23, 42, 0.85)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: '1px solid rgba(99, 102, 241, 0.25)',
+          borderRadius: '100px',
           color: 'var(--text-primary)',
-          fontSize: '0.9rem',
-          fontWeight: '500',
-          boxShadow: 'var(--shadow-md)',
-          padding: '14px 16px',
+          fontSize: '0.88rem',
+          fontWeight: '600',
+          boxShadow: 'var(--shadow-lg), 0 10px 40px rgba(99, 102, 241, 0.1)',
+          padding: '12px 28px',
+          letterSpacing: '0.015em',
         }}
       />
     </AuthProvider>

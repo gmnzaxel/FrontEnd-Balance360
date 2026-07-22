@@ -388,9 +388,9 @@
 
 .ui-card:hover,
 .card:hover {
-  box-shadow: var(--shadow-md), 0 0 40px rgba(99, 102, 241, 0.06);
-  border-color: rgba(99, 102, 241, 0.22);
-  transform: translateY(-3px);
+  box-shadow: var(--shadow-md), 0 0 30px rgba(99, 102, 241, 0.15), inset 0 0 10px rgba(99, 102, 241, 0.05);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-4px) scale(1.01);
 }
 
 .card-head,
@@ -439,7 +439,20 @@
   min-width: 640px;
 }
 
+@keyframes tableRowRise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .styled-table tbody tr {
+  animation: tableRowRise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--delay, 0ms);
   transition: background var(--duration-md) var(--ease-smooth),
     box-shadow var(--duration-md) var(--ease-smooth);
   border-bottom: 1px solid var(--border-subtle);
@@ -512,6 +525,23 @@
   color: var(--danger-text);
   border-color: rgba(239, 68, 68, 0.25);
 }
+
+@keyframes badgePulse {
+  0% {
+    box-shadow: 0 0 0 0px rgba(239, 68, 68, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0px rgba(239, 68, 68, 0);
+  }
+}
+
+.badge-pulse-danger {
+  animation: badgePulse 2s infinite ease-in-out;
+}
+
 
 .badge-neutral {
   background: rgba(148, 163, 184, 0.12);
@@ -1305,4 +1335,66 @@
     font-weight: 600;
   }
 }
+
+/* ─── Premium Shimmer Loading Effect ───────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.03) 25%, 
+    rgba(255, 255, 255, 0.10) 50%, 
+    rgba(255, 255, 255, 0.03) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  border-radius: 12px;
+  animation: shimmer 1.6s linear infinite !important;
+}
+
+[data-theme="light"] .skeleton {
+  background: linear-gradient(90deg, 
+    rgba(15, 23, 42, 0.04) 25%, 
+    rgba(15, 23, 42, 0.12) 50%, 
+    rgba(15, 23, 42, 0.04) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+}
+
+/* ─── Keyboard Shortcut Badges ─────────────────────────────────── */
+.search-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.75;
+  transition: opacity 0.2s, transform 0.2s;
+  margin-right: 4px;
+}
+
+/* Atenuar el kbd badge al enfocar el buscador */
+.field-control:focus-within .search-kbd {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+/* ─── Expand Search Inputs in Toolbars ────────────────────────── */
+.page-toolbar .products-search,
+.sales-toolbar .sales-search {
+  flex: 1;
+  min-width: 280px;
+}
+
+@media (max-width: 640px) {
+  .search-kbd {
+    display: none;
+  }
+}
+
 

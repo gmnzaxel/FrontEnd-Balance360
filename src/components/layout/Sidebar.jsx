@@ -33,6 +33,48 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
   const [showSupportModal, setShowSupportModal] = useState(false);
   const sidebarRef = useRef(null);
 
+  // Refs de contenedores para la animación de pastilla deslizante
+  const quickActionsRef = useRef(null);
+  const secondaryActionsRef = useRef(null);
+  const quickCompactRef = useRef(null);
+  const secondaryCompactRef = useRef(null);
+
+  // Estados de estilos para el indicador deslizante
+  const [quickPillStyle, setQuickPillStyle] = useState({ opacity: 0, transform: 'translateY(0px)', height: '0px' });
+  const [secondaryPillStyle, setSecondaryPillStyle] = useState({ opacity: 0, transform: 'translateY(0px)', height: '0px' });
+  const [quickCompactPillStyle, setQuickCompactPillStyle] = useState({ opacity: 0, transform: 'translateY(0px)', height: '0px' });
+  const [secondaryCompactPillStyle, setSecondaryCompactPillStyle] = useState({ opacity: 0, transform: 'translateY(0px)', height: '0px' });
+
+  const isAdmin = user?.role === 'ADMIN';
+  const showLabels = (hovering && !isMobile) || isMobile;
+
+
+  useEffect(() => {
+    const updatePill = (containerRef, setStyle) => {
+      if (!containerRef.current) return;
+      const activeBtn = containerRef.current.querySelector('.active');
+      if (activeBtn) {
+        setStyle({
+          opacity: 1,
+          transform: `translateY(${activeBtn.offsetTop}px)`,
+          height: `${activeBtn.offsetHeight}px`,
+        });
+      } else {
+        setStyle(prev => ({ ...prev, opacity: 0 }));
+      }
+    };
+
+    const timer = setTimeout(() => {
+      updatePill(quickActionsRef, setQuickPillStyle);
+      updatePill(secondaryActionsRef, setSecondaryPillStyle);
+      updatePill(quickCompactRef, setQuickCompactPillStyle);
+      updatePill(secondaryCompactRef, setSecondaryCompactPillStyle);
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [activePath, showLabels, hovering]);
+
+
   const handleBrandKey = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -73,9 +115,6 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
     () => (user?.role === 'ADMIN' ? 'Administrador' : 'Vendedor'),
     [user?.role]
   );
-  const isAdmin = user?.role === 'ADMIN';
-
-  const showLabels = (hovering && !isMobile) || isMobile;
 
   const handleNavClick = (path) => {
     if (path === 'support') {
@@ -164,7 +203,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
             <div className="sidebar-extras">
               <div className="sidebar-section">
                 <p className="sidebar-section-title">Acciones rapidas</p>
-                <div className="sidebar-actions">
+                <div className="sidebar-actions" ref={quickActionsRef} style={{ position: 'relative' }}>
                   {quickActions.map((action, index) => (
                     <button
                       key={action.label}
@@ -176,13 +215,14 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
                       <span>{action.label}</span>
                     </button>
                   ))}
+                  <div className="sidebar-active-pill" style={quickPillStyle} />
                 </div>
               </div>
             </div>
           )}
 
           {!showLabels && (
-            <div className="sidebar-quick-compact" aria-label="Acciones rápidas">
+            <div className="sidebar-quick-compact" aria-label="Acciones rápidas" ref={quickCompactRef} style={{ position: 'relative' }}>
               {quickActions.map((action) => (
                 <button
                   key={action.label}
@@ -194,6 +234,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
                   {action.icon}
                 </button>
               ))}
+              <div className="sidebar-active-pill-compact" style={quickCompactPillStyle} />
             </div>
           )}
 
@@ -201,7 +242,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
             <div className="sidebar-extras" style={{ paddingTop: '0', paddingBottom: '4px' }}>
               <div className="sidebar-section">
                 <p className="sidebar-section-title">Sistema</p>
-                <div className="sidebar-actions">
+                <div className="sidebar-actions" ref={secondaryActionsRef} style={{ position: 'relative' }}>
                   {secondaryActions.map((action, index) => (
                     <button
                       key={action.label}
@@ -213,13 +254,14 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
                       <span>{action.label}</span>
                     </button>
                   ))}
+                  <div className="sidebar-active-pill" style={secondaryPillStyle} />
                 </div>
               </div>
             </div>
           )}
 
           {!showLabels && (
-            <div className="sidebar-quick-compact" aria-label="Sistema" style={{ paddingTop: '0', paddingBottom: '0' }}>
+            <div className="sidebar-quick-compact" aria-label="Sistema" style={{ paddingTop: '0', paddingBottom: '0', position: 'relative' }} ref={secondaryCompactRef}>
               {secondaryActions.map((action) => (
                 <button
                   key={action.label}
@@ -231,6 +273,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
                   {action.icon}
                 </button>
               ))}
+              <div className="sidebar-active-pill-compact" style={secondaryCompactPillStyle} />
             </div>
           )}
 

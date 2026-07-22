@@ -145,6 +145,7 @@ api.interceptors.response.use(
 export const clearStoredTokens = () => {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+  _tokenCache.clear();
 };
 
 export default api;

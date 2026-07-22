@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { formatCurrency, formatDate } from '../utils/format';
 import Modal from '../components/ui/Modal';
 import ConfirmModal from '../components/ui/ConfirmModal';
+import Input from '../components/ui/Input';
 
 const loadHtml2Pdf = () => {
   return new Promise((resolve, reject) => {
@@ -515,16 +516,15 @@ const Sales = () => {
 
             {/* Header / Toolbar */}
             <div className="card page-toolbar sales-toolbar">
-                <div className="toolbar-group sales-search">
-                    <Search size={18} className="sales-search-icon" />
-                    <input
-                        ref={searchInputRef}
-                        className="input-control sales-search-input"
-                        placeholder="Buscar por ID o vendedor…"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+                <Input
+                    ref={searchInputRef}
+                    className="sales-search"
+                    placeholder="Buscar por ID o vendedor (Presione /)…"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    icon={<Search size={16} />}
+                    suffix={<kbd className="search-kbd">/</kbd>}
+                />
                 <div className="toolbar-group sales-actions">
                     {/* Date Picker using showPicker API */}
                     <div className="sales-filter">
@@ -636,7 +636,8 @@ const Sales = () => {
                                 onClick={() => setSelectedSale(sale)}
                                 style={{ 
                                     cursor: 'pointer',
-                                    backgroundColor: focusedIndex === idx ? 'rgba(14, 165, 233, 0.12)' : undefined
+                                    backgroundColor: focusedIndex === idx ? 'rgba(14, 165, 233, 0.12)' : undefined,
+                                    '--delay': `${idx * 25}ms`,
                                 }}
                                 onMouseEnter={() => setFocusedIndex(idx)}
                             >

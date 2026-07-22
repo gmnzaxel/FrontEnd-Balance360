@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
-import { Edit, Trash2, Plus, Upload, Users, Search, Store, Package, Archive, FileDown, CheckSquare, X } from 'lucide-react';
+import { Edit, Trash2, Plus, Upload, Users, Search, Store, Package, Archive, FileDown, CheckSquare, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
 import { formatARS } from '../utils/format';
@@ -42,6 +42,10 @@ const Products = () => {
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
+  // --- Estado de Ordenamiento ---
+  const [sortField, setSortField] = useState(null);   // null = default del backend
+  const [sortDir, setSortDir]     = useState('asc');  // 'asc' | 'desc'
+
   // --- Estados de Formularios ---
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
@@ -67,7 +71,8 @@ const Products = () => {
           include_archived: showArchivedProducts,
           page,
           page_size: pageSize,
-          search: searchTerm || undefined
+          search: searchTerm || undefined,
+          ...(sortField ? { ordering: sortDir === 'desc' ? `-${sortField}` : sortField } : {}),
         })
       ];
       if (isAdmin) {
@@ -106,7 +111,7 @@ const Products = () => {
 
   useEffect(() => {
     loadData();
-  }, [showArchivedProducts, page, searchTerm]);
+  }, [showArchivedProducts, page, searchTerm, sortField, sortDir]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -118,6 +123,21 @@ const Products = () => {
   useEffect(() => {
     setSelectedProductIds([]);
   }, [searchTerm, showArchivedProducts, products]);
+
+  // Atajos de teclado para enfocar buscador
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable;
+      if (isInput) return;
+
+      if (e.key === 'F2' || e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     setFocusedIndex(-1);
@@ -521,6 +541,53 @@ const Products = () => {
   };
 
 
+
+  // --- Ordenamiento por columna ---
+  const handleSort = (field) => {
+    if (sortField === field) {
+      // misma columna: toggle dirección, o volver al default si ya estaba desc
+      if (sortDir === 'asc') {
+        setSortDir('desc');
+      } else {
+        setSortField(null);
+        setSortDir('asc');
+      }
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+    setPage(1); // volver a la primera página al cambiar el orden
+  };
+
+  const SortableTh = ({ field, label, sortField, sortDir, onSort }) => {
+    const isActive = sortField === field;
+    const Icon = isActive ? (sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+    return (
+      <th
+        onClick={() => onSort(field)}
+        style={{
+          cursor: 'pointer',
+          userSelect: 'none',
+          whiteSpace: 'nowrap',
+        }}
+        title={`Ordenar por ${label}`}
+      >
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          {label}
+          <Icon
+            size={13}
+            style={{
+              opacity: isActive ? 1 : 0.4,
+              color: isActive ? 'var(--accent)' : 'inherit',
+              transition: 'opacity 0.2s, color 0.2s',
+              flexShrink: 0,
+            }}
+          />
+        </span>
+      </th>
+    );
+  };
+
   return (
     <div className="products-page page">
       <div className="page-header">
@@ -551,10 +618,11 @@ const Products = () => {
       <Card className="page-toolbar">
         <Input
           ref={searchInputRef}
-          placeholder="Buscar por código o nombre…"
+          placeholder="Buscar por código o nombre (Presione /)…"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           icon={<Search size={16} />}
+          suffix={<kbd className="search-kbd">/</kbd>}
           className="products-search"
         />
         {isAdmin && selectedProductIds.length > 0 && (
@@ -629,11 +697,11 @@ const Products = () => {
               )}
               <th width="100">Código</th>
               <th style={{ width: isAdmin ? undefined : '50%' }}>{isAdmin ? 'Producto / Proveedor' : 'Producto'}</th>
-              <th>Stock</th>
-              <th>Min</th>
-              <th>Max</th>
-              <th>Costo</th>
-              <th>Precio Venta</th>
+              <SortableTh field="stock_actual" label="Stock" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+              <SortableTh field="stock_minimo" label="Min" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+              <SortableTh field="stock_maximo" label="Max" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+              <SortableTh field="costo_compra" label="Costo" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+              <SortableTh field="precio_venta" label="Precio Venta" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
             </tr>
           </thead>
           <tbody>
@@ -647,7 +715,8 @@ const Products = () => {
                   onClick={() => handleViewDetails(p)}
                   style={{ 
                     cursor: 'pointer',
-                    backgroundColor: focusedIndex === idx ? 'rgba(14, 165, 233, 0.12)' : undefined
+                    backgroundColor: focusedIndex === idx ? 'rgba(14, 165, 233, 0.12)' : undefined,
+                    '--delay': `${idx * 25}ms`,
                   }}
                   onMouseEnter={() => setFocusedIndex(idx)}
                 >
@@ -675,7 +744,7 @@ const Products = () => {
                   </td>
                   <td data-label="Stock">
                     {p.stock_actual < p.stock_minimo
-                      ? <Badge tone="danger">Bajo ({p.stock_actual})</Badge>
+                      ? <Badge tone="danger" className="badge-pulse-danger">Bajo ({p.stock_actual})</Badge>
                       : (p.stock_actual === p.stock_minimo && (p.stock_maximo === 0 || p.stock_actual < p.stock_maximo))
                         ? <Badge tone="warning">{p.stock_actual} un.</Badge>
                         : <Badge tone="success">{p.stock_actual} un.</Badge>}

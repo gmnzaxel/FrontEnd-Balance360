@@ -78,6 +78,7 @@ const NewSale = () => {
   const [showChangeModal, setShowChangeModal] = useState(false);
   const [amountPaid, setAmountPaid] = useState('');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isClearingCart, setIsClearingCart] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -603,7 +604,10 @@ const NewSale = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'F2') {
+      const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable;
+      if (isInput && e.key === '/') return;
+
+      if (e.key === 'F2' || e.key === '/') {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
@@ -637,7 +641,8 @@ const NewSale = () => {
           <div style={{ position: 'relative', flex: 1, marginRight: '16px' }}>
             <Input
               ref={searchInputRef}
-              placeholder="Buscar producto… [F2]"
+              placeholder="Buscar producto (Presione /)…"
+              suffix={!search && <kbd className="search-kbd">/</kbd>}
               value={search}
               onChange={(e) => {
                  let val = e.target.value;
@@ -835,7 +840,7 @@ const NewSale = () => {
             </div>
           )}
           {cart.map((item) => (
-            <div key={item.id} className="cart-item">
+            <div key={item.id} className={`cart-item ${isClearingCart ? 'clearing' : ''}`}>
               <div className="flex-row between">
                 <div>
                   <p className="title-sm">{item.nombre}</p>
@@ -1042,7 +1047,7 @@ const NewSale = () => {
                 </div>
               )}
               {cart.map((item) => (
-                <div key={item.id} className="cart-item">
+                <div key={item.id} className={`cart-item ${isClearingCart ? 'clearing' : ''}`}>
                   <div className="flex-row between">
                     <div>
                       <p className="title-sm">{item.nombre}</p>
@@ -1253,7 +1258,11 @@ const NewSale = () => {
         variant="danger"
         onConfirm={() => {
           setShowClearConfirm(false);
-          clearCart();
+          setIsClearingCart(true);
+          setTimeout(() => {
+            clearCart();
+            setIsClearingCart(false);
+          }, 300);
         }}
         onClose={() => setShowClearConfirm(false)}
       />
