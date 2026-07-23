@@ -221,11 +221,6 @@ const Sales = () => {
 
     const handlePrintTicket = (sale) => {
         if (!sale) return;
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
-        if (!printWindow) {
-            toast.error('El navegador bloqueó la ventana emergente de impresión. Por favor, habilita los pop-ups para este sitio.');
-            return;
-        }
 
         const branchName = ticketConfigRef.current?.branch_name || 'TU NEGOCIO';
         const headerText = ticketConfigRef.current?.ticket_header || 'BALANCE 360';
@@ -237,6 +232,8 @@ const Sales = () => {
         const phone = ticketConfigRef.current?.ticket_phone;
         const email = ticketConfigRef.current?.ticket_email;
         const logoDataUrl = ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || '';
+        const ticketWidth = ticketConfigRef.current?.ticket_width || '58mm';
+        const is58mm = ticketWidth === '58mm';
 
         // Lógica corregida de descuentos
         const itemsBaseSubtotal = sale.items.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
@@ -249,29 +246,93 @@ const Sales = () => {
       <html>
         <head>
           <title>Ticket de Venta #${sale.sale_number || sale.id}</title>
+          <meta charset="UTF-8">
           <style>
             @media print {
-              @page { margin: 0; }
-              body { margin: 0; padding: 4px; }
+              @page {
+                size: ${ticketWidth} auto;
+                margin: 0;
+              }
+              body {
+                margin: 0;
+                padding: ${is58mm ? '1mm 2.5mm' : '2mm 4mm'};
+              }
             }
-            body { font-family: 'Courier New', Courier, monospace; width: 100%; max-width: 100%; margin: 0; padding: 6px; font-size: 11px; box-sizing: border-box; }
-            .header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-            .branch-title { font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 3px; display: inline-block; margin-bottom: 8px; }
-            .company { font-size: 11px; color: #333; margin-bottom: 5px; white-space: pre-wrap; }
-            .info { font-size: 10px; margin-bottom: 5px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-            th { text-align: left; border-bottom: 1px solid #000; }
-            td { padding: 4px 0; }
-            .text-right { text-align: right; }
-            .totals { border-top: 1px dashed #000; padding-top: 10px; }
-            .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-            .footer { text-align: center; margin-top: 20px; font-size: 10px; white-space: pre-wrap; }
+            body {
+              font-family: system-ui, -apple-system, sans-serif;
+              width: ${ticketWidth};
+              max-width: ${ticketWidth};
+              margin: 0 auto;
+              padding: ${is58mm ? '1mm 2.5mm' : '2mm 4mm'};
+              font-size: ${is58mm ? '11px' : '12px'};
+              box-sizing: border-box;
+              color: #000;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 8px;
+              border-bottom: 1px dashed #000;
+              padding-bottom: 8px;
+            }
+            .branch-title {
+              font-size: ${is58mm ? '14px' : '16px'};
+              font-weight: bold;
+              text-transform: uppercase;
+            }
+            .company {
+              font-size: ${is58mm ? '10px' : '11px'};
+              color: #000;
+              margin-bottom: 4px;
+              white-space: pre-wrap;
+            }
+            .info {
+              font-size: ${is58mm ? '9px' : '10px'};
+              margin-bottom: 3px;
+              color: #000;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 8px;
+            }
+            th {
+              text-align: left;
+              border-bottom: 1px solid #000;
+              font-size: ${is58mm ? '10px' : '12px'};
+              color: #000;
+            }
+            td {
+              padding: 3px 0;
+              color: #000;
+            }
+            .text-right {
+              text-align: right;
+            }
+            .totals {
+              border-top: 1px dashed #000;
+              padding-top: 6px;
+              margin-top: 4px;
+            }
+            .row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 3px;
+              font-size: ${is58mm ? '11px' : '12px'};
+              color: #000;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 15px;
+              font-size: ${is58mm ? '9px' : '10px'};
+              white-space: pre-wrap;
+              color: #000;
+            }
           </style>
         </head>
         <body>
           <div class="header">
             <div style="display:flex;align-items:center;justify-content:center;gap:12px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
-              ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:44px;max-width:60px;object-fit:contain;flex-shrink:0;" />` : ''}
+              ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:${is58mm ? '35px' : '44px'};max-width:${is58mm ? '50px' : '60px'};object-fit:contain;flex-shrink:0;" />` : ''}
               <div class="branch-title">${branchName}</div>
             </div>
             <div class="company">${headerText}</div>
@@ -289,8 +350,8 @@ const Sales = () => {
           <table>
             <thead>
               <tr>
-                <th style="width: 55%;">Producto</th>
-                <th class="text-right" style="width: 15%;">Cant</th>
+                <th style="width: ${is58mm ? '50%' : '55%'};">Producto</th>
+                <th class="text-right" style="width: 20%;">Cant</th>
                 <th class="text-right" style="width: 30%;">Total</th>
               </tr>
             </thead>
@@ -300,26 +361,44 @@ const Sales = () => {
                   const baseSub = itemPrice * item.quantity;
                   const descItem = parseFloat(item.discount) || 0;
                   const itemLabel = item.item_type === 'SERVICIO' ? (item.description || 'Servicio') : (item.producto_nombre || item.nombre || 'Producto');
-                  return `
-                <tr>
-                  <td>
-                    <div style="font-weight: bold;">${itemLabel}</div>
-                    ${descItem > 0 ? `
-                      <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                        Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                        ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
-                        <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
-                      </div>
-                    ` : `
-                      <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                        Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                      </div>
-                    `}
-                  </td>
-                  <td class="text-right" style="vertical-align: top;">${item.quantity}</td>
-                  <td class="text-right" style="vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                </tr>
-              `;
+                  
+                  if (is58mm) {
+                      return `
+                    <tr>
+                      <td colspan="3" style="font-weight: bold; font-size: 11px; padding-top: 4px;">${itemLabel}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px dashed #eee;">
+                      <td style="font-size: 10px; color: #000; padding-bottom: 4px; padding-left: 5px;">
+                        $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        ${item.quantity > 1 ? ` x ${item.quantity}` : ''}
+                        ${descItem > 0 ? `<span style="font-weight: bold; text-decoration: underline; margin-left: 4px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>` : ''}
+                      </td>
+                      <td class="text-right" style="vertical-align: top; font-size: 10px; color: #000; padding-bottom: 4px;">${item.quantity}</td>
+                      <td class="text-right" style="vertical-align: top; font-size: 11px; font-weight: bold; padding-bottom: 4px;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                    </tr>
+                  `;
+                  } else {
+                      return `
+                    <tr style="border-bottom: 1px solid #eee;">
+                      <td style="padding: 4px 0;">
+                        <div style="font-weight: bold;">${itemLabel}</div>
+                        ${descItem > 0 ? `
+                          <div style="font-size: 10px; color: #000; margin-top: 2px;">
+                            Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
+                            <span style="font-weight: bold; margin-left: 6px; text-decoration: underline;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
+                          </div>
+                        ` : `
+                          <div style="font-size: 10px; color: #000; margin-top: 2px;">
+                            Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          </div>
+                        `}
+                      </td>
+                      <td class="text-right" style="vertical-align: top; padding: 4px 0;">${item.quantity}</td>
+                      <td class="text-right" style="vertical-align: top; padding: 4px 0;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                    </tr>
+                  `;
+                  }
               }).join('')}
             </tbody>
           </table>
@@ -334,7 +413,7 @@ const Sales = () => {
               <span>Descuento:</span>
               <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>` : ''}
-            <div class="row" style="font-weight: bold; font-size: 14px; margin-top: 5px;">
+            <div class="row" style="font-weight: bold; font-size: ${is58mm ? '13px' : '14px'}; margin-top: 5px; border-top: 1px solid #000; padding-top: 3px;">
               <span>TOTAL:</span>
               <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
@@ -342,24 +421,32 @@ const Sales = () => {
 
           <div class="footer">
             <p>${footerText}</p>
-            <p>*** Copia Cliente ***</p>
+            <p style="border-top: 1px dashed #000; padding-top: 6px; margin-top: 8px; font-size: ${is58mm ? '8px' : '9px'}; color: #000;">*** Copia Cliente ***</p>
           </div>
         </body>
       </html>
     `;
 
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0px';
+        iframe.style.height = '0px';
+        iframe.style.border = 'none';
+        iframe.style.top = '-9999px';
+        iframe.style.left = '-9999px';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+
         setTimeout(() => {
-            printWindow.focus();
-            printWindow.print();
-            printWindow.onafterprint = () => {
-                printWindow.close();
-            };
-            // Fallback si no dispara onafterprint
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
             setTimeout(() => {
-                try { printWindow.close(); } catch (e) {}
-            }, 2000);
+                document.body.removeChild(iframe);
+            }, 1000);
         }, 300);
     };
 

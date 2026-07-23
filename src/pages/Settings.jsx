@@ -16,6 +16,7 @@ const Settings = () => {
         ticket_header: '',
         ticket_footer: '',
         ticket_logo: '',
+        ticket_width: '58mm',
         ticket_address: '',
         ticket_cuit: '',
         ticket_iibb: '',
@@ -280,6 +281,15 @@ const Settings = () => {
                             />
                         </div>
 
+                        <Select
+                            label="Ancho del Ticket"
+                            value={settings.ticket_width || '58mm'}
+                            onChange={(e) => setSettings({ ...settings, ticket_width: e.target.value })}
+                        >
+                            <option value="58mm">58mm (XP-58IIH / Térmica Chica)</option>
+                            <option value="80mm">80mm (Estándar / Ticketera Grande)</option>
+                        </Select>
+
                         <label className="ui-field">
                             <span className="field-label">Encabezado</span>
                             <div className="field-control">
@@ -369,7 +379,18 @@ const Settings = () => {
                     size="md"
                 >
                     <div className="settings-preview-wrap" style={{ background: 'var(--slate-900)', padding: '20px', borderRadius: '8px' }}>
-                        <div className="settings-preview-ticket" style={{ background: 'white', color: 'black', padding: '15px', width: '80mm', maxWidth: '100%', boxSizing: 'border-box', border: '1px solid #ccc', margin: '0 auto', fontSize: '12px', fontFamily: "'Courier New', Courier, monospace" }}>
+                        <div className="settings-preview-ticket" style={{
+                            background: 'white',
+                            color: 'black',
+                            padding: settings.ticket_width === '58mm' ? '8px 10px' : '15px',
+                            width: settings.ticket_width || '58mm',
+                            maxWidth: '100%',
+                            boxSizing: 'border-box',
+                            border: '1px solid #ccc',
+                            margin: '0 auto',
+                            fontSize: settings.ticket_width === '58mm' ? '11px' : '12px',
+                            fontFamily: "system-ui, -apple-system, sans-serif"
+                        }}>
                             {/* Header exact replication */}
                             <div className="text-center" style={{ borderBottom: '1px dashed #000', paddingBottom: '10px', marginBottom: '10px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', borderBottom: '2px solid #000', paddingBottom: '8px', marginBottom: '8px' }}>
@@ -377,25 +398,30 @@ const Settings = () => {
                                         <img
                                             src={logoDataUrl}
                                             alt="Logo"
-                                            style={{ maxHeight: '44px', maxWidth: '60px', objectFit: 'contain', flexShrink: 0 }}
+                                            style={{
+                                                maxHeight: settings.ticket_width === '58mm' ? '35px' : '44px',
+                                                maxWidth: settings.ticket_width === '58mm' ? '50px' : '60px',
+                                                objectFit: 'contain',
+                                                flexShrink: 0
+                                            }}
                                         />
                                     )}
-                                    <div style={{ fontSize: '16px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                    <div style={{ fontSize: settings.ticket_width === '58mm' ? '14px' : '16px', fontWeight: 'bold', textTransform: 'uppercase' }}>
                                         {settings.branch_name || 'TU NEGOCIO'}
                                     </div>
                                 </div>
-                                <div className="company" style={{ fontSize: '11px', color: '#333', marginBottom: '5px', whiteSpace: 'pre-wrap' }}>
+                                <div className="company" style={{ fontSize: settings.ticket_width === '58mm' ? '10px' : '11px', color: '#000', marginBottom: '5px', whiteSpace: 'pre-wrap' }}>
                                     {settings.ticket_header || 'BALANCE 360'}
                                 </div>
-                                {settings.ticket_address && <div style={{ fontSize: '10px', color: '#555' }}>Dirección: {settings.ticket_address}</div>}
-                                {settings.ticket_cuit && <div style={{ fontSize: '10px', color: '#555' }}>CUIT: {settings.ticket_cuit}</div>}
-                                {settings.ticket_iibb && <div style={{ fontSize: '10px', color: '#555' }}>IIBB: {settings.ticket_iibb}</div>}
-                                {settings.ticket_iva && <div style={{ fontSize: '10px', color: '#555' }}>IVA: {settings.ticket_iva}</div>}
-                                {settings.ticket_phone && <div style={{ fontSize: '10px', color: '#555' }}>Tel: {settings.ticket_phone}</div>}
-                                {settings.ticket_email && <div style={{ fontSize: '10px', color: '#555' }}>Email: {settings.ticket_email}</div>}
-                                <div style={{ fontSize: '10px', color: '#555', marginTop: '5px' }}>Fecha: {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', { hour12: false })}</div>
-                                <div style={{ fontSize: '10px', color: '#555' }}>Ticket #12345</div>
-                                <div style={{ fontSize: '10px', color: '#555' }}>Pago: EFECTIVO</div>
+                                {settings.ticket_address && <div style={{ fontSize: settings.ticket_width === '58mm' ? '9px' : '10px', color: '#000' }}>Dirección: {settings.ticket_address}</div>}
+                                {settings.ticket_cuit && <div style={{ fontSize: settings.ticket_width === '58mm' ? '9px' : '10px', color: '#000' }}>CUIT: {settings.ticket_cuit}</div>}
+                                {settings.ticket_iibb && <div style={{ fontSize: settings.ticket_width === '58mm' ? '9px' : '10px', color: '#000' }}>IIBB: {settings.ticket_iibb}</div>}
+                                {settings.ticket_iva && <div style={{ fontSize: settings.ticket_width === '58mm' ? '9px' : '10px', color: '#000' }}>IVA: {settings.ticket_iva}</div>}
+                                {settings.ticket_phone && <div style={{ fontSize: settings.ticket_width === '58mm' ? '9px' : '10px', color: '#000' }}>Tel: {settings.ticket_phone}</div>}
+                                {settings.ticket_email && <div style={{ fontSize: settings.ticket_width === '58mm' ? '9px' : '10px', color: '#000' }}>Email: {settings.ticket_email}</div>}
+                                <div style={{ fontSize: settings.ticket_width === '58mm' ? '9px' : '10px', color: '#000', marginTop: '5px' }}>Fecha: {new Date().toLocaleDateString('es-AR')} {new Date().toLocaleTimeString('es-AR', { hour12: false })}</div>
+                                <div style={{ fontSize: settings.ticket_width === '58mm' ? '9px' : '10px', color: '#000' }}>Ticket #12345</div>
+                                <div style={{ fontSize: settings.ticket_width === '58mm' ? '9px' : '10px', color: '#000' }}>Pago: EFECTIVO</div>
                             </div>
 
 
@@ -403,28 +429,43 @@ const Settings = () => {
                             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px' }}>
                                 <thead>
                                     <tr style={{ borderBottom: '1px solid #000' }}>
-                                        <th style={{ textAlign: 'left', width: '55%', fontSize: '12px' }}>Producto</th>
-                                        <th style={{ textAlign: 'right', width: '15%', fontSize: '12px' }}>Cant</th>
-                                        <th style={{ textAlign: 'right', width: '30%', fontSize: '12px' }}>Total</th>
+                                        <th style={{ textAlign: 'left', width: settings.ticket_width === '58mm' ? '50%' : '55%', fontSize: settings.ticket_width === '58mm' ? '10px' : '12px' }}>Producto</th>
+                                        <th style={{ textAlign: 'right', width: '20%', fontSize: settings.ticket_width === '58mm' ? '10px' : '12px' }}>Cant</th>
+                                        <th style={{ textAlign: 'right', width: '30%', fontSize: settings.ticket_width === '58mm' ? '10px' : '12px' }}>Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td style={{ padding: '4px 0', fontSize: '12px' }}>
-                                            <div style={{ fontWeight: 'bold' }}>CAMISA LINO</div>
-                                            <div style={{ fontSize: '10px', color: '#555', marginTop: '2px' }}>
-                                                Precio: $82.500,00
-                                                <span style={{ color: '#c2410c', fontWeight: 'bold', marginLeft: '6px' }}>(Desc. -$5.000,00)</span>
-                                            </div>
-                                        </td>
-                                        <td style={{ textAlign: 'right', padding: '4px 0', fontSize: '12px', verticalAlign: 'top' }}>1</td>
-                                        <td style={{ textAlign: 'right', padding: '4px 0', fontSize: '12px', verticalAlign: 'top' }}>$77.500,00</td>
-                                    </tr>
+                                    {settings.ticket_width === '58mm' ? (
+                                        <>
+                                            <tr>
+                                                <td colSpan="3" style={{ padding: '4px 0 0 0', fontSize: '11px', fontWeight: 'bold' }}>CAMISA LINO</td>
+                                            </tr>
+                                            <tr style={{ borderBottom: '1px dashed #eee' }}>
+                                                <td style={{ padding: '0 0 4px 5px', fontSize: '10px', color: '#000' }}>
+                                                    $82.500 x 1 <span style={{ fontWeight: 'bold', textDecoration: 'underline' }}>(Desc. -$5.000)</span>
+                                                </td>
+                                                <td style={{ textAlign: 'right', padding: '0 0 4px 0', fontSize: '10px', color: '#000', verticalAlign: 'top' }}>1</td>
+                                                <td style={{ textAlign: 'right', padding: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', verticalAlign: 'top' }}>$77.500</td>
+                                            </tr>
+                                        </>
+                                    ) : (
+                                        <tr>
+                                            <td style={{ padding: '4px 0', fontSize: '12px' }}>
+                                                <div style={{ fontWeight: 'bold' }}>CAMISA LINO</div>
+                                                <div style={{ fontSize: '10px', color: '#000', marginTop: '2px' }}>
+                                                    Precio: $82.500,00
+                                                    <span style={{ fontWeight: 'bold', marginLeft: '6px', textDecoration: 'underline' }}>(Desc. -$5.000,00)</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ textAlign: 'right', padding: '4px 0', fontSize: '12px', verticalAlign: 'top' }}>1</td>
+                                            <td style={{ textAlign: 'right', padding: '4px 0', fontSize: '12px', verticalAlign: 'top' }}>$77.500,00</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
 
                             {/* Totals exact replication */}
-                            <div style={{ borderTop: '1px dashed #000', paddingTop: '10px', fontSize: '12px' }}>
+                            <div style={{ borderTop: '1px dashed #000', paddingTop: '10px', fontSize: settings.ticket_width === '58mm' ? '11px' : '12px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                                     <span>Subtotal:</span>
                                     <span>$82.500,00</span>
@@ -433,16 +474,16 @@ const Settings = () => {
                                     <span>Descuento:</span>
                                     <span>-$5.000,00</span>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', marginTop: '5px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: settings.ticket_width === '58mm' ? '13px' : '14px', marginTop: '5px' }}>
                                     <span>TOTAL:</span>
                                     <span>$77.500,00</span>
                                 </div>
                             </div>
 
                             {/* Footer exact replication */}
-                            <div className="text-center" style={{ marginTop: '20px', fontSize: '10px', whiteSpace: 'pre-wrap' }}>
+                            <div className="text-center" style={{ marginTop: '20px', fontSize: settings.ticket_width === '58mm' ? '9px' : '10px', whiteSpace: 'pre-wrap' }}>
                                 <p>{settings.ticket_footer || '¡Gracias por su compra!'}</p>
-                                <p style={{ marginTop: '5px', fontSize: '9px', color: '#777' }}>*** Copia Cliente ***</p>
+                                <p style={{ marginTop: '5px', fontSize: settings.ticket_width === '58mm' ? '8px' : '9px', color: '#000' }}>*** Copia Cliente ***</p>
                             </div>
                         </div>
                     </div>
