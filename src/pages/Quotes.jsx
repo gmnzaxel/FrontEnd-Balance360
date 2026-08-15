@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef, memo } from 'react';
+import { createPortal } from 'react-dom';
 import useCart from '../hooks/useCart';
 import useMediaQuery from '../hooks/useMediaQuery';
 import { Search, Trash2, Wrench, PackageX, FileDown, CreditCard, Printer, ShoppingCart } from 'lucide-react';
@@ -31,7 +32,7 @@ const PAGE_SIZE = 12;
 
 // ─── Sub-componentes memoizados ────────────────────────────────────────────────
 
-const ProductRow = memo(({ product, onAdd, isFocused, onMouseEnter }) => {
+const ProductRow = memo(({ product, onAdd, isFocused, onMouseEnter, onMouseLeave, onMouseMove }) => {
     const handleClick = useCallback(() => onAdd(product), [product, onAdd]);
     return (
         <tr
@@ -41,6 +42,8 @@ const ProductRow = memo(({ product, onAdd, isFocused, onMouseEnter }) => {
                 backgroundColor: isFocused ? 'rgba(14, 165, 233, 0.12)' : undefined
             }}
             onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            onMouseMove={onMouseMove}
         >
             <td data-label="Código">
                 <span className="badge badge-neutral" style={{ fontSize: '0.75rem' }}>{product.codigo}</span>
@@ -175,6 +178,8 @@ const Quotes = () => {
     const [showServiceModal, setShowServiceModal] = useState(false);
     const [serviceForm, setServiceForm]           = useState({ description: '', price: '' });
     const [showClearConfirm, setShowClearConfirm] = useState(false);
+    const [hoveredProduct, setHoveredProduct] = useState(null);
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
     // ─── Hook de carrito compartido ─────────────────────────────────────────────
     const {
@@ -316,6 +321,11 @@ const Quotes = () => {
 
     const handleGenerateQuote = useCallback(() => {
         if (!cart.length) { toast.warning('El presupuesto está vacío'); return; }
+        const invalidItem = cart.find(item => !item.quantity || parseInt(item.quantity, 10) <= 0);
+        if (invalidItem) {
+            toast.warning(`La cantidad para el producto "${invalidItem.nombre}" debe ser mayor a 0.`);
+            return;
+        }
 
         const branchName = ticketConfigRef.current?.branch_name || 'TU NEGOCIO';
         const headerText = ticketConfigRef.current?.ticket_header || 'BALANCE 360';
@@ -561,6 +571,11 @@ const Quotes = () => {
 
     const handleDownloadQuotePDF = useCallback(async () => {
         if (!cart.length) { toast.warning('El presupuesto está vacío'); return; }
+        const invalidItem = cart.find(item => !item.quantity || parseInt(item.quantity, 10) <= 0);
+        if (invalidItem) {
+            toast.warning(`La cantidad para el producto "${invalidItem.nombre}" debe ser mayor a 0.`);
+            return;
+        }
         setDownloadingPDF(true);
 
         const branchName = ticketConfigRef.current?.branch_name || 'TU NEGOCIO';
@@ -593,30 +608,56 @@ const Quotes = () => {
         const finalTotal = itemsBaseSubtotal - totalDiscount;
 
         const htmlContent = `
-      <div style="font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 15px; font-size: 12px; box-sizing: border-box; background: white; color: black;">
-        <div style="text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px;">
-          <div style="display:flex;align-items:center;justify-content:center;gap:12px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
-            ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:44px;max-width:60px;object-fit:contain;flex-shrink:0;" />` : ''}
-            <div style="font-size: 16px; font-weight: bold; text-transform: uppercase;">${branchName}</div>
+      <div style="font-family: system-ui, -apple-system, sans-serif; padding: 20px; font-size: 11px; box-sizing: border-box; background: white; color: #1e293b; line-height: 1.5;">
+        <!-- Header Grid -->
+        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px;">
+          <!-- Left: Logo & Business Details -->
+          <div style="display: flex; align-items: flex-start; gap: 15px;">
+            ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height: 60px; max-width: 90px; object-fit: contain;" />` : ''}
+            <div>
+              <h1 style="font-size: 20px; font-weight: 800; margin: 0; text-transform: uppercase; color: #0f172a; letter-spacing: -0.5px;">${branchName}</h1>
+              <p style="font-size: 11px; color: #64748b; margin: 4px 0 6px 0; white-space: pre-wrap; max-width: 320px;">${headerText}</p>
+              <div style="font-size: 10px; color: #475569; display: flex; flex-direction: column; gap: 2px;">
+                ${address ? `<div>Dirección: ${address}</div>` : ''}
+                ${phone ? `<div>Teléfono: ${phone}</div>` : ''}
+                ${email ? `<div>Email: ${email}</div>` : ''}
+              </div>
+            </div>
           </div>
-          <div style="font-size: 11px; color: #333; margin-bottom: 5px; white-space: pre-wrap;">${headerText}</div>
-          ${address ? `<div style="font-size: 10px; color: #555;">Dirección: ${address}</div>` : ''}
-          ${cuit ? `<div style="font-size: 10px; color: #555;">CUIT: ${cuit}</div>` : ''}
-          ${iibb ? `<div style="font-size: 10px; color: #555;">IIBB: ${iibb}</div>` : ''}
-          ${iva ? `<div style="font-size: 10px; color: #555;">IVA: ${iva}</div>` : ''}
-          ${phone ? `<div style="font-size: 10px; color: #555;">Tel: ${phone}</div>` : ''}
-          ${email ? `<div style="font-size: 10px; color: #555;">Email: ${email}</div>` : ''}
-          <div style="font-size: 10px; margin-bottom: 5px; margin-top: 5px;">Validez: ${validityDays} días</div>
-          ${clientName ? `<div style="font-size: 10px; margin-bottom: 5px;">Cliente: ${clientName}</div>` : ''}
-          <div style="font-size: 10px; margin-bottom: 5px;">Fecha: ${dateStr}</div>
+          <!-- Right: Document Info & Legal details -->
+          <div style="text-align: right;">
+            <h2 style="font-size: 12px; font-weight: 800; color: #0f172a; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Presupuesto Valorado</h2>
+            <div style="font-size: 10px; color: #475569; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; margin-top: 6px;">
+              ${cuit ? `<div><strong>CUIT:</strong> ${cuit}</div>` : ''}
+              ${iibb ? `<div><strong>Ingresos Brutos:</strong> ${iibb}</div>` : ''}
+              ${iva ? `<div><strong>Cond. IVA:</strong> ${iva}</div>` : ''}
+            </div>
+          </div>
         </div>
-        
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+
+        <!-- Info bar: Date, Client, Validity -->
+        <div style="display: flex; justify-content: space-between; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 25px; font-size: 10px; color: #334155;">
+          <div>
+            <strong>Fecha:</strong> ${dateStr}
+          </div>
+          ${clientName ? `
+          <div>
+            <strong>Cliente:</strong> ${clientName}
+          </div>` : ''}
+          <div>
+            <strong>Validez:</strong> ${validityDays} días
+          </div>
+        </div>
+
+        <!-- Items Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px;">
           <thead>
-            <tr>
-              <th style="text-align: left; border-bottom: 1px solid #000; width: 55%;">Producto</th>
-              <th style="text-align: right; border-bottom: 1px solid #000; width: 15%;">Cant</th>
-              <th style="text-align: right; border-bottom: 1px solid #000; width: 30%;">Total</th>
+            <tr style="background: #0f172a; color: white;">
+              <th style="text-align: left; padding: 8px 10px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; font-weight: 600;">Detalle / Producto</th>
+              <th style="text-align: right; padding: 8px 10px; font-weight: 600; width: 15%;">Precio Unit.</th>
+              <th style="text-align: right; padding: 8px 10px; font-weight: 600; width: 10%;">Cant.</th>
+              <th style="text-align: right; padding: 8px 10px; font-weight: 600; width: 15%;">Descuento</th>
+              <th style="text-align: right; padding: 8px 10px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; font-weight: 600; width: 18%;">Subtotal</th>
             </tr>
           </thead>
           <tbody>
@@ -625,48 +666,42 @@ const Quotes = () => {
                 const dv = parseFloat(item.discountValue);
                 const descItem = !item.discountValue || isNaN(dv) ? 0
                     : item.discountType === '%' ? baseSub * (dv / 100) : dv;
+                const lineTotal = baseSub - descItem;
                 return `
-              <tr>
-                <td style="padding: 4px 0;">
-                  <div style="font-weight: bold;">${item.nombre}</div>
-                  ${descItem > 0 ? `
-                    <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                      Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                      ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
-                      <span style="color: #c2410c; font-weight: bold; margin-left: 6px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
-                    </div>
-                  ` : item.quantity > 1 ? `
-                    <div style="font-size: 10px; color: #555; margin-top: 2px;">
-                      Precio: $${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} x ${item.quantity} un.
-                    </div>
-                  ` : ''}
-                </td>
-                <td style="padding: 4px 0; text-align: right; vertical-align: top;">${item.quantity}</td>
-                <td style="padding: 4px 0; text-align: right; vertical-align: top;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px 10px; text-align: left; vertical-align: middle; font-weight: 500; color: #1e293b;">${item.nombre}</td>
+                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; color: #475569;">$${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; color: #475569;">${item.quantity}</td>
+                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; color: #ef4444;">${descItem > 0 ? `-$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '-'}</td>
+                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; font-weight: 700; color: #0f172a;">$${lineTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
               </tr>
             `;
             }).join('')}
           </tbody>
         </table>
 
-        <div style="border-top: 1px dashed #000; padding-top: 10px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Subtotal:</span>
-            <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-          </div>
-          ${totalDiscount > 0 ? `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Descuento:</span>
-            <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-          </div>` : ''}
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-weight: bold; font-size: 14px; margin-top: 5px;">
-            <span>TOTAL PREVISTO:</span>
-            <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-          </div>
+        <!-- Totals -->
+        <div style="display: flex; justify-content: flex-end; margin-top: 10px; margin-bottom: 30px;">
+          <table style="border-collapse: collapse; font-size: 11px; min-width: 240px;">
+            <tr>
+              <td style="padding: 5px 10px; color: #64748b;">Subtotal</td>
+              <td style="padding: 5px 10px; text-align: right; font-weight: 600; color: #334155;">$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+            </tr>
+            ${totalDiscount > 0 ? `
+            <tr>
+              <td style="padding: 5px 10px; color: #ef4444;">Descuento Total</td>
+              <td style="padding: 5px 10px; text-align: right; font-weight: 600; color: #ef4444;">-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+            </tr>` : ''}
+            <tr style="border-top: 2px solid #0f172a;">
+              <td style="padding: 8px 10px; font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase;">Total Previsto</td>
+              <td style="padding: 8px 10px; text-align: right; font-size: 14px; font-weight: 800; color: #0284c7;">$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+            </tr>
+          </table>
         </div>
 
-        <div style="text-align: center; margin-top: 20px; font-size: 10px; white-space: pre-wrap;">
-          <p>Los precios pueden estar sujetos a modificaciones sin previo aviso luego de su expiración.</p>
+        <!-- Footer -->
+        <div style="text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 9px; color: #64748b; white-space: pre-wrap; line-height: 1.6;">
+          <p style="margin: 0;">Los precios pueden estar sujetos a modificaciones sin previo aviso luego de su expiración.</p>
         </div>
       </div>
     `;
@@ -676,11 +711,11 @@ const Quotes = () => {
             const element = document.createElement('div');
             element.innerHTML = htmlContent;
             const opt = {
-                margin:       0,
+                margin:       15,
                 filename:     `Presupuesto_${clientName ? clientName.replace(/\s+/g, '_') : 'Cliente'}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 3, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: [80, 220], orientation: 'portrait' }
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
             await html2pdf().from(element).set(opt).save();
             toast.success('Presupuesto PDF descargado con éxito');
@@ -761,6 +796,30 @@ const Quotes = () => {
                                 }
                                 setSearch(val);
                             }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    setFocusedIndex(i => Math.min(products.length - 1, i + 1));
+                                } else if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    setFocusedIndex(i => Math.max(0, i - 1));
+                                } else if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (focusedIndex >= 0 && focusedIndex < products.length) {
+                                        addToCart(products[focusedIndex]);
+                                        setSearch('');
+                                    } else if (search.length > 0) {
+                                        api.get('inventory/products/', { params: { search, page_size: 1 } })
+                                            .then(res => {
+                                                const list = res.data.results || res.data;
+                                                if (list.length === 1) {
+                                                    addToCart(list[0]);
+                                                    setSearch('');
+                                                }
+                                            });
+                                    }
+                                }
+                            }}
                             icon={<Search size={18} />}
                             suffix={!search && <kbd className="search-kbd">/</kbd>}
                         />
@@ -828,7 +887,9 @@ const Quotes = () => {
                                             product={p} 
                                             onAdd={addToCart} 
                                             isFocused={focusedIndex === idx}
-                                            onMouseEnter={() => setFocusedIndex(idx)}
+                                            onMouseEnter={() => { setFocusedIndex(idx); setHoveredProduct(p); }}
+                                            onMouseLeave={() => { setFocusedIndex(prev => prev === idx ? -1 : prev); setHoveredProduct(null); }}
+                                            onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                                         />
                                     ))
                                 }
@@ -1132,6 +1193,61 @@ const Quotes = () => {
                 onConfirm={confirmClearCart}
                 onClose={() => setShowClearConfirm(false)}
             />
+
+            {!window.matchMedia('(pointer: coarse)').matches && hoveredProduct && hoveredProduct.imagen_base64 && createPortal((() => {
+                const tooltipWidth = 160;
+                const tooltipHeight = 160;
+                let x = mousePos.x + 15;
+                let y = mousePos.y + 15;
+                if (x + tooltipWidth > window.innerWidth) {
+                    x = mousePos.x - tooltipWidth - 15;
+                }
+                if (y + tooltipHeight > window.innerHeight) {
+                    y = mousePos.y - tooltipHeight - 15;
+                }
+                return (
+                    <>
+                        <style>{`
+                            @keyframes fadeInScale {
+                                from { opacity: 0; transform: scale(0.95); }
+                                to { opacity: 1; transform: scale(1); }
+                            }
+                        `}</style>
+                        <div
+                            style={{
+                                position: 'fixed',
+                                left: `${x}px`,
+                                top: `${y}px`,
+                                width: `${tooltipWidth}px`,
+                                height: `${tooltipHeight}px`,
+                                zIndex: 100000,
+                                pointerEvents: 'none',
+                                backgroundColor: 'white',
+                                border: '1px solid var(--border-subtle, #e2e8f0)',
+                                borderRadius: '12px',
+                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                                overflow: 'hidden',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '3px',
+                                animation: 'fadeInScale 0.15s ease-out'
+                            }}
+                        >
+                            <img
+                                src={hoveredProduct.imagen_base64}
+                                alt={hoveredProduct.nombre}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    borderRadius: '9px'
+                                }}
+                            />
+                        </div>
+                    </>
+                );
+            })(), document.body)}
         </div>
     );
 };

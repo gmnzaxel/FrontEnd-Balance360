@@ -31,6 +31,11 @@ const Settings = () => {
     const logoInputRef = useRef(null);
 
     const [showPreview, setShowPreview] = useState(false);
+    const [localViewAsSeller, setLocalViewAsSeller] = useState(false);
+
+    useEffect(() => {
+        setLocalViewAsSeller(viewAsSeller);
+    }, [viewAsSeller]);
 
     useEffect(() => {
         fetchSettings();
@@ -57,6 +62,7 @@ const Settings = () => {
         setSaving(true);
         try {
             await api.patch('settings/', settings);
+            setViewAsSeller(localViewAsSeller);
             toast.success("Configuración guardada.");
         } catch (error) {
             console.error(error);
@@ -187,8 +193,8 @@ const Settings = () => {
                                 <label className="toggle-switch" aria-label="Activar vista de vendedor">
                                     <input
                                         type="checkbox"
-                                        checked={viewAsSeller}
-                                        onChange={(e) => setViewAsSeller(e.target.checked)}
+                                        checked={localViewAsSeller}
+                                        onChange={(e) => setLocalViewAsSeller(e.target.checked)}
                                     />
                                     <span className="slider" />
                                 </label>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Edit, Trash2, Plus, Upload, Users, Search, Store, Package, Archive, FileDown, CheckSquare, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getErrorMessage } from '../utils/errorUtils';
@@ -39,6 +40,9 @@ const Products = () => {
   const [showImportErrors, setShowImportErrors] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [hoveredProduct, setHoveredProduct] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
@@ -390,7 +394,10 @@ const Products = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    setFormData(product);
+    setFormData({
+      ...product,
+      imagen_base64: product.imagen_base64 || ''
+    });
     setShowModal(true);
   };
 
@@ -399,10 +406,86 @@ const Products = () => {
     setShowDetailsModal(true);
   };
 
+  const processImageFile = (file) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, seleccioná un archivo de imagen válido.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
+        setFormData(prev => ({ ...prev, imagen_base64: dataUrl }));
+      };
+      img.onerror = () => {
+        toast.error('Error al procesar la imagen.');
+      };
+    };
+    reader.onerror = () => {
+      toast.error('Error al leer el archivo.');
+    };
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData(prev => ({ ...prev, imagen_base64: '' }));
+  };
+
   const handleCreate = () => {
     setEditingProduct(null);
     setFormData({
-      codigo: '', nombre: '', stock_actual: 0, stock_minimo: 5, stock_maximo: 0, costo_compra: 0, precio_venta: 0, supplier_name: '',
+      codigo: '', nombre: '', stock_actual: 0, stock_minimo: 5, stock_maximo: 0, costo_compra: 0, precio_venta: 0, supplier_name: '', imagen_base64: '',
     });
     setShowModal(true);
   };
@@ -718,7 +801,9 @@ const Products = () => {
                     backgroundColor: focusedIndex === idx ? 'rgba(14, 165, 233, 0.12)' : undefined,
                     '--delay': `${idx * 25}ms`,
                   }}
-                  onMouseEnter={() => setFocusedIndex(idx)}
+                  onMouseEnter={() => { setFocusedIndex(idx); setHoveredProduct(p); }}
+                  onMouseLeave={() => { setFocusedIndex((prev) => prev === idx ? -1 : prev); setHoveredProduct(null); }}
+                  onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                 >
                   {isAdmin && (
                     <td data-label="Seleccionar">
@@ -825,6 +910,25 @@ const Products = () => {
           )}
         >
           <div className="form-stack">
+            {selectedProduct.imagen_base64 && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                <div style={{
+                  width: '120px',
+                  height: '120px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-subtle)',
+                  overflow: 'hidden',
+                  boxShadow: 'var(--shadow-sm)',
+                  backgroundColor: 'var(--surface-muted)'
+                }}>
+                  <img 
+                    src={selectedProduct.imagen_base64} 
+                    alt={selectedProduct.nombre} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
+                </div>
+              </div>
+            )}
             <div className={isAdmin ? "grid two-cols" : "grid one-col"}>
               <div>
                 <p className="text-xs muted">Código</p>
@@ -964,6 +1068,88 @@ const Products = () => {
                 onChange={(e) => setFormData({ ...formData, precio_venta: e.target.value })}
                 required
               />
+            </div>
+
+            <div style={{ marginTop: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--slate-700)' }}>
+                Imagen del Producto (Vista Previa en Hover)
+              </label>
+              {formData.imagen_base64 ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{
+                    width: '100px',
+                    height: '100px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-subtle)',
+                    overflow: 'hidden',
+                    backgroundColor: 'var(--surface-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative'
+                  }}>
+                    <img 
+                      src={formData.imagen_base64} 
+                      alt="Vista previa" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    icon={<Trash2 size={16} />} 
+                    onClick={handleRemoveImage}
+                    style={{ color: 'var(--danger-600)' }}
+                  >
+                    Eliminar Imagen
+                  </Button>
+                </div>
+              ) : (
+                <label 
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: isDragging ? '2px dashed var(--primary-500)' : '2px dashed var(--border-subtle)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    cursor: 'pointer',
+                    backgroundColor: isDragging ? 'var(--surface-hover, #eff6ff)' : 'var(--surface-muted, #f8fafc)',
+                    transition: 'border-color 0.2s, background-color 0.2s',
+                    textAlign: 'center'
+                  }}
+                  onMouseEnter={e => { 
+                    if (!isDragging) {
+                      e.currentTarget.style.borderColor = 'var(--primary-500)'; 
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)'; 
+                    }
+                  }}
+                  onMouseLeave={e => { 
+                    if (!isDragging) {
+                      e.currentTarget.style.borderColor = 'var(--border-subtle)'; 
+                      e.currentTarget.style.backgroundColor = 'var(--surface-muted)'; 
+                    }
+                  }}
+                >
+                  <Upload size={24} className="text-muted" style={{ marginBottom: '8px', color: isDragging ? 'var(--primary-600)' : 'var(--text-secondary)' }} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 500, color: isDragging ? 'var(--primary-700)' : 'var(--text-secondary)' }}>
+                    {isDragging ? '¡Soltá la imagen acá!' : 'Hacé clic o arrastrá una imagen acá'}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Sube una foto clara (se redimensionará para conservar nitidez)
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              )}
             </div>
 
             {parseFloat(formData.precio_venta) > 0 && (
@@ -1177,6 +1363,61 @@ const Products = () => {
         onConfirm={confirmConfig.onConfirm}
         onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {!window.matchMedia('(pointer: coarse)').matches && hoveredProduct && hoveredProduct.imagen_base64 && createPortal((() => {
+        const tooltipWidth = 160;
+        const tooltipHeight = 160;
+        let x = mousePos.x + 15;
+        let y = mousePos.y + 15;
+        if (x + tooltipWidth > window.innerWidth) {
+          x = mousePos.x - tooltipWidth - 15;
+        }
+        if (y + tooltipHeight > window.innerHeight) {
+          y = mousePos.y - tooltipHeight - 15;
+        }
+        return (
+          <>
+            <style>{`
+              @keyframes fadeInScale {
+                from { opacity: 0; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+              }
+            `}</style>
+            <div
+              style={{
+                position: 'fixed',
+                left: `${x}px`,
+                top: `${y}px`,
+                width: `${tooltipWidth}px`,
+                height: `${tooltipHeight}px`,
+                zIndex: 100000,
+                pointerEvents: 'none',
+                backgroundColor: 'white',
+                border: '1px solid var(--border-subtle, #e2e8f0)',
+                borderRadius: '12px',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '3px',
+                animation: 'fadeInScale 0.15s ease-out'
+              }}
+            >
+              <img
+                src={hoveredProduct.imagen_base64}
+                alt={hoveredProduct.nombre}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: '9px'
+                }}
+              />
+            </div>
+          </>
+        );
+      })(), document.body)}
     </div>
   );
 };
