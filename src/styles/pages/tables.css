@@ -47,12 +47,12 @@
     text-align: left;
   }
 
-  .styled-table td[data-label="Acciones"] {
+  .styled-table td[data-label='Acciones'] {
     justify-content: flex-start;
     gap: 8px;
   }
 
-  .styled-table td[data-label="Acciones"] > * {
+  .styled-table td[data-label='Acciones'] > * {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
@@ -68,4 +68,3 @@
     box-shadow: var(--shadow-xs);
   }
 }
-

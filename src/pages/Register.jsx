@@ -1,21 +1,31 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Building, MapPin, Phone, Store, User, Lock, ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
-import api from '../api/axios';
-import { toast } from 'react-toastify';
-import { getErrorMessage } from '../utils/errorUtils';
-import Card from '../components/ui/Card';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
-import BrandMark from '../components/ui/BrandMark';
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import {
+  Building,
+  MapPin,
+  Phone,
+  Store,
+  User,
+  Lock,
+  ArrowLeft,
+  ArrowRight,
+  ShieldCheck,
+} from 'lucide-react'
+import api from '../api/axios'
+import { toast } from 'react-toastify'
+import { getErrorMessage } from '../utils/errorUtils'
+import Card from '../components/ui/Card'
+import Input from '../components/ui/Input'
+import Button from '../components/ui/Button'
+import BrandMark from '../components/ui/BrandMark'
 
 const Register = () => {
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
-  const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState(1)
+  const [errors, setErrors] = useState({})
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     empresa_nombre: '',
     empresa_direccion: '',
@@ -25,12 +35,12 @@ const Register = () => {
     email: '',
     password: '',
     confirm_password: '',
-  });
+  })
 
   const handleChange = (e) => {
-    setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    setErrors((prev) => ({ ...prev, [e.target.name]: '' }))
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
 
   const handleNext = () => {
     const requiredFields = [
@@ -38,18 +48,18 @@ const Register = () => {
       'empresa_direccion',
       'empresa_telefono',
       'local_principal_nombre',
-    ];
-    const nextErrors = {};
+    ]
+    const nextErrors = {}
     requiredFields.forEach((field) => {
       if (!formData[field].trim()) {
-        nextErrors[field] = 'Campo obligatorio.';
+        nextErrors[field] = 'Campo obligatorio.'
       }
-    });
-    const missing = Object.keys(nextErrors);
+    })
+    const missing = Object.keys(nextErrors)
     if (missing.length) {
-      setErrors((prev) => ({ ...prev, ...nextErrors }));
-      toast.error('Completá los datos de la empresa antes de continuar.');
-      return;
+      setErrors((prev) => ({ ...prev, ...nextErrors }))
+      toast.error('Completá los datos de la empresa antes de continuar.')
+      return
     }
     setErrors((prev) => ({
       ...prev,
@@ -57,73 +67,71 @@ const Register = () => {
       email: '',
       password: '',
       confirm_password: '',
-    }));
-    setStep(2);
-  };
+    }))
+    setStep(2)
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (step === 1) {
-      handleNext();
-      return;
+      handleNext()
+      return
     }
-    const requiredFields = [
-      'username',
-      'password',
-      'confirm_password',
-    ];
-    const nextErrors = {};
+    const requiredFields = ['username', 'password', 'confirm_password']
+    const nextErrors = {}
     requiredFields.forEach((field) => {
       if (!formData[field].trim()) {
-        nextErrors[field] = 'Campo obligatorio.';
+        nextErrors[field] = 'Campo obligatorio.'
       }
-    });
+    })
     if (Object.keys(nextErrors).length) {
-      setErrors((prev) => ({ ...prev, ...nextErrors }));
-      toast.error('Completá los datos del administrador.');
-      return;
+      setErrors((prev) => ({ ...prev, ...nextErrors }))
+      toast.error('Completá los datos del administrador.')
+      return
     }
     if (formData.password !== formData.confirm_password) {
-      setErrors((prev) => ({ ...prev, confirm_password: 'Las contraseñas no coinciden.' }));
-      toast.error('Las contraseñas no coinciden');
-      return;
+      setErrors((prev) => ({ ...prev, confirm_password: 'Las contraseñas no coinciden.' }))
+      toast.error('Las contraseñas no coinciden')
+      return
     }
     if (formData.password.length < 8 || !/\d/.test(formData.password)) {
       setErrors((prev) => ({
         ...prev,
         password: 'Mínimo 8 caracteres y al menos 1 número.',
-      }));
-      toast.error('La contraseña es débil.');
-      return;
+      }))
+      toast.error('La contraseña es débil.')
+      return
     }
-    setLoading(true);
+    setLoading(true)
     try {
-      await api.post('auth/registro/', formData);
-      toast.success('¡Empresa registrada con éxito!');
-      navigate('/login');
+      await api.post('auth/registro/', formData)
+      toast.success('¡Empresa registrada con éxito!')
+      navigate('/login')
     } catch (error) {
       if (error.response?.data && typeof error.response.data === 'object') {
-        const apiErrors = {};
+        const apiErrors = {}
         Object.entries(error.response.data).forEach(([key, value]) => {
-          const message = Array.isArray(value) ? value[0] : value;
-          apiErrors[key] = message;
-        });
+          const message = Array.isArray(value) ? value[0] : value
+          apiErrors[key] = message
+        })
         if (Object.keys(apiErrors).length) {
-          setErrors((prev) => ({ ...prev, ...apiErrors }));
+          setErrors((prev) => ({ ...prev, ...apiErrors }))
         }
       }
-      toast.error(getErrorMessage(error));
+      toast.error(getErrorMessage(error))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="auth-shell auth-shell-register">
       <div className="auth-layout">
         <aside className="auth-aside auth-aside-compact">
           <div className="auth-brand">
-            <div className="brand-icon"><BrandMark size={26} /></div>
+            <div className="brand-icon">
+              <BrandMark size={26} />
+            </div>
             <div className="brand-text">
               <span>Balance</span>
               <strong>360</strong>
@@ -144,14 +152,16 @@ const Register = () => {
             className="w-full auth-card animate-slide-up"
             title="Crear cuenta de empresa"
             description="Completá los datos para comenzar a operar en minutos."
-            headerSlot={(
+            headerSlot={
               <Link to="/login" className="link flex-row">
                 <ArrowLeft size={16} /> Volver
               </Link>
-            )}
+            }
           >
             <div className="brand-chip auth-mobile-brand">
-              <div className="brand-icon"><BrandMark size={26} /></div>
+              <div className="brand-icon">
+                <BrandMark size={26} />
+              </div>
               <div>
                 <p className="eyebrow">Onboarding seguro</p>
                 <h2>Balance360</h2>
@@ -171,7 +181,9 @@ const Register = () => {
               {step === 1 ? (
                 <div className="section-block">
                   <div className="section-title">
-                    <div className="section-icon"><Building size={18} /></div>
+                    <div className="section-icon">
+                      <Building size={18} />
+                    </div>
                     <div>
                       <h4>Datos de la empresa</h4>
                       <p>Información necesaria para emitir reportes y comprobantes.</p>
@@ -222,7 +234,9 @@ const Register = () => {
               ) : (
                 <div className="section-block">
                   <div className="section-title">
-                    <div className="section-icon subtle"><User size={18} /></div>
+                    <div className="section-icon subtle">
+                      <User size={18} />
+                    </div>
                     <div>
                       <h4>Usuario administrador</h4>
                       <p>Acceso principal para configurar el negocio.</p>
@@ -263,7 +277,7 @@ const Register = () => {
                       helper="Mínimo 8 caracteres y 1 número."
                       autoComplete="new-password"
                       error={errors.password}
-                      suffix={(
+                      suffix={
                         <button
                           type="button"
                           className="field-action"
@@ -271,7 +285,7 @@ const Register = () => {
                         >
                           {showPassword ? 'Ocultar' : 'Mostrar'}
                         </button>
-                      )}
+                      }
                     />
                     <Input
                       label="Confirmar contraseña"
@@ -283,7 +297,7 @@ const Register = () => {
                       icon={<Lock size={16} />}
                       autoComplete="new-password"
                       error={errors.confirm_password}
-                      suffix={(
+                      suffix={
                         <button
                           type="button"
                           className="field-action"
@@ -291,7 +305,7 @@ const Register = () => {
                         >
                           {showConfirm ? 'Ocultar' : 'Mostrar'}
                         </button>
-                      )}
+                      }
                     />
                   </div>
                 </div>
@@ -314,19 +328,29 @@ const Register = () => {
                         email: '',
                         password: '',
                         confirm_password: '',
-                      }));
-                      setStep(1);
+                      }))
+                      setStep(1)
                     }}
                   >
                     Volver
                   </Button>
                 )}
                 {step === 1 ? (
-                  <Button type="button" variant="primary" icon={<ArrowRight size={18} />} onClick={handleNext}>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    icon={<ArrowRight size={18} />}
+                    onClick={handleNext}
+                  >
                     Continuar
                   </Button>
                 ) : (
-                  <Button type="submit" variant="primary" icon={<ArrowRight size={18} />} loading={loading}>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    icon={<ArrowRight size={18} />}
+                    loading={loading}
+                  >
                     Crear cuenta
                   </Button>
                 )}
@@ -336,7 +360,7 @@ const Register = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Register;
+export default Register

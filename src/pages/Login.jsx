@@ -1,59 +1,63 @@
-import React, { useContext, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { User, Lock, ArrowRight } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
-import Card from '../components/ui/Card';
-import BrandMark from '../components/ui/BrandMark';
+import React, { useContext, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { User, Lock, ArrowRight } from 'lucide-react'
+import { AuthContext } from '../context/AuthContext'
+import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
+import Card from '../components/ui/Card'
+import BrandMark from '../components/ui/BrandMark'
 
 const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const { login } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState({})
+  const { login } = useContext(AuthContext)
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const nextErrors = {};
-    if (!username.trim()) nextErrors.username = 'Ingresá tu usuario.';
-    if (!password) nextErrors.password = 'Ingresá tu contraseña.';
+    e.preventDefault()
+    const nextErrors = {}
+    if (!username.trim()) nextErrors.username = 'Ingresá tu usuario.'
+    if (!password) nextErrors.password = 'Ingresá tu contraseña.'
     if (Object.keys(nextErrors).length) {
-      setErrors(nextErrors);
-      return;
+      setErrors(nextErrors)
+      return
     }
-    const loggedUser = await login(username.trim(), password);
-    setLoading(false);
+    const loggedUser = await login(username.trim(), password)
+    setLoading(false)
     if (loggedUser) {
       if (loggedUser.is_superuser && !localStorage.getItem('impersonated_company_id')) {
-        navigate('/super-dashboard');
+        navigate('/super-dashboard')
       } else {
-        navigate('/');
+        navigate('/')
       }
     } else {
       setErrors((prev) => ({
         ...prev,
         password: 'Revisá usuario y contraseña.',
-      }));
+      }))
     }
-  };
+  }
 
   return (
     <div className="auth-shell">
       <div className="auth-layout">
         <aside className="auth-aside">
           <div className="auth-brand">
-            <div className="brand-icon"><BrandMark size={26} /></div>
+            <div className="brand-icon">
+              <BrandMark size={26} />
+            </div>
             <div className="brand-text">
               <span>Balance</span>
               <strong>360</strong>
             </div>
           </div>
           <h2 className="auth-headline">Gestioná tu negocio en un solo lugar.</h2>
-          <p className="auth-subtitle">Ventas, inventario y reportes con foco en claridad y control.</p>
+          <p className="auth-subtitle">
+            Ventas, inventario y reportes con foco en claridad y control.
+          </p>
           <ul className="auth-list">
             <li>Inventario con stock en tiempo real.</li>
             <li>Ventas rápidas con historial completo.</li>
@@ -69,7 +73,9 @@ const Login = () => {
             description="Accedé a tu cuenta para continuar."
           >
             <div className="brand-chip auth-mobile-brand">
-              <div className="brand-icon"><BrandMark size={26} /></div>
+              <div className="brand-icon">
+                <BrandMark size={26} />
+              </div>
               <div>
                 <p className="eyebrow">Acceso seguro</p>
                 <h2>Balance360</h2>
@@ -81,8 +87,8 @@ const Login = () => {
                 placeholder="usuario_admin"
                 value={username}
                 onChange={(e) => {
-                  setUsername(e.target.value);
-                  setErrors((prev) => ({ ...prev, username: '' }));
+                  setUsername(e.target.value)
+                  setErrors((prev) => ({ ...prev, username: '' }))
                 }}
                 icon={<User size={18} />}
                 autoComplete="username"
@@ -95,13 +101,13 @@ const Login = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => {
-                  setPassword(e.target.value);
-                  setErrors((prev) => ({ ...prev, password: '' }));
+                  setPassword(e.target.value)
+                  setErrors((prev) => ({ ...prev, password: '' }))
                 }}
                 icon={<Lock size={18} />}
                 autoComplete="current-password"
                 error={errors.password}
-                suffix={(
+                suffix={
                   <button
                     type="button"
                     className="field-action"
@@ -109,10 +115,16 @@ const Login = () => {
                   >
                     {showPassword ? 'Ocultar' : 'Mostrar'}
                   </button>
-                )}
+                }
                 required
               />
-              <Button type="submit" variant="primary" fullWidth loading={loading} icon={<ArrowRight size={18} />}>
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                loading={loading}
+                icon={<ArrowRight size={18} />}
+              >
                 Ingresar
               </Button>
             </form>
@@ -120,7 +132,7 @@ const Login = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Login;
+export default Login

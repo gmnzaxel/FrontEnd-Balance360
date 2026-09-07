@@ -100,16 +100,16 @@
 
   --z-base: 1;
   --z-header: 60;
-  --z-overlay: 70;
-  --z-drawer: 75;
   --z-dropdown: 80;
-  --z-modal: 100;
-  --z-toast: 110;
-  --z-tooltip: 120;
+  --z-overlay: 900;
+  --z-drawer: 950;
+  --z-modal: 100000;
+  --z-toast: 110000;
+  --z-tooltip: 120000;
 }
 
 /* ─── Light Mode Theme ────────────────────────────────────────── */
-[data-theme="light"] {
+[data-theme='light'] {
   --slate-50: #f8fafc;
   --slate-100: #f1f5f9;
   --slate-200: #e2e8f0;
@@ -152,90 +152,95 @@
   --card-gradient-end: #f1f5f9;
 }
 
-[data-theme="light"] .sidebar-profile,
-[data-theme="light"] .sidebar-user {
+[data-theme='light'] .sidebar-profile,
+[data-theme='light'] .sidebar-user-profile,
+[data-theme='light'] .sidebar-user {
   background: rgba(15, 23, 42, 0.04) !important;
 }
 
-[data-theme="light"] .sidebar-action-compact,
-[data-theme="light"] .sidebar-action {
+[data-theme='light'] .sidebar-action-compact,
+[data-theme='light'] .sidebar-action {
   background: rgba(99, 102, 241, 0.04) !important;
 }
 
-[data-theme="light"] .sidebar-action-icon {
+[data-theme='light'] .sidebar-action-icon {
   background: rgba(99, 102, 241, 0.08) !important;
   color: var(--primary-600) !important;
 }
 
-[data-theme="light"] .avatar {
+[data-theme='light'] .avatar {
   background: var(--primary-100) !important;
   color: var(--primary-700) !important;
 }
 
-[data-theme="light"] .cart-body {
+[data-theme='light'] .cart-body {
   background: rgba(15, 23, 42, 0.03) !important;
 }
 
-[data-theme="light"] .sidebar-section {
+[data-theme='light'] .sidebar-section {
   background: rgba(15, 23, 42, 0.02) !important;
   border-color: rgba(15, 23, 42, 0.06) !important;
   box-shadow: none !important;
 }
 
-[data-theme="light"] .sidebar-action-compact {
+[data-theme='light'] .sidebar-action-compact {
   color: var(--primary-600) !important;
 }
 
-[data-theme="light"] .sidebar-action.active,
-[data-theme="light"] .sidebar-action-compact.active {
+[data-theme='light'] .sidebar-action.active,
+[data-theme='light'] .sidebar-action-compact.active {
   background: var(--primary-600) !important;
   border-color: var(--primary-700) !important;
   color: #ffffff !important;
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2) !important;
 }
 
-[data-theme="light"] .sidebar-action.active .sidebar-action-icon {
+[data-theme='light'] .sidebar-action.active .sidebar-action-icon {
   background: rgba(255, 255, 255, 0.25) !important;
   color: #ffffff !important;
 }
 
-[data-theme="light"] .skeleton {
-  background: linear-gradient(90deg, rgba(226, 232, 240, 0.5) 0%, rgba(203, 213, 225, 0.7) 50%, rgba(226, 232, 240, 0.5) 100%) !important;
+[data-theme='light'] .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.5) 0%,
+    rgba(203, 213, 225, 0.7) 50%,
+    rgba(226, 232, 240, 0.5) 100%
+  ) !important;
 }
 
-[data-theme="light"] .row-muted {
+[data-theme='light'] .row-muted {
   background: rgba(15, 23, 42, 0.03) !important;
 }
 
-[data-theme="light"] .products-page .table-container .styled-table tbody tr,
-[data-theme="light"] .supplier-order-table .styled-table tbody tr,
-[data-theme="light"] .sale-detail-items .styled-table tbody tr {
+[data-theme='light'] .products-page .table-container .styled-table tbody tr,
+[data-theme='light'] .supplier-order-table .styled-table tbody tr,
+[data-theme='light'] .sale-detail-items .styled-table tbody tr {
   background: var(--surface-0) !important;
 }
 
-[data-theme="light"] .settings-row,
-[data-theme="light"] .settings-preview-wrap {
+[data-theme='light'] .settings-row,
+[data-theme='light'] .settings-preview-wrap {
   background: rgba(15, 23, 42, 0.03) !important;
 }
 
-[data-theme="light"] .profile-card-icon,
-[data-theme="light"] .profile-page .badge {
+[data-theme='light'] .profile-card-icon,
+[data-theme='light'] .profile-page .badge {
   background: rgba(14, 165, 233, 0.08) !important;
   color: var(--primary-600) !important;
 }
 
-[data-theme="light"] .reports-kpi-icon {
+[data-theme='light'] .reports-kpi-icon {
   background: rgba(15, 23, 42, 0.05) !important;
   color: var(--primary-600) !important;
 }
 
-[data-theme="light"] .text-primary-600 {
+[data-theme='light'] .text-primary-600 {
   color: var(--primary-600) !important;
 }
 
-[data-theme="light"] .badge-primary {
+[data-theme='light'] .badge-primary {
   background: rgba(99, 102, 241, 0.12) !important;
   color: var(--primary-600) !important;
   border: 1px solid rgba(99, 102, 241, 0.2) !important;
 }
-

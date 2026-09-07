@@ -18,9 +18,9 @@ body {
 
 body {
   font-family: var(--font-sans);
-  background: radial-gradient(circle at 10% 12%, rgba(99, 102, 241, 0.07), transparent 45%),
-    radial-gradient(circle at 86% 82%, rgba(139, 92, 246, 0.05), transparent 40%),
-    var(--bg-app);
+  background:
+    radial-gradient(circle at 10% 12%, rgba(99, 102, 241, 0.07), transparent 45%),
+    radial-gradient(circle at 86% 82%, rgba(139, 92, 246, 0.05), transparent 40%), var(--bg-app);
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -36,6 +36,10 @@ img {
   display: block;
 }
 
+html {
+  color-scheme: dark;
+}
+
 button,
 input,
 select,
@@ -43,16 +47,30 @@ textarea {
   font-family: inherit;
 }
 
+:focus,
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25);
+}
+
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none !important;
+}
+
+select option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
 }
 
 /* ─── Mobile global fixes ─────────────────────────────────────── */
 /* Prevent iOS tap highlight */
 button,
 a,
-[role="button"] {
+[role='button'] {
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -65,7 +83,7 @@ a,
   }
 
   /* Minimum 44px touch target (Apple HIG / Material Design accessibility) */
-  button:not([aria-hidden="true"]),
+  button:not([aria-hidden='true']),
   .ghost-icon,
   .btn-icon,
   .nav-link,
@@ -146,108 +164,232 @@ a,
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* ─── Entrance Animations ─────────────────────────────────────── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-24px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-32px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(32px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes popIn {
-  0% { opacity: 0; transform: scale(0.8); }
-  70% { opacity: 1; transform: scale(1.04); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes modalPop {
-  0% { opacity: 0; transform: scale(0.9) translateY(15px); }
-  65% { opacity: 1; transform: scale(1.025) translateY(-2px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(15px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.025) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 @keyframes overlayFadeIn {
-  from { opacity: 0; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
-  to { opacity: 1; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
 }
 
 /* ─── Emphasis & Micro-interactions ────────────────────────────── */
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+  }
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-4px); }
-  40%, 80% { transform: translateX(4px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
 }
 
 @keyframes breathe {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.02); }
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
 }
 
 @keyframes countUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes borderGlow {
-  0%, 100% { border-color: rgba(99, 102, 241, 0.15); }
-  50% { border-color: rgba(99, 102, 241, 0.45); }
+  0%,
+  100% {
+    border-color: rgba(99, 102, 241, 0.15);
+  }
+  50% {
+    border-color: rgba(99, 102, 241, 0.45);
+  }
 }
 
 @keyframes ripple {
-  0% { transform: scale(0); opacity: 0.5; }
-  100% { transform: scale(4); opacity: 0; }
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 
 @keyframes slideUpFadeOut {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-16px); }
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 /* ─── Utility Classes ──────────────────────────────────────────── */
@@ -288,16 +430,30 @@ a,
 }
 
 /* Stagger delays for child elements */
-.stagger-children > *:nth-child(1) { animation-delay: var(--stagger-1); }
-.stagger-children > *:nth-child(2) { animation-delay: var(--stagger-2); }
-.stagger-children > *:nth-child(3) { animation-delay: var(--stagger-3); }
-.stagger-children > *:nth-child(4) { animation-delay: var(--stagger-4); }
-.stagger-children > *:nth-child(5) { animation-delay: var(--stagger-5); }
-.stagger-children > *:nth-child(6) { animation-delay: var(--stagger-6); }
+.stagger-children > *:nth-child(1) {
+  animation-delay: var(--stagger-1);
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: var(--stagger-2);
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: var(--stagger-3);
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: var(--stagger-4);
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: var(--stagger-5);
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: var(--stagger-6);
+}
 
 /* Respect user motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -306,8 +462,13 @@ a,
 
 /* ─── Pulse Dot (indicador de actividad) ─────────────────────── */
 @keyframes pulseDot {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
-  50%       { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0);
+  }
 }
 
 /* ─── React-Toastify Custom Theme ────────────────────────────── */
@@ -418,10 +579,10 @@ a,
 }
 
 /* Light mode overrides */
-[data-theme="light"] .Toastify__toast {
+[data-theme='light'] .Toastify__toast {
   color: var(--text-primary) !important;
 }
-[data-theme="light"] .Toastify__toast-body {
+[data-theme='light'] .Toastify__toast-body {
   color: var(--text-primary) !important;
 }
 
@@ -444,9 +605,15 @@ a,
 
 /* ─── Export Progress Bar ─────────────────────────────────────── */
 @keyframes progressSlide {
-  0% { transform: translateX(-100%); }
-  50% { transform: translateX(60%); }
-  100% { transform: translateX(300%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(60%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
 }
 
 .export-progress-bar {
@@ -486,9 +653,9 @@ a,
 }
 
 /* Ajuste inverso para cuando pasamos a modo claro */
-[data-theme="light"]::view-transition-old(root) {
+[data-theme='light']::view-transition-old(root) {
   z-index: 9999;
 }
-[data-theme="light"]::view-transition-new(root) {
+[data-theme='light']::view-transition-new(root) {
   z-index: 1;
 }

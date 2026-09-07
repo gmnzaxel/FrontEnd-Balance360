@@ -1,39 +1,39 @@
-import React, { useEffect, useState, useRef, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Bell, AlertTriangle, ShieldAlert, RefreshCw, ArrowRight, Package } from 'lucide-react';
-import api from '../../api/axios';
-import { AuthContext } from '../../context/AuthContext';
+import React, { useEffect, useState, useRef, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Bell, AlertTriangle, ShieldAlert, RefreshCw, ArrowRight, Package } from 'lucide-react'
+import api from '../../api/axios'
+import { AuthContext } from '../../context/AuthContext'
 
 const NotificationCenter = () => {
-  const { user, isAdminActual } = useContext(AuthContext);
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('stock'); // 'stock' o 'security'
-  const [loading, setLoading] = useState(false);
-  const [lowStockProducts, setLowStockProducts] = useState([]);
-  const [securityAlerts, setSecurityAlerts] = useState([]);
-  const popoverRef = useRef(null);
+  const { user, isAdminActual } = useContext(AuthContext)
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('stock') // 'stock' o 'security'
+  const [loading, setLoading] = useState(false)
+  const [lowStockProducts, setLowStockProducts] = useState([])
+  const [securityAlerts, setSecurityAlerts] = useState([])
+  const popoverRef = useRef(null)
 
   // Administradores y Superusuarios pueden ver el centro de notificaciones
-  const isAllowedToSeeAlerts = user?.is_superuser || isAdminActual || user?.role === 'ADMIN';
+  const isAllowedToSeeAlerts = user?.is_superuser || isAdminActual || user?.role === 'ADMIN'
 
   const fetchAlerts = async () => {
-    if (!isAllowedToSeeAlerts) return;
-    setLoading(true);
+    if (!isAllowedToSeeAlerts) return
+    setLoading(true)
     try {
       // 1. Fetch low stock products (strictly less than stock_minimo)
-      const prodRes = await api.get('inventory/products/?include_archived=false');
-      const allProds = prodRes.data?.results || prodRes.data || [];
-      const lowStock = allProds.filter((p) => Number(p.stock_actual) < Number(p.stock_minimo));
-      setLowStockProducts(lowStock);
+      const prodRes = await api.get('inventory/products/?include_archived=false')
+      const allProds = prodRes.data?.results || prodRes.data || []
+      const lowStock = allProds.filter((p) => Number(p.stock_actual) < Number(p.stock_minimo))
+      setLowStockProducts(lowStock)
 
       // 2. Fetch security alerts ONLY for SuperUsers
-      const secAlerts = [];
+      const secAlerts = []
       if (user?.is_superuser) {
         try {
-          const logsRes = await api.get('users/login-logs/');
-          const logs = logsRes.data || [];
-          const failedLogs = logs.filter((l) => l.status !== 'SUCCESS').slice(0, 5);
+          const logsRes = await api.get('users/login-logs/')
+          const logs = logsRes.data || []
+          const failedLogs = logs.filter((l) => l.status !== 'SUCCESS').slice(0, 5)
           failedLogs.forEach((l) => {
             secAlerts.push({
               id: `log-${l.id}`,
@@ -41,14 +41,16 @@ const NotificationCenter = () => {
               title: `Intento de login fallido: ${l.username}`,
               detail: `IP: ${l.ip_address || '—'} - ${new Date(l.fecha).toLocaleString('es-AR')}`,
               time: new Date(l.fecha),
-            });
-          });
-        } catch (_e) {}
+            })
+          })
+        } catch {
+          // No alertar si el usuario no tiene permisos de auditoría
+        }
 
         try {
-          const salesRes = await api.get('sales/sales/');
-          const sales = salesRes.data?.results || salesRes.data || [];
-          const voidedOrRefunded = sales.filter((s) => s.is_voided || s.is_refunded).slice(0, 5);
+          const salesRes = await api.get('sales/sales/')
+          const sales = salesRes.data?.results || salesRes.data || []
+          const voidedOrRefunded = sales.filter((s) => s.is_voided || s.is_refunded).slice(0, 5)
           voidedOrRefunded.forEach((s) => {
             secAlerts.push({
               id: `sale-${s.id}`,
@@ -56,45 +58,50 @@ const NotificationCenter = () => {
               title: s.is_voided ? `Venta #${s.id} Anulada` : `Venta #${s.id} Reembolsada`,
               detail: `Monto: $${Number(s.total).toLocaleString('es-AR')} - ${s.reason || 'Sin motivo'}`,
               time: new Date(s.created_at || s.fecha),
-            });
-          });
-        } catch (_e) {}
+            })
+          })
+        } catch {
+          // No alertar si la carga de ventas falla
+        }
 
-        secAlerts.sort((a, b) => b.time - a.time);
+        secAlerts.sort((a, b) => b.time - a.time)
       }
-      setSecurityAlerts(secAlerts);
+      setSecurityAlerts(secAlerts)
     } catch (error) {
-      console.error('Error al cargar centro de notificaciones:', error);
+      console.error('Error al cargar centro de notificaciones:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchAlerts();
-    const interval = setInterval(fetchAlerts, 60000);
-    return () => clearInterval(interval);
-  }, []);
+    fetchAlerts()
+    const interval = setInterval(fetchAlerts, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target)) {
-        setOpen(false);
+        setOpen(false)
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
-  if (!isAllowedToSeeAlerts) return null;
+  if (!isAllowedToSeeAlerts) return null
 
-  const totalBadges = lowStockProducts.length + (user?.is_superuser ? securityAlerts.length : 0);
+  const totalBadges = lowStockProducts.length + (user?.is_superuser ? securityAlerts.length : 0)
 
   return (
     <div style={{ position: 'relative' }} ref={popoverRef}>
       <button
         className="btn-icon"
-        onClick={() => { setOpen((prev) => !prev); if (!open) fetchAlerts(); }}
+        onClick={() => {
+          setOpen((prev) => !prev)
+          if (!open) fetchAlerts()
+        }}
         title="Centro de Notificaciones y Alertas"
         style={{
           position: 'relative',
@@ -148,15 +155,31 @@ const NotificationCenter = () => {
           }}
         >
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--border-color)' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '14px 16px',
+              borderBottom: '1px solid var(--border-color)',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Bell size={16} style={{ color: 'var(--primary-300)' }} />
-              <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>Notificaciones & Alertas</strong>
+              <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                Notificaciones & Alertas
+              </strong>
             </div>
             <button
               onClick={() => fetchAlerts()}
               title="Actualizar notificaciones"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px' }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--text-secondary)',
+                padding: '4px',
+              }}
             >
               <RefreshCw size={14} className={loading ? 'spin' : ''} />
             </button>
@@ -164,7 +187,13 @@ const NotificationCenter = () => {
 
           {/* Sub-tabs only for SuperUser */}
           {user?.is_superuser && (
-            <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.2)', borderBottom: '1px solid var(--border-color)' }}>
+            <div
+              style={{
+                display: 'flex',
+                background: 'rgba(15, 23, 42, 0.2)',
+                borderBottom: '1px solid var(--border-color)',
+              }}
+            >
               <button
                 onClick={() => setActiveTab('stock')}
                 style={{
@@ -202,8 +231,8 @@ const NotificationCenter = () => {
 
           {/* Tab Contents */}
           <div style={{ maxHeight: '320px', overflowY: 'auto', padding: '12px' }}>
-            {(!user?.is_superuser || activeTab === 'stock') && (
-              lowStockProducts.length > 0 ? (
+            {(!user?.is_superuser || activeTab === 'stock') &&
+              (lowStockProducts.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {lowStockProducts.map((p) => (
                     <div
@@ -219,16 +248,29 @@ const NotificationCenter = () => {
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: '600', fontSize: '0.85rem', color: 'var(--text-primary)' }}>{p.nombre}</div>
+                        <div
+                          style={{
+                            fontWeight: '600',
+                            fontSize: '0.85rem',
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          {p.nombre}
+                        </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--warning-text)' }}>
                           Stock actual: <strong>{p.stock_actual}</strong> (Mínimo: {p.stock_minimo})
                         </div>
                       </div>
-                      <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>Bajo Stock</span>
+                      <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>
+                        Bajo Stock
+                      </span>
                     </div>
                   ))}
                   <button
-                    onClick={() => { setOpen(false); navigate('/products'); }}
+                    onClick={() => {
+                      setOpen(false)
+                      navigate('/products')
+                    }}
                     style={{
                       marginTop: '4px',
                       padding: '8px',
@@ -248,15 +290,22 @@ const NotificationCenter = () => {
                   </button>
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '24px 12px',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.85rem',
+                  }}
+                >
                   <Package size={28} style={{ opacity: 0.5, marginBottom: '6px' }} />
                   <p style={{ margin: 0 }}>No hay productos bajo stock mínimo.</p>
                 </div>
-              )
-            )}
+              ))}
 
-            {user?.is_superuser && activeTab === 'security' && (
-              securityAlerts.length > 0 ? (
+            {user?.is_superuser &&
+              activeTab === 'security' &&
+              (securityAlerts.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {securityAlerts.map((s) => (
                     <div
@@ -268,28 +317,49 @@ const NotificationCenter = () => {
                         border: '1px solid rgba(239, 68, 68, 0.2)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f87171', fontWeight: '600', fontSize: '0.82rem' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          color: '#f87171',
+                          fontWeight: '600',
+                          fontSize: '0.82rem',
+                        }}
+                      >
                         <ShieldAlert size={14} />
                         {s.title}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      <div
+                        style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--text-secondary)',
+                          marginTop: '2px',
+                        }}
+                      >
                         {s.detail}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '24px 12px',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.85rem',
+                  }}
+                >
                   <ShieldAlert size={28} style={{ opacity: 0.5, marginBottom: '6px' }} />
                   <p style={{ margin: 0 }}>No hay alertas de seguridad registradas.</p>
                 </div>
-              )
-            )}
+              ))}
           </div>
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default NotificationCenter;
+export default NotificationCenter

@@ -1,3 +1,3 @@
-const clsx = (...values) => values.filter(Boolean).join(' ');
+const clsx = (...values) => values.filter(Boolean).join(' ')
 
-export default clsx;
+export default clsx

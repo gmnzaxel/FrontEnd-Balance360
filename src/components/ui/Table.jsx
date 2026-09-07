@@ -1,5 +1,5 @@
-import React from 'react';
-import clsx from '../../utils/clsx';
+import React from 'react'
+import clsx from '../../utils/clsx'
 
 const Table = ({ headers, rows, renderRow, className = '' }) => (
   <div className={clsx('table-container', className)}>
@@ -13,11 +13,9 @@ const Table = ({ headers, rows, renderRow, className = '' }) => (
           </tr>
         </thead>
       )}
-      <tbody>
-        {rows.map(renderRow)}
-      </tbody>
+      <tbody>{rows.map(renderRow)}</tbody>
     </table>
   </div>
-);
+)
 
-export default Table;
+export default Table

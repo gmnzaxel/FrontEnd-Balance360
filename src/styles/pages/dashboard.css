@@ -2,44 +2,90 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
+  width: 100%;
+}
+
+.dashboard-page .page-heading {
+  font-size: clamp(1.4rem, 4vw, 1.85rem);
+  line-height: 1.2;
+}
+
+.dashboard-page .page-subtitle {
+  font-size: clamp(0.8rem, 2.5vw, 0.95rem);
 }
 
 .grid-layout {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
+  width: 100%;
 }
 
+/* ─── KPI Grid ───────────────────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  gap: 16px;
+  min-width: 0;
 }
 
 .kpi-card {
   position: relative;
   overflow: hidden;
   animation: slideUp var(--duration-enter) var(--ease-out-expo) both;
-  transition: transform var(--duration-md) var(--ease-spring),
+  transition:
+    transform var(--duration-md) var(--ease-spring),
     box-shadow var(--duration-md) var(--ease-smooth),
     border-color var(--duration-md) var(--ease-smooth);
 }
 
+.kpi-card .card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.kpi-card .card-head h3 {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.25;
+}
+
 /* Stagger KPI cards */
-.kpi-grid > .kpi-card:nth-child(1) { animation-delay: 0ms; }
-.kpi-grid > .kpi-card:nth-child(2) { animation-delay: 70ms; }
-.kpi-grid > .kpi-card:nth-child(3) { animation-delay: 140ms; }
-.kpi-grid > .kpi-card:nth-child(4) { animation-delay: 210ms; }
-.kpi-grid > .kpi-card:nth-child(5) { animation-delay: 280ms; }
-.kpi-grid > .kpi-card:nth-child(6) { animation-delay: 350ms; }
+.kpi-grid > .kpi-card:nth-child(1) {
+  animation-delay: 0ms;
+}
+.kpi-grid > .kpi-card:nth-child(2) {
+  animation-delay: 70ms;
+}
+.kpi-grid > .kpi-card:nth-child(3) {
+  animation-delay: 140ms;
+}
+.kpi-grid > .kpi-card:nth-child(4) {
+  animation-delay: 210ms;
+}
+.kpi-grid > .kpi-card:nth-child(5) {
+  animation-delay: 280ms;
+}
+.kpi-grid > .kpi-card:nth-child(6) {
+  animation-delay: 350ms;
+}
 
 .kpi-value {
-  font-size: 1.6rem;
+  font-size: clamp(1.2rem, 3.2vw, 1.6rem);
   font-weight: 800;
-  margin-top: 6px;
+  margin-top: 4px;
   color: var(--text-primary);
   animation: countUp var(--duration-enter) var(--ease-out-expo) both;
   animation-delay: 200ms;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kpi-icon {
@@ -50,7 +96,9 @@
   place-items: center;
   color: var(--primary-200);
   background: rgba(99, 102, 241, 0.18);
-  transition: transform var(--duration-md) var(--ease-spring),
+  flex-shrink: 0;
+  transition:
+    transform var(--duration-md) var(--ease-spring),
     box-shadow var(--duration-md) var(--ease-smooth);
 }
 
@@ -75,36 +123,109 @@
 }
 
 .kpi-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md), 0 0 30px rgba(99, 102, 241, 0.08);
+  transform: translateY(-3px);
+  box-shadow:
+    var(--shadow-md),
+    0 0 30px rgba(99, 102, 241, 0.08);
   border-color: rgba(99, 102, 241, 0.2);
 }
 
+/* ─── Charts & Cards Grid ────────────────────────────────────────────────── */
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 20px;
+  min-width: 0;
 }
 
 .charts-grid > * {
   animation: scaleIn var(--duration-enter) var(--ease-out-expo) both;
+  min-width: 0;
 }
 
-.charts-grid > *:nth-child(1) { animation-delay: 150ms; }
-.charts-grid > *:nth-child(2) { animation-delay: 250ms; }
-.charts-grid > *:nth-child(3) { animation-delay: 350ms; }
-.charts-grid > *:nth-child(4) { animation-delay: 450ms; }
+.charts-grid > *:nth-child(1) {
+  animation-delay: 150ms;
+}
+.charts-grid > *:nth-child(2) {
+  animation-delay: 250ms;
+}
+.charts-grid > *:nth-child(3) {
+  animation-delay: 350ms;
+}
+.charts-grid > *:nth-child(4) {
+  animation-delay: 450ms;
+}
 
 .dashboard-chart-body {
-  height: 320px;
-  min-height: 240px;
+  height: 300px;
+  min-height: 220px;
   margin-top: 10px;
   width: 100%;
+  min-width: 0;
 }
 
 .dashboard-chart-body .recharts-responsive-container {
-  min-height: 240px;
+  min-height: 220px;
+  min-width: 0;
 }
+
+/* ─── Stock Alerts Component ─────────────────────────────────────────────── */
+.stock-alerts-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.stock-alerts-container {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.stock-product-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stock-product-name {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.stock-supplier-inline-badge {
+  display: none;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* ─── Top Products Component ─────────────────────────────────────────────── */
+.top-product-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-product-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--primary-300);
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.top-product-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ─── Responsive Media Queries ───────────────────────────────────────────── */
 
 @media (max-width: 1280px) {
   .kpi-grid {
@@ -115,46 +236,163 @@
 @media (max-width: 1024px) {
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-}
-
-@media (max-width: 640px) {
-  .kpi-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .kpi-value {
-    font-size: 1.2rem;
-  }
-
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-chart-body {
-    height: 240px;
-  }
-}
-
-@media (max-width: 390px) {
-  .kpi-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .kpi-value {
-    font-size: 1.35rem;
-  }
-}
-
-@media (max-width: 390px) {
-  .dashboard-page .page-header {
     gap: 12px;
   }
 }
 
 @media (max-width: 640px) {
+  .dashboard-page {
+    gap: 16px;
+  }
+
+  .grid-layout {
+    gap: 16px;
+  }
+
+  /* 2 columns on most smartphones */
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .kpi-card {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .kpi-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+
+  .kpi-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .kpi-value {
+    font-size: clamp(1.05rem, 4vw, 1.25rem);
+    margin-top: 4px;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .dashboard-chart-body {
+    height: 220px;
+    min-height: 190px;
+  }
+
+  /* Stock Alerts: Mobile Clean Card List */
+  .stock-alerts-action {
+    justify-content: stretch;
+    margin-bottom: 12px;
+  }
+
+  .stock-alerts-action button,
+  .stock-alerts-action .ui-btn,
+  .stock-alerts-action .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .stock-alerts-container {
+    max-height: 300px;
+  }
+
+  .stock-supplier-inline-badge {
+    display: inline-block;
+  }
+
+  .stock-alerts-table thead {
+    display: none;
+  }
+
+  .stock-alerts-table tbody tr {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background: var(--surface-0);
+    border: 1px solid var(--border-subtle);
+    gap: 10px;
+  }
+
+  .stock-alerts-table tbody td {
+    border: none;
+    padding: 0;
+  }
+
+  .stock-alerts-table tbody td.stock-supplier-cell {
+    display: none;
+  }
+
+  .stock-alerts-table tbody td.stock-min-cell {
+    display: none;
+  }
+
+  .stock-alerts-table tbody td.stock-actual-cell {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .stock-product-cell {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .stock-product-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    word-break: break-word;
+    line-height: 1.25;
+  }
+
+  /* Top Products: Mobile Clean Horizontal Ranking */
+  .top-products-table thead {
+    display: none;
+  }
+
+  .top-products-table tbody tr {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background: var(--surface-0);
+    border: 1px solid var(--border-subtle);
+    gap: 8px;
+  }
+
+  .top-products-table tbody td {
+    border: none;
+    padding: 0;
+  }
+
+  .top-product-name-cell {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .top-product-name {
+    font-size: 0.86rem;
+    word-break: break-word;
+    line-height: 1.25;
+  }
+
+  .top-product-qty-cell {
+    flex-shrink: 0;
+  }
+
+  /* Supplier Order Modal */
   .supplier-order-modal {
     gap: 12px;
   }
@@ -212,41 +450,86 @@
     margin-bottom: 4px;
   }
 
-  .supplier-order-table .styled-table tbody td[data-label="Incluir"] {
+  .supplier-order-table .styled-table tbody td[data-label='Incluir'] {
     grid-column: 2;
     justify-self: end;
     align-self: start;
   }
 
-  .supplier-order-table .styled-table tbody td[data-label="Incluir"]::before {
+  .supplier-order-table .styled-table tbody td[data-label='Incluir']::before {
     display: none;
   }
 
-  .supplier-order-table .styled-table tbody td[data-label="Código"],
-  .supplier-order-table .styled-table tbody td[data-label="Producto"] {
+  .supplier-order-table .styled-table tbody td[data-label='Código'],
+  .supplier-order-table .styled-table tbody td[data-label='Producto'] {
     grid-column: 1 / -1;
   }
 
-  .supplier-order-table .styled-table tbody td[data-label="Código"] {
+  .supplier-order-table .styled-table tbody td[data-label='Código'] {
     font-size: 0.75rem;
     color: var(--text-secondary);
   }
 
-  .supplier-order-table .styled-table tbody td[data-label="Producto"] {
+  .supplier-order-table .styled-table tbody td[data-label='Producto'] {
     font-size: 0.95rem;
     line-height: 1.2;
     color: var(--text-primary);
   }
 
-  .supplier-order-table .styled-table tbody td[data-label="Stock Mínimo"],
-  .supplier-order-table .styled-table tbody td[data-label="Stock Actual"],
-  .supplier-order-table .styled-table tbody td[data-label="A Reponer"] {
+  .supplier-order-table .styled-table tbody td[data-label='Stock Mínimo'],
+  .supplier-order-table .styled-table tbody td[data-label='Stock Actual'],
+  .supplier-order-table .styled-table tbody td[data-label='A Reponer'] {
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
 
-  .supplier-order-table .styled-table tbody td[data-label="A Reponer"] {
+  .supplier-order-table .styled-table tbody td[data-label='A Reponer'] {
     justify-content: flex-end;
+  }
+}
+
+/* ─── Ultra-Compact Screen Support (iPhone SE 1st Gen: 320px) ─────────────── */
+@media (max-width: 360px) {
+  .dashboard-page {
+    gap: 12px;
+  }
+
+  .grid-layout {
+    gap: 12px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .kpi-card {
+    padding: 10px 12px;
+  }
+
+  .kpi-value {
+    font-size: 1.35rem;
+  }
+
+  .dashboard-chart-body {
+    height: 200px;
+    min-height: 180px;
+  }
+
+  .supplier-order-table .styled-table tbody tr {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .supplier-order-table .styled-table tbody td[data-label='Incluir'] {
+    grid-column: 1;
+    justify-self: start;
+    margin-bottom: 4px;
+  }
+
+  .supplier-order-controls {
+    padding: 10px;
   }
 }

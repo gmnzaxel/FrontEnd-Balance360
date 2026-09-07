@@ -1,42 +1,39 @@
-import React, { useEffect, useRef, useState, useContext } from 'react';
-import { ChevronDown, LogOut, Settings, User, Sun, Moon } from 'lucide-react';
-import { AuthContext } from '../../context/AuthContext';
+import React, { useEffect, useRef, useState, useContext } from 'react'
+import { ChevronDown, LogOut, Settings, User, Sun, Moon } from 'lucide-react'
+import { AuthContext } from '../../context/AuthContext'
 
 const UserMenu = ({ user, onLogout, onNavigate }) => {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef(null);
-  const { isAdminActual } = useContext(AuthContext);
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef(null)
+  const { isAdminActual } = useContext(AuthContext)
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   const toggleTheme = (event) => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
 
     if (!document.startViewTransition) {
-      setTheme(nextTheme);
-      return;
+      setTheme(nextTheme)
+      return
     }
 
-    const x = event.clientX ?? window.innerWidth / 2;
-    const y = event.clientY ?? window.innerHeight / 2;
+    const x = event.clientX ?? window.innerWidth / 2
+    const y = event.clientY ?? window.innerHeight / 2
     const endRadius = Math.hypot(
       Math.max(x, window.innerWidth - x),
-      Math.max(y, window.innerHeight - y)
-    );
+      Math.max(y, window.innerHeight - y),
+    )
 
     const transition = document.startViewTransition(() => {
-      setTheme(nextTheme);
-    });
+      setTheme(nextTheme)
+    })
 
     transition.ready.then(() => {
-      const clipPath = [
-        `circle(0px at ${x}px ${y}px)`,
-        `circle(${endRadius}px at ${x}px ${y}px)`,
-      ];
+      const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`]
       document.documentElement.animate(
         {
           clipPath: theme === 'dark' ? [...clipPath].reverse() : clipPath,
@@ -44,33 +41,34 @@ const UserMenu = ({ user, onLogout, onNavigate }) => {
         {
           duration: 400,
           easing: 'ease-out',
-          pseudoElement: theme === 'dark' ? '::view-transition-old(root)' : '::view-transition-new(root)',
-        }
-      );
-    });
-  };
+          pseudoElement:
+            theme === 'dark' ? '::view-transition-old(root)' : '::view-transition-new(root)',
+        },
+      )
+    })
+  }
 
   useEffect(() => {
     const handleClick = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setOpen(false);
+        setOpen(false)
       }
-    };
+    }
     const handleEsc = (event) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    window.addEventListener('mousedown', handleClick);
-    window.addEventListener('keydown', handleEsc);
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('mousedown', handleClick)
+    window.addEventListener('keydown', handleEsc)
     return () => {
-      window.removeEventListener('mousedown', handleClick);
-      window.removeEventListener('keydown', handleEsc);
-    };
-  }, []);
+      window.removeEventListener('mousedown', handleClick)
+      window.removeEventListener('keydown', handleEsc)
+    }
+  }, [])
 
   const handleNavigate = (path) => {
-    onNavigate(path);
-    setOpen(false);
-  };
+    onNavigate(path)
+    setOpen(false)
+  }
 
   return (
     <div className="user-menu" ref={menuRef}>
@@ -104,7 +102,7 @@ const UserMenu = ({ user, onLogout, onNavigate }) => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default UserMenu;
+export default UserMenu

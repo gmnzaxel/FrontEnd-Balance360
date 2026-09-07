@@ -5,36 +5,214 @@
   animation: slideUp var(--duration-enter) var(--ease-out-expo) both;
 }
 
+/* ─── Toolbar & Filters ───────────────────────────────────────── */
 .sales-toolbar {
-  overflow: visible;
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  overflow: visible !important;
 }
 
 .sales-search {
   position: relative;
   min-width: 260px;
-  max-width: 360px;
+  max-width: 380px;
   flex: 1;
 }
 
-.sales-search-icon {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  color: var(--text-secondary);
-}
-
-.sales-search-input {
-  padding-left: 2.4rem;
-}
-
 .sales-actions {
-  gap: 8px;
+  position: relative;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .sales-filter {
   position: relative;
+  z-index: 40;
 }
 
+.sales-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 175px;
+  background: var(--surface-1, #1e293b);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.25);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 1000;
+  animation: scaleIn 0.15s var(--ease-out-expo) both;
+  transform-origin: top right;
+}
+
+.sales-filter-dropdown .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.sales-filter-dropdown .dropdown-item:hover {
+  background: var(--surface-hover, rgba(255, 255, 255, 0.08));
+}
+
+.sales-filter-dropdown .dropdown-item.active {
+  font-weight: 700;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary-300, #a5b4fc);
+}
+
+.filter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.sale-date-mobile {
+  display: none;
+}
+
+.seller-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary-400);
+  flex-shrink: 0;
+}
+
+/* ─── Detail Modal Layout ─────────────────────────────────────── */
+.sale-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding: 14px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.sale-detail-foot-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.sale-detail-foot-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.sale-detail-foot-row > .ui-btn {
+  flex: 1;
+  justify-content: center;
+  font-size: 0.82rem;
+  padding: 8px 12px;
+}
+
+.sale-detail-admin-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.sale-admin-toggle-btn {
+  width: 100%;
+  justify-content: center;
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  gap: 6px;
+}
+
+.sale-detail-close-btn {
+  flex: 1;
+  justify-content: center;
+  font-size: 0.82rem;
+  padding: 8px 12px;
+}
+
+.sale-admin-dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 6px;
+  background: var(--surface-elevated, #1e293b);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.4));
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 100;
+}
+
+.sale-admin-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.sale-admin-item:hover {
+  background: var(--surface-hover, rgba(255, 255, 255, 0.06));
+}
+
+.sale-admin-item.text-warning {
+  color: var(--warning-text);
+}
+
+.sale-admin-item.text-danger {
+  color: var(--danger-text);
+}
+
+/* ─── Tablet & Mobile Responsive ──────────────────────────────── */
 @media (max-width: 768px) {
   .sales-search {
     width: 100%;
@@ -47,25 +225,190 @@
   }
 }
 
-@media (max-width: 390px) {
+@media (max-width: 640px) {
+  .sales-toolbar {
+    position: relative;
+    z-index: 30;
+    gap: 10px;
+    overflow: visible !important;
+  }
+
+  .sales-search {
+    min-width: 0;
+    width: 100%;
+  }
+
   .sales-actions {
+    position: relative;
+    z-index: 35;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
+    width: 100%;
   }
 
-  .sales-actions .ui-btn,
-  .sales-actions .btn {
+  .sales-actions .sales-filter,
+  .sales-actions .ui-btn {
     width: 100%;
     justify-content: center;
+    font-size: 0.82rem;
+    padding: 8px 10px;
   }
-}
 
-@media (max-width: 640px) {
+  .sales-filter-dropdown {
+    max-width: calc(100vw - 32px);
+    z-index: 1000;
+  }
+
+  /* Main Sales Table converted to cards */
+  .sales-page .table-container {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .sales-page .table-container .styled-table thead {
+    display: none;
+  }
+
+  .sales-page .table-container .styled-table,
+  .sales-page .table-container .styled-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .sales-page .table-container .styled-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'id-date status'
+      'seller method'
+      'total actions';
+    gap: 8px 12px;
+    padding: 14px;
+    border-radius: 16px;
+    background: var(--surface-1, rgba(30, 41, 59, 0.6));
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 12px;
+    transition:
+      transform 0.15s var(--ease-smooth),
+      border-color 0.15s,
+      box-shadow 0.15s;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sales-page .table-container .styled-table tbody tr:active {
+    transform: scale(0.985);
+  }
+
+  .sales-page .table-container .styled-table tbody td {
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+
+  /* Fila 1: ID y fecha a la izquierda, Estado a la derecha */
+  .sales-page .table-container .styled-table tbody td.cell-sale-id {
+    grid-area: id-date;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sales-page .table-container .styled-table tbody td.cell-sale-id::before {
+    display: none;
+  }
+
+  .sale-id-badge {
+    font-family: var(--font-mono, monospace);
+    font-weight: 700;
+    font-size: 0.86rem;
+    color: var(--text-primary);
+  }
+
+  .sale-date-mobile {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .sales-page .table-container .styled-table tbody td.cell-sale-date {
+    display: none;
+  }
+
+  .sales-page .table-container .styled-table tbody td.cell-sale-status {
+    grid-area: status;
+    justify-content: flex-end;
+  }
+
+  .sales-page .table-container .styled-table tbody td.cell-sale-status::before {
+    display: none;
+  }
+
+  /* Fila 2: Vendedor y Método de Pago */
+  .sales-page .table-container .styled-table tbody td.cell-sale-seller {
+    grid-area: seller;
+    justify-content: flex-start;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-subtle);
+  }
+
+  .sales-page .table-container .styled-table tbody td.cell-sale-seller::before {
+    display: none;
+  }
+
+  .sales-page .table-container .styled-table tbody td.cell-sale-method {
+    grid-area: method;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-subtle);
+  }
+
+  .sales-page .table-container .styled-table tbody td.cell-sale-method::before {
+    display: none;
+  }
+
+  /* Fila 3: Total y Botón Acciones */
+  .sales-page .table-container .styled-table tbody td.cell-sale-total {
+    grid-area: total;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--primary-400, #38bdf8);
+    padding-top: 4px;
+  }
+
+  .sales-page .table-container .styled-table tbody td.cell-sale-total::before {
+    content: 'Total:';
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .sales-page .table-container .styled-table tbody td.cell-sale-actions {
+    grid-area: actions;
+    justify-content: flex-end;
+    padding-top: 4px;
+  }
+
+  .sales-page .table-container .styled-table tbody td.cell-sale-actions::before {
+    display: none;
+  }
+
+  /* Modal de Detalle de Venta en móvil */
   .ui-modal.sale-detail-modal-container {
     display: flex;
     flex-direction: column;
-    max-height: 90vh;
+    max-height: 92vh;
   }
 
   .ui-modal.sale-detail-modal-container .modal-body {
@@ -76,7 +419,9 @@
 
   .ui-modal.sale-detail-modal-container .modal-foot {
     flex-shrink: 0;
-    margin-top: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
   }
 
   .sale-detail-summary {
@@ -125,20 +470,50 @@
     margin-bottom: 4px;
   }
 
-  .sale-detail-items .styled-table tbody td[data-label="Producto"] {
+  .sale-detail-items .styled-table tbody td[data-label='Producto'] {
     grid-column: 1 / -1;
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
   }
 
-  .sale-detail-items .styled-table tbody td[data-label="Cant."] {
+  .sale-detail-items .styled-table tbody td[data-label='Cant.'] {
     justify-self: start;
   }
 
-  .sale-detail-items .styled-table tbody td[data-label="Precio"],
-  .sale-detail-items .styled-table tbody td[data-label="Total"] {
+  .sale-detail-items .styled-table tbody td[data-label='Precio'],
+  .sale-detail-items .styled-table tbody td[data-label='Total'] {
     text-align: right;
     justify-self: end;
+  }
+}
+
+/* ─── Ultra Small Phones (iPhone SE 1st gen - 320px to 360px) ── */
+@media (max-width: 360px) {
+  .sales-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .sales-actions .ui-btn {
+    padding: 7px 6px;
+    font-size: 0.76rem;
+  }
+
+  .sales-page .table-container .styled-table tbody tr {
+    padding: 10px;
+    gap: 6px 8px;
+  }
+
+  .sale-detail-summary {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .sale-detail-foot-row > .ui-btn,
+  .sale-admin-toggle-btn,
+  .sale-detail-close-btn {
+    padding: 7px 8px;
+    font-size: 0.78rem;
   }
 }

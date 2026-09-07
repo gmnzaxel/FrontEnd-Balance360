@@ -10,6 +10,7 @@ Frontend en React + Vite para el sistema de gestión Balance360.
 ## Instalación
 
 1.  Instalar dependencias:
+
     ```bash
     npm install
     ```
@@ -31,12 +32,12 @@ npm run format
 - `src/api`: Configuración de Axios e interceptores (Refresh Token).
 - `src/context`: AuthContext para manejo de sesión.
 - `src/pages`:
-    - **Login**: Autenticación.
-    - **Dashboard**: KPIs y gráficos simples.
-    - **Productos**: CRUD de inventario.
-    - **Nueva Venta**: Punto de venta con buscador y carrito.
-    - **Ventas**: Historial y detalle.
-    - **Reportes**: Exportación a Excel y gráficos.
+  - **Login**: Autenticación.
+  - **Dashboard**: KPIs y gráficos simples.
+  - **Productos**: CRUD de inventario.
+  - **Nueva Venta**: Punto de venta con buscador y carrito.
+  - **Ventas**: Historial y detalle.
+  - **Reportes**: Exportación a Excel y gráficos.
 - `src/components`: Layout principal y rutas protegidas.
 
 ## Características

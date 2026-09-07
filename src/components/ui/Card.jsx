@@ -1,5 +1,5 @@
-import React from 'react';
-import clsx from '../../utils/clsx';
+import React from 'react'
+import clsx from '../../utils/clsx'
 
 const Card = ({ title, description, children, className = '', headerSlot }) => (
   <div className={clsx('ui-card', className)}>
@@ -14,6 +14,6 @@ const Card = ({ title, description, children, className = '', headerSlot }) => (
     )}
     {children}
   </div>
-);
+)
 
-export default Card;
+export default Card

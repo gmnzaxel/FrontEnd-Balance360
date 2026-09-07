@@ -1,19 +1,10 @@
-import React from 'react';
-import clsx from '../../utils/clsx';
+import React from 'react'
+import clsx from '../../utils/clsx'
 
 const Input = React.memo(
   React.forwardRef(
     (
-      {
-        label,
-        icon,
-        helper,
-        error,
-        suffix,
-        className = '',
-        inputClassName = '',
-        ...props
-      },
+      { label, icon, helper, error, suffix, className = '', inputClassName = '', ...props },
       ref,
     ) => (
       <label className={clsx('ui-field', className)}>
@@ -24,16 +15,13 @@ const Input = React.memo(
           {suffix && <span className="field-suffix">{suffix}</span>}
         </div>
         {(error || helper) && (
-          <span className={clsx('field-helper', error && 'error')}>
-            {error || helper}
-          </span>
+          <span className={clsx('field-helper', error && 'error')}>{error || helper}</span>
         )}
       </label>
     ),
   ),
-);
+)
 
-Input.displayName = 'Input';
+Input.displayName = 'Input'
 
-export default Input;
-
+export default Input

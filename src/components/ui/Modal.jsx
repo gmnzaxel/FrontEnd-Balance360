@@ -1,21 +1,38 @@
-import React, { useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import clsx from '../../utils/clsx';
-import { X } from 'lucide-react';
+import React, { useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import clsx from '../../utils/clsx'
+import { X } from 'lucide-react'
 
-const Modal = ({ title, children, onClose, size = 'md', footer, persist = false, className }) => {
+const Modal = ({
+  title,
+  children,
+  onClose,
+  size = 'md',
+  footer,
+  persist = false,
+  className,
+  overlayClassName,
+}) => {
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape' && !persist) onClose?.();
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose, persist]);
+      if (e.key === 'Escape' && !persist) onClose?.()
+    }
+    window.addEventListener('keydown', handleEsc)
+    return () => window.removeEventListener('keydown', handleEsc)
+  }, [onClose, persist])
 
   const modalContent = (
-    <div className="modal-overlay" onClick={!persist ? onClose : undefined}>
+    <div
+      className={clsx('modal-overlay', overlayClassName)}
+      onClick={!persist ? onClose : undefined}
+    >
       <div
-        className={clsx('ui-modal', size === 'lg' && 'ui-modal-lg', className)}
+        className={clsx(
+          'ui-modal',
+          size === 'lg' && 'ui-modal-lg',
+          size === 'sm' && 'ui-modal-sm',
+          className,
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-head">
@@ -26,19 +43,13 @@ const Modal = ({ title, children, onClose, size = 'md', footer, persist = false,
             </button>
           )}
         </div>
-        <div className="modal-body">
-          {children}
-        </div>
-        {footer && (
-          <div className="modal-foot">
-            {footer}
-          </div>
-        )}
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-foot">{footer}</div>}
       </div>
     </div>
-  );
+  )
 
-  return createPortal(modalContent, document.body);
-};
+  return createPortal(modalContent, document.body)
+}
 
-export default Modal;
+export default Modal

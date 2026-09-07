@@ -1,18 +1,28 @@
-import React from 'react';
-import clsx from '../../utils/clsx';
+import React from 'react'
+import clsx from '../../utils/clsx'
 
-const Button = React.memo(({ children, variant = 'primary', loading = false, fullWidth = false, icon, className = '', ...props }) => (
-  <button
-    className={clsx('ui-btn', `ui-btn-${variant}`, fullWidth && 'w-full', className)}
-    disabled={props.disabled || loading}
-    {...props}
-  >
-    {loading && <span className="spinner" aria-hidden />}
-    {icon && <span className="btn-icon-slot">{icon}</span>}
-    {children}
-  </button>
-));
+const Button = React.memo(
+  ({
+    children,
+    variant = 'primary',
+    loading = false,
+    fullWidth = false,
+    icon,
+    className = '',
+    ...props
+  }) => (
+    <button
+      className={clsx('ui-btn', `ui-btn-${variant}`, fullWidth && 'w-full', className)}
+      disabled={props.disabled || loading}
+      {...props}
+    >
+      {loading && <span className="spinner" aria-hidden />}
+      {icon && <span className="btn-icon-slot">{icon}</span>}
+      {children}
+    </button>
+  ),
+)
 
-Button.displayName = 'Button';
+Button.displayName = 'Button'
 
-export default Button;
+export default Button

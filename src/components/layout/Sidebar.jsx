@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   LayoutDashboard,
   Package,
@@ -12,10 +12,10 @@ import {
   LifeBuoy,
   Mail,
   MessageCircle,
-  Calculator
-} from 'lucide-react';
-import BrandMark from '../ui/BrandMark';
-import Modal from '../ui/Modal';
+  Calculator,
+} from 'lucide-react'
+import BrandMark from '../ui/BrandMark'
+import Modal from '../ui/Modal'
 
 const ICONS = {
   '/dashboard': <LayoutDashboard size={20} />,
@@ -26,145 +26,168 @@ const ICONS = {
   '/reports': <FileText size={20} />,
   '/users': <Briefcase size={20} />,
   '/configuracion': <Settings size={20} />,
-};
+}
 
-const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate, onCloseMobile }) => {
-  const [hovering, setHovering] = useState(false);
-  const [showSupportModal, setShowSupportModal] = useState(false);
-  const sidebarRef = useRef(null);
+const Sidebar = ({ activePath, user, mobileOpen, isMobile, onNavigate, onCloseMobile }) => {
+  const [hovering, setHovering] = useState(false)
+  const [showSupportModal, setShowSupportModal] = useState(false)
+  const sidebarRef = useRef(null)
 
   // Refs de contenedores para la animación de pastilla deslizante
-  const quickActionsRef = useRef(null);
-  const secondaryActionsRef = useRef(null);
-  const quickCompactRef = useRef(null);
-  const secondaryCompactRef = useRef(null);
+  const quickActionsRef = useRef(null)
+  const secondaryActionsRef = useRef(null)
+  const quickCompactRef = useRef(null)
+  const secondaryCompactRef = useRef(null)
 
   // Estados de estilos para el indicador deslizante
-  const [quickPillStyle, setQuickPillStyle] = useState({ opacity: 0, transform: 'translateY(0px)', height: '0px' });
-  const [secondaryPillStyle, setSecondaryPillStyle] = useState({ opacity: 0, transform: 'translateY(0px)', height: '0px' });
-  const [quickCompactPillStyle, setQuickCompactPillStyle] = useState({ opacity: 0, transform: 'translateY(0px)', height: '0px' });
-  const [secondaryCompactPillStyle, setSecondaryCompactPillStyle] = useState({ opacity: 0, transform: 'translateY(0px)', height: '0px' });
+  const [quickPillStyle, setQuickPillStyle] = useState({
+    opacity: 0,
+    transform: 'translateY(0px)',
+    height: '0px',
+  })
+  const [secondaryPillStyle, setSecondaryPillStyle] = useState({
+    opacity: 0,
+    transform: 'translateY(0px)',
+    height: '0px',
+  })
+  const [quickCompactPillStyle, setQuickCompactPillStyle] = useState({
+    opacity: 0,
+    transform: 'translateY(0px)',
+    height: '0px',
+  })
+  const [secondaryCompactPillStyle, setSecondaryCompactPillStyle] = useState({
+    opacity: 0,
+    transform: 'translateY(0px)',
+    height: '0px',
+  })
 
-  const isAdmin = user?.role === 'ADMIN';
-  const showLabels = (hovering && !isMobile) || isMobile;
-
+  const isAdmin = user?.role === 'ADMIN'
+  const showLabels = (hovering && !isMobile) || isMobile
 
   useEffect(() => {
     const updatePill = (containerRef, setStyle) => {
-      if (!containerRef.current) return;
-      const activeBtn = containerRef.current.querySelector('.active');
+      if (!containerRef.current) return
+      const activeBtn = containerRef.current.querySelector('.active')
       if (activeBtn) {
         setStyle({
           opacity: 1,
           transform: `translateY(${activeBtn.offsetTop}px)`,
           height: `${activeBtn.offsetHeight}px`,
-        });
+        })
       } else {
-        setStyle(prev => ({ ...prev, opacity: 0 }));
+        setStyle((prev) => ({ ...prev, opacity: 0 }))
       }
-    };
+    }
 
     const timer = setTimeout(() => {
-      updatePill(quickActionsRef, setQuickPillStyle);
-      updatePill(secondaryActionsRef, setSecondaryPillStyle);
-      updatePill(quickCompactRef, setQuickCompactPillStyle);
-      updatePill(secondaryCompactRef, setSecondaryCompactPillStyle);
-    }, 50);
+      updatePill(quickActionsRef, setQuickPillStyle)
+      updatePill(secondaryActionsRef, setSecondaryPillStyle)
+      updatePill(quickCompactRef, setQuickCompactPillStyle)
+      updatePill(secondaryCompactRef, setSecondaryCompactPillStyle)
+    }, 50)
 
-    return () => clearTimeout(timer);
-  }, [activePath, showLabels, hovering]);
-
+    return () => clearTimeout(timer)
+  }, [activePath, showLabels, hovering])
 
   const handleBrandKey = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onNavigate('/');
+      e.preventDefault()
+      onNavigate('/')
     }
-  };
+  }
 
   useEffect(() => {
-    if (!mobileOpen) return undefined;
+    if (!mobileOpen) return undefined
     const handleClickOutside = (event) => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
-        onCloseMobile();
+        onCloseMobile()
       }
-    };
+    }
     const handleEsc = (e) => {
-      if (e.key === 'Escape') onCloseMobile();
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-    window.addEventListener('keydown', handleEsc);
+      if (e.key === 'Escape') onCloseMobile()
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    window.addEventListener('keydown', handleEsc)
     return () => {
-      window.removeEventListener('keydown', handleEsc);
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [mobileOpen, onCloseMobile]);
+      window.removeEventListener('keydown', handleEsc)
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [mobileOpen, onCloseMobile])
 
   useEffect(() => {
     if (mobileOpen) {
-      document.body.classList.add('no-scroll');
+      document.body.classList.add('no-scroll')
     } else {
-      document.body.classList.remove('no-scroll');
+      document.body.classList.remove('no-scroll')
     }
-    return () => document.body.classList.remove('no-scroll');
-  }, [mobileOpen]);
+    return () => document.body.classList.remove('no-scroll')
+  }, [mobileOpen])
 
   const roleLabel = useMemo(
     () => (user?.role === 'ADMIN' ? 'Administrador' : 'Vendedor'),
-    [user?.role]
-  );
+    [user?.role],
+  )
 
   const handleNavClick = (path) => {
     if (path === 'support') {
-      setShowSupportModal(true);
-      return;
+      setShowSupportModal(true)
+      return
     }
-    onNavigate(path);
-    if (isMobile) onCloseMobile();
-  };
+    onNavigate(path)
+    if (isMobile) onCloseMobile()
+  }
 
   const quickActions = useMemo(() => {
-    const isImpersonating = Boolean(localStorage.getItem('impersonated_company_id'));
+    const isImpersonating = Boolean(localStorage.getItem('impersonated_company_id'))
     if (user?.is_superuser && !isImpersonating) {
       return [
-        { label: 'Panel SuperAdmin', path: '/super-dashboard', icon: <LayoutDashboard size={16} /> },
-      ];
+        {
+          label: 'Panel SuperAdmin',
+          path: '/super-dashboard',
+          icon: <LayoutDashboard size={16} />,
+        },
+      ]
     }
 
     const actions = [
-      ...(isAdmin ? [{ label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={16} /> }] : []),
+      ...(isAdmin
+        ? [{ label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={16} /> }]
+        : []),
       { label: 'Inventario', path: '/products', icon: <Package size={16} /> },
       { label: 'Ventas', path: '/sales', icon: <ShoppingCart size={16} /> },
       { label: 'Presupuestos', path: '/quotes', icon: <Calculator size={16} /> },
       { label: 'Nueva venta', path: '/new-sale', icon: <Zap size={16} /> },
       ...(isAdmin ? [{ label: 'Reportes', path: '/reports', icon: <FileText size={16} /> }] : []),
-    ];
-    return actions;
-  }, [isAdmin, user]);
+    ]
+    return actions
+  }, [isAdmin, user])
 
   const secondaryActions = useMemo(() => {
-    const isImpersonating = Boolean(localStorage.getItem('impersonated_company_id'));
+    const isImpersonating = Boolean(localStorage.getItem('impersonated_company_id'))
     if (user?.is_superuser && !isImpersonating) {
-      return [
-        { label: 'Soporte', path: 'support', icon: <LifeBuoy size={16} /> },
-      ];
+      return [{ label: 'Soporte', path: 'support', icon: <LifeBuoy size={16} /> }]
     }
 
     const actions = [
-      ...(user?.is_superuser ? [{ label: 'Panel SuperAdmin', path: '/super-dashboard', icon: <LayoutDashboard size={16} /> }] : []),
+      ...(user?.is_superuser
+        ? [
+            {
+              label: 'Panel SuperAdmin',
+              path: '/super-dashboard',
+              icon: <LayoutDashboard size={16} />,
+            },
+          ]
+        : []),
       ...(isAdmin ? [{ label: 'Usuarios', path: '/users', icon: <Briefcase size={16} /> }] : []),
-      ...(isAdmin ? [{ label: 'Ajustes', path: '/configuracion', icon: <Settings size={16} /> }] : []),
+      ...(isAdmin
+        ? [{ label: 'Ajustes', path: '/configuracion', icon: <Settings size={16} /> }]
+        : []),
       { label: 'Soporte', path: 'support', icon: <LifeBuoy size={16} /> },
-    ];
-    return actions;
-  }, [isAdmin, user]);
-
-  const navItemsFiltered = useMemo(
-    () => navItems.filter((item) => item.path !== '/dashboard'),
-    [navItems]
-  );
+    ]
+    return actions
+  }, [isAdmin, user])
 
   return (
     <>
@@ -177,128 +200,171 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
         onMouseLeave={() => !isMobile && setHovering(false)}
       >
         <div className="sidebar-inner">
-          <div
-            className="sidebar-brand"
-            onClick={() => onNavigate('/')}
-            role="button"
-            tabIndex={0}
-            onKeyDown={handleBrandKey}
-          >
-            <div className="brand-icon">
-              <BrandMark size={22} />
+          <div className="sidebar-header">
+            <div
+              className="sidebar-brand"
+              onClick={() => handleNavClick('/')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={handleBrandKey}
+            >
+              <div className="brand-icon">
+                <BrandMark size={22} />
+              </div>
+              <div className="brand-text">
+                <span>Balance</span>
+                <strong>360</strong>
+              </div>
             </div>
-            <div className="brand-text">
-              <span>Balance</span>
-              <strong>360</strong>
-            </div>
+
+            {isMobile && (
+              <button
+                className="ghost-icon close-btn"
+                onClick={onCloseMobile}
+                aria-label="Cerrar menú"
+              >
+                <X size={18} />
+              </button>
+            )}
           </div>
 
-          {isMobile && (
-            <button className="ghost-icon close-btn" onClick={onCloseMobile} aria-label="Cerrar menú">
-              <X size={18} />
-            </button>
-          )}
-
-          {showLabels && (
-            <div className="sidebar-extras">
-              <div className="sidebar-section">
-                <p className="sidebar-section-title">Acciones rapidas</p>
-                <div className="sidebar-actions" ref={quickActionsRef} style={{ position: 'relative' }}>
-                  {quickActions.map((action, index) => (
-                    <button
-                      key={action.label}
-                      className={`sidebar-action ${activePath === action.path ? 'active' : ''}`}
-                      onClick={() => handleNavClick(action.path)}
-                      style={{ '--delay': `${index * 70}ms` }}
-                    >
-                      <span className="sidebar-action-icon">{action.icon}</span>
-                      <span>{action.label}</span>
-                    </button>
-                  ))}
-                  <div className="sidebar-active-pill" style={quickPillStyle} />
+          <div className="sidebar-scrollable">
+            {showLabels && (
+              <div className="sidebar-extras">
+                <div className="sidebar-section">
+                  <p className="sidebar-section-title">Acciones rápidas</p>
+                  <div
+                    className="sidebar-actions"
+                    ref={quickActionsRef}
+                    style={{ position: 'relative' }}
+                  >
+                    {quickActions.map((action, index) => (
+                      <button
+                        key={action.label}
+                        className={`sidebar-action ${activePath === action.path ? 'active' : ''}`}
+                        onClick={() => handleNavClick(action.path)}
+                        style={{ '--delay': `${index * 70}ms` }}
+                      >
+                        <span className="sidebar-action-icon">{action.icon}</span>
+                        <span>{action.label}</span>
+                      </button>
+                    ))}
+                    <div className="sidebar-active-pill" style={quickPillStyle} />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {!showLabels && (
-            <div className="sidebar-quick-compact" aria-label="Acciones rápidas" ref={quickCompactRef} style={{ position: 'relative' }}>
-              {quickActions.map((action) => (
-                <button
-                  key={action.label}
-                  className={`sidebar-action-compact ${activePath === action.path ? 'active' : ''}`}
-                  onClick={() => handleNavClick(action.path)}
-                  title={action.label}
-                  aria-label={action.label}
-                >
-                  {action.icon}
-                </button>
-              ))}
-              <div className="sidebar-active-pill-compact" style={quickCompactPillStyle} />
-            </div>
-          )}
+            {!showLabels && (
+              <div
+                className="sidebar-quick-compact"
+                aria-label="Acciones rápidas"
+                ref={quickCompactRef}
+                style={{ position: 'relative' }}
+              >
+                {quickActions.map((action) => (
+                  <button
+                    key={action.label}
+                    className={`sidebar-action-compact ${activePath === action.path ? 'active' : ''}`}
+                    onClick={() => handleNavClick(action.path)}
+                    title={action.label}
+                    aria-label={action.label}
+                  >
+                    {action.icon}
+                  </button>
+                ))}
+                <div className="sidebar-active-pill-compact" style={quickCompactPillStyle} />
+              </div>
+            )}
 
-          {showLabels && (
-            <div className="sidebar-extras" style={{ paddingTop: '0', paddingBottom: '4px' }}>
-              <div className="sidebar-section">
-                <p className="sidebar-section-title">Sistema</p>
-                <div className="sidebar-actions" ref={secondaryActionsRef} style={{ position: 'relative' }}>
-                  {secondaryActions.map((action, index) => (
-                    <button
-                      key={action.label}
-                      className={`sidebar-action ${activePath === action.path ? 'active' : ''}`}
-                      onClick={() => handleNavClick(action.path)}
-                      style={{ '--delay': `${index * 70}ms` }}
-                    >
-                      <span className="sidebar-action-icon">{action.icon}</span>
-                      <span>{action.label}</span>
-                    </button>
-                  ))}
-                  <div className="sidebar-active-pill" style={secondaryPillStyle} />
+            {showLabels && (
+              <div className="sidebar-extras" style={{ paddingTop: '0', paddingBottom: '4px' }}>
+                <div className="sidebar-section">
+                  <p className="sidebar-section-title">Sistema</p>
+                  <div
+                    className="sidebar-actions"
+                    ref={secondaryActionsRef}
+                    style={{ position: 'relative' }}
+                  >
+                    {secondaryActions.map((action, index) => (
+                      <button
+                        key={action.label}
+                        className={`sidebar-action ${activePath === action.path ? 'active' : ''}`}
+                        onClick={() => handleNavClick(action.path)}
+                        style={{ '--delay': `${index * 70}ms` }}
+                      >
+                        <span className="sidebar-action-icon">{action.icon}</span>
+                        <span>{action.label}</span>
+                      </button>
+                    ))}
+                    <div className="sidebar-active-pill" style={secondaryPillStyle} />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {!showLabels && (
-            <div className="sidebar-quick-compact" aria-label="Sistema" style={{ paddingTop: '0', paddingBottom: '0', position: 'relative' }} ref={secondaryCompactRef}>
-              {secondaryActions.map((action) => (
-                <button
-                  key={action.label}
-                  className={`sidebar-action-compact ${activePath === action.path ? 'active' : ''}`}
-                  onClick={() => handleNavClick(action.path)}
-                  title={action.label}
-                  aria-label={action.label}
-                >
-                  {action.icon}
-                </button>
-              ))}
-              <div className="sidebar-active-pill-compact" style={secondaryCompactPillStyle} />
-            </div>
-          )}
-
-          <div className="sidebar-spacer" />
+            {!showLabels && (
+              <div
+                className="sidebar-quick-compact"
+                aria-label="Sistema"
+                style={{ paddingTop: '0', paddingBottom: '0', position: 'relative' }}
+                ref={secondaryCompactRef}
+              >
+                {secondaryActions.map((action) => (
+                  <button
+                    key={action.label}
+                    className={`sidebar-action-compact ${activePath === action.path ? 'active' : ''}`}
+                    onClick={() => handleNavClick(action.path)}
+                    title={action.label}
+                    aria-label={action.label}
+                  >
+                    {action.icon}
+                  </button>
+                ))}
+                <div className="sidebar-active-pill-compact" style={secondaryCompactPillStyle} />
+              </div>
+            )}
+          </div>
 
           {showLabels && !isMobile && (
-            <div className="sidebar-profile">
-              <div className="avatar">{user?.username?.[0]?.toUpperCase() || 'U'}</div>
-              <div className="user-meta">
-                <p className="user-name">{user?.username || 'Usuario'}</p>
-                <p className="user-role">{roleLabel}</p>
-                <div className="user-status">
+            <div className="sidebar-user-footer">
+              <div className="sidebar-profile">
+                <div className="avatar">{user?.username?.[0]?.toUpperCase() || 'U'}</div>
+                <div className="user-meta">
+                  <p className="user-name">{user?.username || 'Usuario'}</p>
+                  <p className="user-role">{roleLabel}</p>
+                  <div className="user-status">
+                    <span className="status-dot" />
+                    <span>Online</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!showLabels && !isMobile && (
+            <div
+              className="sidebar-user-footer"
+              style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}
+            >
+              <div className="avatar" title={`${user?.username || 'Usuario'} (${roleLabel})`}>
+                {user?.username?.[0]?.toUpperCase() || 'U'}
+              </div>
+            </div>
+          )}
+
+          {isMobile && (
+            <div className="sidebar-user-footer">
+              <div className="sidebar-user-profile">
+                <div className="avatar">{user?.username?.[0]?.toUpperCase() || 'U'}</div>
+                <div className="user-meta">
+                  <p className="user-name">{user?.username || 'Usuario'}</p>
+                  <p className="user-role">{roleLabel}</p>
+                </div>
+                <div className="sidebar-user-badge">
                   <span className="status-dot" />
                   <span>Online</span>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {isMobile && (
-            <div className="sidebar-user">
-              <div className="avatar">{user?.username?.[0]?.toUpperCase() || 'U'}</div>
-              <div className="user-meta">
-                <p className="user-name">{user?.username || 'Usuario'}</p>
-                <p className="user-role">{roleLabel}</p>
               </div>
             </div>
           )}
@@ -309,13 +375,20 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
         <Modal title="Soporte Técnico" onClose={() => setShowSupportModal(false)} size="md">
           <div className="stack gap-md text-center">
             <div className="muted mb-4">
-              ¿Tienes algún problema o necesitas ayuda con el sistema? Puedes contactarnos a través de los siguientes canales:
+              ¿Tienes algún problema o necesitas ayuda con el sistema? Puedes contactarnos a través
+              de los siguientes canales:
             </div>
 
             <a
               href="mailto:gimenezaaxel@gmail.com"
               className="btn btn-primary"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '12px',
+              }}
             >
               <Mail size={18} /> gimenezaaxel@gmail.com
             </a>
@@ -325,7 +398,15 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-outline"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderColor: '#25D366', color: '#25D366' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '12px',
+                borderColor: '#25D366',
+                color: '#25D366',
+              }}
             >
               <MessageCircle size={18} /> WhatsApp: 2604845564
             </a>
@@ -333,7 +414,7 @@ const Sidebar = ({ navItems, activePath, user, mobileOpen, isMobile, onNavigate,
         </Modal>
       )}
     </>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar

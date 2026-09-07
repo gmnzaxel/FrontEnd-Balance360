@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 
 const BrandMark = ({ size = 24, className = '' }) => (
   <svg
@@ -9,12 +9,39 @@ const BrandMark = ({ size = 24, className = '' }) => (
     fill="none"
     aria-hidden="true"
   >
-    <circle cx="32" cy="32" r="24" fill="none" stroke="rgba(248, 250, 252, 0.4)" strokeWidth="2.4" />
-    <path d="M16 20h32" stroke="rgba(248, 250, 252, 0.95)" strokeWidth="3.6" strokeLinecap="round" />
+    <circle
+      cx="32"
+      cy="32"
+      r="24"
+      fill="none"
+      stroke="rgba(248, 250, 252, 0.4)"
+      strokeWidth="2.4"
+    />
+    <path
+      d="M16 20h32"
+      stroke="rgba(248, 250, 252, 0.95)"
+      strokeWidth="3.6"
+      strokeLinecap="round"
+    />
     <path d="M32 20v16" stroke="rgba(248, 250, 252, 0.95)" strokeWidth="4" strokeLinecap="round" />
-    <path d="M22 28h10" stroke="rgba(248, 250, 252, 0.95)" strokeWidth="3.2" strokeLinecap="round" />
-    <path d="M32 28h10" stroke="rgba(248, 250, 252, 0.95)" strokeWidth="3.2" strokeLinecap="round" />
-    <path d="M24 32h16" stroke="rgba(248, 250, 252, 0.95)" strokeWidth="3.2" strokeLinecap="round" />
+    <path
+      d="M22 28h10"
+      stroke="rgba(248, 250, 252, 0.95)"
+      strokeWidth="3.2"
+      strokeLinecap="round"
+    />
+    <path
+      d="M32 28h10"
+      stroke="rgba(248, 250, 252, 0.95)"
+      strokeWidth="3.2"
+      strokeLinecap="round"
+    />
+    <path
+      d="M24 32h16"
+      stroke="rgba(248, 250, 252, 0.95)"
+      strokeWidth="3.2"
+      strokeLinecap="round"
+    />
     <g fill="rgba(248, 250, 252, 0.95)">
       <rect x="19" y="42" width="7" height="2.6" rx="1.2" />
       <rect x="19" y="46" width="7" height="2.6" rx="1.2" />
@@ -33,6 +60,6 @@ const BrandMark = ({ size = 24, className = '' }) => (
       <rect x="44" y="42" width="2.6" height="11" rx="1.2" />
     </g>
   </svg>
-);
+)
 
-export default BrandMark;
+export default BrandMark

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext } from 'react'
 import {
   ResponsiveContainer,
   AreaChart,
@@ -6,136 +6,184 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip
-} from 'recharts';
-import { DollarSign, ShoppingBag, TrendingUp, AlertTriangle, PackageOpen, FileDown, Filter } from 'lucide-react';
-import api from '../api/axios';
-import { formatARS } from '../utils/format';
-import Card from '../components/ui/Card';
-import Skeleton from '../components/ui/Skeleton';
-import Modal from '../components/ui/Modal';
-import Button from '../components/ui/Button';
-import Select from '../components/ui/Select';
-import { AuthContext } from '../context/AuthContext';
-import { toast } from 'react-toastify';
+  Tooltip,
+} from 'recharts'
+import {
+  DollarSign,
+  ShoppingBag,
+  TrendingUp,
+  AlertTriangle,
+  PackageOpen,
+  FileDown,
+  Filter,
+} from 'lucide-react'
+import api from '../api/axios'
+import { formatARS } from '../utils/format'
+import Card from '../components/ui/Card'
+import Skeleton from '../components/ui/Skeleton'
+import Modal from '../components/ui/Modal'
+import Button from '../components/ui/Button'
+import Select from '../components/ui/Select'
+import { AuthContext } from '../context/AuthContext'
+import { toast } from 'react-toastify'
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div style={{
-        backgroundColor: 'var(--surface-elevated)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid var(--border-subtle)',
-        padding: '12px',
-        borderRadius: '12px',
-        boxShadow: 'var(--shadow-md)'
-      }}>
-        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+      <div
+        style={{
+          backgroundColor: 'var(--surface-elevated)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid var(--border-subtle)',
+          padding: '12px',
+          borderRadius: '12px',
+          boxShadow: 'var(--shadow-md)',
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: '0.85rem',
+            color: 'var(--text-secondary)',
+            fontWeight: 600,
+          }}
+        >
           {label}
         </p>
-        <p style={{ margin: '4px 0 0', fontWeight: 700, color: 'var(--primary-500)', fontSize: '1rem' }}>
+        <p
+          style={{
+            margin: '4px 0 0',
+            fontWeight: 700,
+            color: 'var(--primary-500)',
+            fontSize: '1rem',
+          }}
+        >
           {formatARS(payload[0].value)}
         </p>
         {payload[1] && (
-          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--success-text)', fontWeight: 500 }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: '0.85rem',
+              color: 'var(--success-text)',
+              fontWeight: 500,
+            }}
+          >
             {payload[1].value} transacciones
           </p>
         )}
       </div>
-    );
+    )
   }
-  return null;
-};
-
-
+  return null
+}
 
 const kpis = [
-  { key: 'total_sold', label: 'Ventas del mes', icon: <DollarSign size={22} />, tone: 'primary', formatter: formatARS },
+  {
+    key: 'total_sold',
+    label: 'Ventas del mes',
+    icon: <DollarSign size={22} />,
+    tone: 'primary',
+    formatter: formatARS,
+  },
   { key: 'sales_count', label: 'Operaciones', icon: <ShoppingBag size={22} />, tone: 'success' },
-  { key: 'margin', label: 'Margen estimado', icon: <TrendingUp size={22} />, tone: 'warning', formatter: formatARS },
+  {
+    key: 'margin',
+    label: 'Margen estimado',
+    icon: <TrendingUp size={22} />,
+    tone: 'warning',
+    formatter: formatARS,
+  },
   { key: 'stockouts', label: 'Stock bajo', icon: <AlertTriangle size={22} />, tone: 'danger' },
-];
+]
 
 const Dashboard = () => {
-  const [stats, setStats] = useState(null);
-  const { isAdmin } = useContext(AuthContext);
+  const [stats, setStats] = useState(null)
+  const { isAdmin } = useContext(AuthContext)
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true)
 
   // State for Supplier Modal
-  const [showSupplierModal, setShowSupplierModal] = useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState('');
-  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [showSupplierModal, setShowSupplierModal] = useState(false)
+  const [selectedSupplier, setSelectedSupplier] = useState('')
+  const [selectedProductIds, setSelectedProductIds] = useState([])
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await api.get('reports/monthly-summary/');
-        setStats(response.data);
+        const response = await api.get('reports/monthly-summary/')
+        setStats(response.data)
       } catch (error) {
-        console.error("Error fetching stats:", error);
-        toast.error("No se pudieron cargar las estadísticas del mes.");
+        console.error('Error fetching stats:', error)
+        toast.error('No se pudieron cargar las estadísticas del mes.')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    fetchStats();
-  }, []);
+    }
+    fetchStats()
+  }, [])
 
   // Use the full supplier list provided by backend, or fallback to extracting from low_stock if not available
-  const uniqueSuppliers = stats?.all_suppliers || Array.from(new Set(stats?.low_stock_products?.map(p => p.supplier_name).filter(Boolean) || []));
+  const uniqueSuppliers =
+    stats?.all_suppliers ||
+    Array.from(
+      new Set(stats?.low_stock_products?.map((p) => p.supplier_name).filter(Boolean) || []),
+    )
 
   const filteredStock = selectedSupplier
-    ? stats?.low_stock_products?.filter(p => p.supplier_name === selectedSupplier)
-    : stats?.low_stock_products || [];
+    ? stats?.low_stock_products?.filter((p) => p.supplier_name === selectedSupplier)
+    : stats?.low_stock_products || []
 
   useEffect(() => {
-    setSelectedProductIds([]);
-  }, [selectedSupplier]);
+    setSelectedProductIds([])
+  }, [selectedSupplier])
 
-  const allFilteredSelected = filteredStock.length > 0 && filteredStock.every((p) => selectedProductIds.includes(p.id));
+  const allFilteredSelected =
+    filteredStock.length > 0 && filteredStock.every((p) => selectedProductIds.includes(p.id))
 
   const toggleProductSelection = (productId) => {
-    setSelectedProductIds((prev) => (
-      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
-    ));
-  };
+    setSelectedProductIds((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId],
+    )
+  }
 
   const toggleAllFiltered = () => {
-    if (!filteredStock.length) return;
+    if (!filteredStock.length) return
     if (allFilteredSelected) {
-      setSelectedProductIds((prev) => prev.filter((id) => !filteredStock.some((p) => p.id === id)));
-      return;
+      setSelectedProductIds((prev) => prev.filter((id) => !filteredStock.some((p) => p.id === id)))
+      return
     }
     setSelectedProductIds((prev) => {
-      const merged = new Set([...prev, ...filteredStock.map((p) => p.id)]);
-      return Array.from(merged);
-    });
-  };
+      const merged = new Set([...prev, ...filteredStock.map((p) => p.id)])
+      return Array.from(merged)
+    })
+  }
 
   const handleDownloadSupplierExcel = async () => {
-    if (!selectedSupplier) return;
-    if (!filteredStock.length) return;
-    const selectedForExport = filteredStock.filter((p) => selectedProductIds.includes(p.id));
-    const productIds = (selectedForExport.length ? selectedForExport : filteredStock).map((p) => p.id);
+    if (!selectedSupplier) return
+    if (!filteredStock.length) return
+    const selectedForExport = filteredStock.filter((p) => selectedProductIds.includes(p.id))
+    const productIds = (selectedForExport.length ? selectedForExport : filteredStock).map(
+      (p) => p.id,
+    )
     try {
       const response = await api.get('reports/export-supplier-order/', {
         params: { supplier: selectedSupplier, product_ids: productIds.join(',') },
-        responseType: 'blob'
-      });
-      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      const fileName = `Orden_Pedido_${selectedSupplier}.xlsx`;
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(blobUrl);
+        responseType: 'blob',
+      })
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = blobUrl
+      const fileName = `Orden_Pedido_${selectedSupplier}.xlsx`
+      link.setAttribute('download', fileName)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(blobUrl)
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
-  };
+  }
 
   return (
     <div className="dashboard-page page">
@@ -148,174 +196,240 @@ const Dashboard = () => {
       </div>
 
       <div className="grid-layout">
-      {/* ... existing KPI grid ... */}
-      {loading ? (
-        <div className="kpi-grid">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} height={120} />)}
-        </div>
-      ) : (
-        <div className="kpi-grid">
-          {kpis.map((item) => (
-            <Card
-              key={item.key}
-              className="kpi-card"
-              headerSlot={<div className={`kpi-icon tone-${item.tone}`}>{item.icon}</div>}
-              title={item.label}
-            >
-              <div className="kpi-value">
-                {item.formatter ? item.formatter(stats?.[item.key]) : stats?.[item.key] || 0}
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* ... Low Stock Table Card (Moved to bottom) ... */}
-
-
-      <div className="charts-grid">
-        {/* ... AreaChart Card ... */}
-        <Card title="Evolución de ventas" description="Tendencia de los últimos 30 días.">
-          <div className="dashboard-chart-body">
-            {loading ? <Skeleton height="100%" /> : (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats?.sales_by_day || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
-                  <XAxis
-                    dataKey="day"
-                    tickFormatter={(str) => str.slice(8)}
-                    tick={{ fontSize: 12, fill: '#94a3b8' }}
-                    axisLine={false}
-                    tickLine={false}
-                    dy={10}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12, fill: '#94a3b8' }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(val) => `$${val / 1000}k`}
-                    width={50}
-                  />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                  <Area
-                    type="monotone"
-                    dataKey="total"
-                    stroke="#4f46e5"
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#colorSales)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
+        {/* ... existing KPI grid ... */}
+        {loading ? (
+          <div className="kpi-grid">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} height={120} />
+            ))}
           </div>
-        </Card>
-
-        {/* Alertas de stock Card (Moved next to charts) */}
-        <Card title="Alertas de stock" description="Productos por debajo del mínimo.">
-          {isAdmin && (
-            <div className="flex justify-end mb-4">
-              <Button variant="secondary" size="sm" icon={<Filter size={16} />} onClick={() => setShowSupplierModal(true)}>
-                Filtrar por proveedor
-              </Button>
-            </div>
-          )}
-          {loading ? <Skeleton height={200} /> : (
-            <div className="table-container compact" style={{ maxHeight: '240px', overflowY: 'auto' }}>
-              {!stats?.low_stock_products?.length ? (
-                <div className="empty-state py-8">
-                  <p>No hay productos con stock bajo.</p>
+        ) : (
+          <div className="kpi-grid">
+            {kpis.map((item) => (
+              <Card
+                key={item.key}
+                className="kpi-card"
+                headerSlot={<div className={`kpi-icon tone-${item.tone}`}>{item.icon}</div>}
+                title={item.label}
+              >
+                <div className="kpi-value">
+                  {item.formatter ? item.formatter(stats?.[item.key]) : stats?.[item.key] || 0}
                 </div>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* ... Low Stock Table Card (Moved to bottom) ... */}
+
+        <div className="charts-grid">
+          {/* ... AreaChart Card ... */}
+          <Card title="Evolución de ventas" description="Tendencia de los últimos 30 días.">
+            <div className="dashboard-chart-body">
+              {loading ? (
+                <Skeleton height="100%" />
               ) : (
-                <table className="styled-table">
-                  <thead>
-                    <tr>
-                      <th>Producto</th>
-                      {isAdmin && <th>Proveedor</th>}
-                      <th className="text-center">Min</th>
-                      <th className="text-center">Actual</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.low_stock_products.map((p) => (
-                      <tr key={p.id}>
-                        <td className="font-medium" data-label="Producto">{p.nombre}</td>
-                        {isAdmin && <td className="text-sm text-muted" data-label="Proveedor">{p.supplier_name || '-'}</td>}
-                        <td className="text-center" data-label="Min">
-                          <span className="badge badge-neutral">{p.stock_minimo}</span>
-                        </td>
-                        <td className="text-center" data-label="Actual">
-                          <span className="badge badge-danger">{p.stock_actual}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={stats?.sales_by_day || []}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="var(--border-subtle)"
+                    />
+                    <XAxis
+                      dataKey="day"
+                      tickFormatter={(str) => str.slice(8)}
+                      tick={{ fontSize: 11, fill: '#94a3b8' }}
+                      axisLine={false}
+                      tickLine={false}
+                      dy={8}
+                      minTickGap={16}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: '#94a3b8' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(val) =>
+                        `$${val >= 1000 ? `${Math.round(val / 1000)}k` : val}`
+                      }
+                      width={44}
+                    />
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="total"
+                      stroke="#4f46e5"
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#colorSales)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               )}
             </div>
-          )}
-        </Card>
-      </div>
+          </Card>
 
-      {/* Top Productos Card (Moved to bottom) */}
-      <div className="mt-6">
-        <Card title="Top productos" description="Rendimiento por volumen de ventas.">
-          {loading ? <Skeleton height={240} /> : (
-            <div className="table-container compact">
-              {!stats?.top_products?.length ? (
-                <div className="empty-state" style={{ padding: '40px 0' }}>
-                  <div style={{
-                    width: 48, height: 48,
-                    borderRadius: '50%', background: 'var(--slate-100)',
-                    color: 'var(--slate-400)', display: 'grid', placeItems: 'center',
-                    margin: '0 auto 12px'
-                  }}>
-                    <PackageOpen size={24} />
+          {/* Alertas de stock Card (Moved next to charts) */}
+          <Card title="Alertas de stock" description="Productos por debajo del mínimo.">
+            {isAdmin && (
+              <div className="stock-alerts-action mb-4">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Filter size={15} />}
+                  onClick={() => setShowSupplierModal(true)}
+                >
+                  Filtrar por proveedor
+                </Button>
+              </div>
+            )}
+            {loading ? (
+              <Skeleton height={200} />
+            ) : (
+              <div className="table-container compact stock-alerts-container">
+                {!stats?.low_stock_products?.length ? (
+                  <div className="empty-state py-8">
+                    <p>No hay productos con stock bajo.</p>
                   </div>
-                  <p style={{ fontWeight: 600, color: 'var(--slate-700)', margin: 0 }}>Todavía no hay ventas registradas.</p>
-                  <p className="text-sm text-muted">El ranking aparecerá cuando haya ventas.</p>
-                </div>
-              ) : (
-                <table className="styled-table">
-                  <thead>
-                    <tr>
-                      <th>Producto</th>
-                      <th style={{ textAlign: 'right' }}>Cantidad vendida</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.top_products.map((p, idx) => (
-                      <tr key={idx}>
-                        <td data-label="Producto">
-                          <span style={{ fontWeight: 500 }}>{p.product__nombre}</span>
-                        </td>
-                        <td style={{ textAlign: 'right' }} data-label="Cantidad vendida">
-                          <span className="badge badge-neutral" style={{ fontWeight: 700 }}>
-                            {p.qty} unidades
-                          </span>
-                        </td>
+                ) : (
+                  <table className="styled-table stock-alerts-table">
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        {isAdmin && <th>Proveedor</th>}
+                        <th className="text-center">Min</th>
+                        <th className="text-center">Actual</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
-        </Card>
-      </div>
+                    </thead>
+                    <tbody>
+                      {stats.low_stock_products.map((p) => (
+                        <tr key={p.id}>
+                          <td className="font-medium" data-label="Producto">
+                            <div className="stock-product-cell">
+                              <span className="stock-product-name">{p.nombre}</span>
+                              {isAdmin && p.supplier_name && (
+                                <span className="stock-supplier-inline-badge">
+                                  {p.supplier_name}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          {isAdmin && (
+                            <td
+                              className="text-sm text-muted stock-supplier-cell"
+                              data-label="Proveedor"
+                            >
+                              {p.supplier_name || '-'}
+                            </td>
+                          )}
+                          <td className="text-center stock-min-cell" data-label="Min">
+                            <span className="badge badge-neutral">{p.stock_minimo}</span>
+                          </td>
+                          <td className="text-center stock-actual-cell" data-label="Actual">
+                            <span className="badge badge-danger">{p.stock_actual}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+          </Card>
+        </div>
 
-      {/* Supplier Filter Modal */}
-      {
-        showSupplierModal && (
-          <Modal title="Generar pedido a proveedor" onClose={() => setShowSupplierModal(false)} size="lg">
+        {/* Top Productos Card (Moved to bottom) */}
+        <div className="mt-6">
+          <Card title="Top productos" description="Rendimiento por volumen de ventas.">
+            {loading ? (
+              <Skeleton height={240} />
+            ) : (
+              <div className="table-container compact top-products-container">
+                {!stats?.top_products?.length ? (
+                  <div className="empty-state" style={{ padding: '40px 0' }}>
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: '50%',
+                        background: 'var(--slate-100)',
+                        color: 'var(--slate-400)',
+                        display: 'grid',
+                        placeItems: 'center',
+                        margin: '0 auto 12px',
+                      }}
+                    >
+                      <PackageOpen size={24} />
+                    </div>
+                    <p style={{ fontWeight: 600, color: 'var(--slate-700)', margin: 0 }}>
+                      Todavía no hay ventas registradas.
+                    </p>
+                    <p className="text-sm text-muted">El ranking aparecerá cuando haya ventas.</p>
+                  </div>
+                ) : (
+                  <table className="styled-table top-products-table">
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th style={{ textAlign: 'right' }}>Cantidad vendida</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.top_products.map((p, idx) => (
+                        <tr key={idx}>
+                          <td data-label="Producto" className="top-product-name-cell">
+                            <div className="top-product-info">
+                              <span className="top-product-rank">#{idx + 1}</span>
+                              <span className="top-product-name">{p.product__nombre}</span>
+                            </div>
+                          </td>
+                          <td
+                            style={{ textAlign: 'right' }}
+                            data-label="Cantidad vendida"
+                            className="top-product-qty-cell"
+                          >
+                            <span className="badge badge-neutral" style={{ fontWeight: 700 }}>
+                              {p.qty} unidades
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* Supplier Filter Modal */}
+        {showSupplierModal && (
+          <Modal
+            title="Generar pedido a proveedor"
+            onClose={() => setShowSupplierModal(false)}
+            size="lg"
+          >
             <div className="supplier-order-modal flex flex-col gap-4">
-              <div className="supplier-order-controls flex items-end gap-4 p-4 rounded-lg" style={{ background: 'var(--surface-muted)', border: '1px solid var(--border-subtle)' }}>
+              <div
+                className="supplier-order-controls flex items-end gap-4 p-4 rounded-lg"
+                style={{
+                  background: 'var(--surface-muted)',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
                 <div className="flex-1">
                   <Select
                     label="Proveedor"
@@ -323,7 +437,11 @@ const Dashboard = () => {
                     onChange={(e) => setSelectedSupplier(e.target.value)}
                   >
                     <option value="">-- Todos los Proveedores --</option>
-                    {uniqueSuppliers.map(s => <option key={s} value={s}>{s}</option>)}
+                    {uniqueSuppliers.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </Select>
                 </div>
                 <div className="supplier-order-download mb-1">
@@ -345,7 +463,10 @@ const Dashboard = () => {
                 </Button>
               </div>
 
-              <div className="supplier-order-table table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <div
+                className="supplier-order-table table-container"
+                style={{ maxHeight: '400px', overflowY: 'auto' }}
+              >
                 <table className="styled-table">
                   <thead>
                     <tr>
@@ -359,11 +480,15 @@ const Dashboard = () => {
                   </thead>
                   <tbody>
                     {filteredStock.length === 0 ? (
-                      <tr><td colSpan="6" className="text-center py-8 text-muted">No hay productos para este proveedor.</td></tr>
+                      <tr>
+                        <td colSpan="6" className="text-center py-8 text-muted">
+                          No hay productos para este proveedor.
+                        </td>
+                      </tr>
                     ) : (
-                      filteredStock.map(p => {
-                        const target = p.stock_maximo > 0 ? p.stock_maximo : p.stock_minimo;
-                        const suggestedOrder = Math.max(0, target - p.stock_actual);
+                      filteredStock.map((p) => {
+                        const target = p.stock_maximo > 0 ? p.stock_maximo : p.stock_minimo
+                        const suggestedOrder = Math.max(0, target - p.stock_actual)
                         return (
                           <tr key={p.id}>
                             <td className="text-center" data-label="Incluir">
@@ -373,15 +498,26 @@ const Dashboard = () => {
                                 onChange={() => toggleProductSelection(p.id)}
                               />
                             </td>
-                            <td className="text-xs font-mono text-muted" data-label="Código">{p.codigo}</td>
-                            <td className="font-medium" data-label="Producto">{p.nombre}</td>
-                            <td className="text-center text-muted" data-label="Stock Mínimo">{p.stock_minimo}</td>
-                            <td className="text-center font-bold text-red-600" data-label="Stock Actual">{p.stock_actual}</td>
+                            <td className="text-xs font-mono text-muted" data-label="Código">
+                              {p.codigo}
+                            </td>
+                            <td className="font-medium" data-label="Producto">
+                              {p.nombre}
+                            </td>
+                            <td className="text-center text-muted" data-label="Stock Mínimo">
+                              {p.stock_minimo}
+                            </td>
+                            <td
+                              className="text-center font-bold text-red-600"
+                              data-label="Stock Actual"
+                            >
+                              {p.stock_actual}
+                            </td>
                             <td className="text-center" data-label="A Reponer">
                               <span className="badge badge-primary">{suggestedOrder} u.</span>
                             </td>
                           </tr>
-                        );
+                        )
                       })
                     )}
                   </tbody>
@@ -389,12 +525,10 @@ const Dashboard = () => {
               </div>
             </div>
           </Modal>
-        )
-      }
-
+        )}
       </div>
-    </div >
-  );
-};
+    </div>
+  )
+}
 
-export default Dashboard;
+export default Dashboard

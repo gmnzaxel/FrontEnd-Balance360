@@ -1,0 +1,393 @@
+/* ─── Quotes (Presupuestos) Stylesheet ────────────────────────────── */
+
+.pos-shell.quotes-page {
+  display: grid;
+  grid-template-columns: 1fr 430px;
+  gap: 20px;
+  height: calc(100vh - 140px);
+  min-height: 520px;
+  animation: slideUp var(--duration-enter) var(--ease-out-expo) both;
+}
+
+@media (min-width: 1500px) {
+  .pos-shell.quotes-page {
+    grid-template-columns: 1fr 450px;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .pos-shell.quotes-page {
+    grid-template-columns: 1fr 390px;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 960px) {
+  .pos-shell.quotes-page {
+    grid-template-columns: minmax(0, 1fr) !important;
+    height: auto !important;
+    gap: 12px;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Ensure catalog table fits cleanly on desktop without overflow */
+.quotes-page .styled-table.pos-catalog-table {
+  min-width: 0;
+  width: 100%;
+}
+
+/* ─── Desktop Header: Eyebrow, Badge & Clear Button ────────────── */
+.quote-desktop-card-head {
+  padding: 16px 18px !important;
+  background: var(--surface-1, rgba(30, 41, 59, 0.4)) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+.quote-items-count-badge {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  padding: 5px 10px !important;
+  background: rgba(99, 102, 241, 0.12) !important;
+  border: 1px solid rgba(99, 102, 241, 0.28) !important;
+  color: var(--primary-300, #a5b4fc) !important;
+  border-radius: 9px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.quote-desktop-clear-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 13px !important;
+  border-radius: 9px !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  color: #f87171 !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  user-select: none !important;
+  letter-spacing: 0.02em !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.quote-desktop-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.22) !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.quote-desktop-clear-btn:active {
+  transform: scale(0.95) !important;
+}
+
+/* ─── Editable Price Pill in Cart Items ────────────────────────── */
+.quote-item-price-edit-wrap {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-0, #090e1a);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 1px 4px;
+  height: 26px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.quote-item-price-edit-wrap:focus-within {
+  border-color: var(--primary-500, #6366f1) !important;
+}
+
+.pos-mobile-drawer .quote-item-price-edit-wrap {
+  background: var(--surface-1, #111726) !important;
+}
+
+.quote-price-symbol {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding-left: 2px;
+  user-select: none;
+  line-height: 1;
+}
+
+.quote-price-input {
+  width: 52px;
+  height: 22px;
+  padding: 0 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--text-primary);
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+.quote-price-input:focus,
+.quote-price-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.quote-price-input::-webkit-outer-spin-button,
+.quote-price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ─── Desktop Cart Footer (Spacious & Clean Layout) ────────────── */
+.quotes-page .quote-desktop-cart-footer {
+  padding: 18px 20px 20px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  background: var(--surface-0, #090e1a) !important;
+  border-top: 1px solid var(--border-subtle) !important;
+}
+
+/* ─── Client Box ──────────────────────────────────────────────── */
+.quotes-page .quote-client-box {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background: var(--surface-1, rgba(30, 41, 59, 0.5)) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 10px !important;
+  padding: 0 14px !important;
+  height: 44px !important;
+  box-sizing: border-box !important;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+.quotes-page .quote-client-box:focus-within {
+  border-color: var(--primary-500, #6366f1) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+}
+
+.quotes-page .quote-client-icon {
+  color: var(--primary-400, #818cf8) !important;
+  flex-shrink: 0 !important;
+}
+
+.quotes-page .quote-client-input {
+  flex: 1 !important;
+  min-width: 0 !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-size: 0.9rem !important;
+  padding: 0 !important;
+}
+
+.quotes-page .quote-client-input:focus,
+.quotes-page .quote-client-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.quotes-page .quote-client-clear-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s !important;
+}
+
+.quotes-page .quote-client-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ─── Options Grid (Global Discount & Validity) ───────────────── */
+.quotes-page .quote-options-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) !important;
+  gap: 14px !important;
+  margin: 0 !important;
+}
+
+.quotes-page .quote-options-grid .field-label {
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+  color: var(--text-secondary) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  margin-bottom: 6px !important;
+}
+
+.quotes-page .quote-global-discount-box {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.quotes-page .quote-global-discount-input {
+  flex: 1 !important;
+  min-width: 0 !important;
+  height: 44px !important;
+  padding: 0 14px !important;
+  font-size: 0.92rem !important;
+  font-weight: 600 !important;
+  background: var(--surface-1, rgba(30, 41, 59, 0.5)) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 10px !important;
+  color: var(--text-primary) !important;
+  outline: none !important;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+.quotes-page .quote-global-discount-input:focus {
+  border-color: var(--primary-500, #6366f1) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+}
+
+.quotes-page .pos-global-discount-type-btn {
+  width: 48px !important;
+  height: 44px !important;
+  border-radius: 10px !important;
+  font-size: 1rem !important;
+  background: var(--surface-1, rgba(30, 41, 59, 0.5)) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--primary-300, #a5b4fc) !important;
+  transition: all 0.15s ease !important;
+}
+
+.quotes-page .pos-global-discount-type-btn:hover {
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  color: #ffffff !important;
+}
+
+.quotes-page .quote-validity-select {
+  width: 100% !important;
+  height: 44px !important;
+  padding: 0 32px 0 12px !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  background-color: var(--surface-1, rgba(30, 41, 59, 0.5)) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 10px !important;
+  outline: none !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+.quotes-page .quote-validity-select:focus {
+  border-color: var(--primary-500, #6366f1) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+}
+
+.quotes-page .quote-validity-select option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 8px !important;
+}
+
+/* ─── Total Highlight Card ────────────────────────────────────── */
+.quotes-page .quote-total-card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.03) 100%) !important;
+  border: 1px solid rgba(99, 102, 241, 0.28) !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: var(--shadow-xs) !important;
+}
+
+.quotes-page .quote-total-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+}
+
+.quotes-page .quote-total-label {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+}
+
+.quotes-page .quote-total-validity-badge {
+  font-size: 0.72rem !important;
+  color: var(--primary-300, #a5b4fc) !important;
+  font-weight: 600 !important;
+}
+
+.quotes-page .quote-total-amount {
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+  color: var(--text-primary) !important;
+  letter-spacing: -0.02em !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* ─── Action Buttons Row ──────────────────────────────────────── */
+.quotes-page .quote-action-buttons-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  margin-top: 2px !important;
+}
+
+.quotes-page .quote-action-buttons-row button {
+  height: 46px !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+}
+
+/* ─── Mobile Drawer Adjustments ───────────────────────────────── */
+.quote-mobile-drawer-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quote-mobile-docked-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .quotes-page .quote-client-box {
+    background: var(--surface-0, #090e1a) !important;
+  }
+
+  .quotes-page .quote-validity-select {
+    background-color: var(--surface-0, #090e1a) !important;
+  }
+}

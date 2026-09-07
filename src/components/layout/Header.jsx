@@ -1,6 +1,6 @@
-import React from 'react';
-import { Menu } from 'lucide-react';
-import NotificationCenter from './NotificationCenter';
+import React from 'react'
+import { Menu } from 'lucide-react'
+import NotificationCenter from './NotificationCenter'
 
 const Header = ({ title, onToggleSidebar, menuSlot }) => {
   return (
@@ -19,7 +19,7 @@ const Header = ({ title, onToggleSidebar, menuSlot }) => {
         {menuSlot}
       </div>
     </header>
-  );
-};
+  )
+}
 
-export default Header;
+export default Header

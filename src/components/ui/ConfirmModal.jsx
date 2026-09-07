@@ -1,7 +1,7 @@
-import React from 'react';
-import Modal from './Modal';
-import Button from './Button';
-import { AlertTriangle } from 'lucide-react';
+import React from 'react'
+import Modal from './Modal'
+import Button from './Button'
+import { AlertTriangle } from 'lucide-react'
 
 /**
  * ConfirmModal — reusable confirmation dialog that replaces window.confirm()
@@ -28,7 +28,7 @@ const ConfirmModal = ({
   variant = 'danger',
   loading = false,
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <Modal title={title} onClose={onClose} size="sm">
@@ -51,7 +51,7 @@ const ConfirmModal = ({
         </Button>
       </div>
     </Modal>
-  );
-};
+  )
+}
 
-export default ConfirmModal;
+export default ConfirmModal
