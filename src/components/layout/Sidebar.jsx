@@ -209,7 +209,7 @@ const Sidebar = ({ activePath, user, mobileOpen, isMobile, onNavigate, onCloseMo
               onKeyDown={handleBrandKey}
             >
               <div className="brand-icon">
-                <BrandMark size={22} />
+                <BrandMark size={36} />
               </div>
               <div className="brand-text">
                 <span>Balance</span>

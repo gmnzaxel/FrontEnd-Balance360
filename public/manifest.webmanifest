@@ -3,8 +3,8 @@
   "short_name": "Balance360",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a1322",
-  "theme_color": "#0a1322",
+  "background_color": "#08080a",
+  "theme_color": "#08080a",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
