@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { jwtDecode } from 'jwt-decode'
+import { toast } from 'react-toastify'
 
 const rawApiUrl =
   import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/'
@@ -114,12 +115,14 @@ api.interceptors.response.use(
 
     // Sin respuesta = backend caído, timeout o error de red
     if (!response) {
+      if (axios.isCancel(error) || error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError' || error?.name === 'AbortError') {
+        return Promise.reject(error)
+      }
       const isTimeout = error.code === 'ECONNABORTED'
       const msg = isTimeout
         ? 'La solicitud tardó demasiado. Verificá que el servidor esté activo.'
         : 'No se pudo conectar con el servidor. Verificá tu conexión o que el backend esté corriendo.'
-      // Importamos toast de forma lazy para no crear una dependencia circular
-      import('react-toastify').then(({ toast }) => toast.error(msg, { toastId: 'network-error' }))
+      toast.error(msg, { toastId: 'network-error' })
       return Promise.reject(error)
     }
 

@@ -26,6 +26,7 @@ import Button from '../components/ui/Button'
 import Select from '../components/ui/Select'
 import { AuthContext } from '../context/AuthContext'
 import { toast } from 'react-toastify'
+import { getErrorMessage } from '../utils/errorUtils'
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -182,6 +183,7 @@ const Dashboard = () => {
       window.URL.revokeObjectURL(blobUrl)
     } catch (error) {
       console.error(error)
+      toast.error(getErrorMessage(error))
     }
   }
 
@@ -236,8 +238,8 @@ const Dashboard = () => {
                   >
                     <defs>
                       <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#5e6ad2" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#5e6ad2" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
@@ -266,12 +268,12 @@ const Dashboard = () => {
                     />
                     <Tooltip
                       content={<CustomTooltip />}
-                      cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                      cursor={{ stroke: '#5e6ad2', strokeWidth: 1, strokeDasharray: '4 4' }}
                     />
                     <Area
                       type="monotone"
                       dataKey="total"
-                      stroke="#4f46e5"
+                      stroke="#5e6ad2"
                       strokeWidth={3}
                       fillOpacity={1}
                       fill="url(#colorSales)"

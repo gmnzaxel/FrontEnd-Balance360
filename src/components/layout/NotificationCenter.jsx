@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useContext } from 'react'
+import React, { useEffect, useState, useRef, useContext, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, AlertTriangle, ShieldAlert, RefreshCw, ArrowRight, Package } from 'lucide-react'
 import api from '../../api/axios'
@@ -17,14 +17,13 @@ const NotificationCenter = () => {
   // Administradores y Superusuarios pueden ver el centro de notificaciones
   const isAllowedToSeeAlerts = user?.is_superuser || isAdminActual || user?.role === 'ADMIN'
 
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     if (!isAllowedToSeeAlerts) return
     setLoading(true)
     try {
-      // 1. Fetch low stock products (strictly less than stock_minimo)
-      const prodRes = await api.get('inventory/products/?include_archived=false')
-      const allProds = prodRes.data?.results || prodRes.data || []
-      const lowStock = allProds.filter((p) => Number(p.stock_actual) < Number(p.stock_minimo))
+      // 1. Fetch low stock products from dedicated unpaginated endpoint
+      const prodRes = await api.get('inventory/low-stock/')
+      const lowStock = prodRes.data?.results || prodRes.data || []
       setLowStockProducts(lowStock)
 
       // 2. Fetch security alerts ONLY for SuperUsers
@@ -52,12 +51,14 @@ const NotificationCenter = () => {
           const sales = salesRes.data?.results || salesRes.data || []
           const voidedOrRefunded = sales.filter((s) => s.is_voided || s.is_refunded).slice(0, 5)
           voidedOrRefunded.forEach((s) => {
+            const saleDate = s.date ? new Date(s.date) : new Date()
+            const reasonText = s.void_reason || s.refund_reason || 'Sin motivo especificado'
             secAlerts.push({
               id: `sale-${s.id}`,
               type: 'sale_action',
-              title: s.is_voided ? `Venta #${s.id} Anulada` : `Venta #${s.id} Reembolsada`,
-              detail: `Monto: $${Number(s.total).toLocaleString('es-AR')} - ${s.reason || 'Sin motivo'}`,
-              time: new Date(s.created_at || s.fecha),
+              title: s.is_voided ? `Venta #${s.sale_number || s.id} Anulada` : `Venta #${s.sale_number || s.id} Reembolsada`,
+              detail: `Monto: $${Number(s.total).toLocaleString('es-AR')} - ${reasonText}`,
+              time: saleDate,
             })
           })
         } catch {
@@ -72,13 +73,13 @@ const NotificationCenter = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isAllowedToSeeAlerts, user?.is_superuser])
 
   useEffect(() => {
     fetchAlerts()
     const interval = setInterval(fetchAlerts, 60000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchAlerts])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -87,8 +88,22 @@ const NotificationCenter = () => {
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
   }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open])
 
   if (!isAllowedToSeeAlerts) return null
 
@@ -97,266 +112,128 @@ const NotificationCenter = () => {
   return (
     <div style={{ position: 'relative' }} ref={popoverRef}>
       <button
-        className="btn-icon"
+        className={`notification-bell-btn ${totalBadges > 0 ? 'has-alerts' : ''}`}
         onClick={() => {
           setOpen((prev) => !prev)
           if (!open) fetchAlerts()
         }}
         title="Centro de Notificaciones y Alertas"
-        style={{
-          position: 'relative',
-          padding: '8px',
-          borderRadius: '10px',
-          background: 'var(--surface-1)',
-          border: '1px solid var(--border-color)',
-          color: totalBadges > 0 ? 'var(--warning-text)' : 'var(--text-secondary)',
-          cursor: 'pointer',
-        }}
+        aria-label="Centro de Notificaciones"
       >
         <Bell size={18} />
         {totalBadges > 0 && (
-          <span
-            style={{
-              position: 'absolute',
-              top: '-4px',
-              right: '-4px',
-              background: '#ef4444',
-              color: '#ffffff',
-              fontSize: '0.7rem',
-              fontWeight: '700',
-              borderRadius: '999px',
-              padding: '2px 6px',
-              minWidth: '18px',
-              textAlign: 'center',
-              boxShadow: '0 0 0 2px var(--surface-1)',
-              animation: 'pulse 2s infinite',
-            }}
-          >
-            {totalBadges}
+          <span className="notification-badge">
+            {totalBadges > 99 ? '99+' : totalBadges}
           </span>
         )}
       </button>
 
       {open && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 10px)',
-            right: '0',
-            width: '360px',
-            maxWidth: '92vw',
-            background: 'var(--surface-1)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '16px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
-            zIndex: 9999,
-            overflow: 'hidden',
-            animation: 'fadeIn 0.2s ease-out',
-          }}
-        >
-          {/* Header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '14px 16px',
-              borderBottom: '1px solid var(--border-color)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Bell size={16} style={{ color: 'var(--primary-300)' }} />
-              <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                Notificaciones & Alertas
-              </strong>
-            </div>
-            <button
-              onClick={() => fetchAlerts()}
-              title="Actualizar notificaciones"
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--text-secondary)',
-                padding: '4px',
-              }}
-            >
-              <RefreshCw size={14} className={loading ? 'spin' : ''} />
-            </button>
-          </div>
+        <>
+          {/* Backdrop on mobile touch screens for outside tap */}
+          <div className="notification-backdrop" onClick={() => setOpen(false)} aria-hidden="true" />
 
-          {/* Sub-tabs only for SuperUser */}
-          {user?.is_superuser && (
-            <div
-              style={{
-                display: 'flex',
-                background: 'rgba(15, 23, 42, 0.2)',
-                borderBottom: '1px solid var(--border-color)',
-              }}
-            >
+          <div className="notification-dropdown">
+            {/* Header */}
+            <div className="notification-header">
+              <div className="notification-header-title">
+                <Bell size={16} style={{ color: 'var(--primary-300)', flexShrink: 0 }} />
+                <span>Notificaciones & Alertas</span>
+              </div>
               <button
-                onClick={() => setActiveTab('stock')}
-                style={{
-                  flex: 1,
-                  padding: '8px 4px',
-                  border: 'none',
-                  background: 'none',
-                  color: activeTab === 'stock' ? 'var(--warning-text)' : 'var(--text-secondary)',
-                  borderBottom: activeTab === 'stock' ? '2px solid var(--warning-text)' : 'none',
-                  fontSize: '0.82rem',
-                  fontWeight: activeTab === 'stock' ? '600' : '400',
-                  cursor: 'pointer',
-                }}
+                onClick={() => fetchAlerts()}
+                title="Actualizar notificaciones"
+                className="notification-refresh-btn"
+                aria-label="Actualizar notificaciones"
               >
-                ⚠️ Bajo Stock ({lowStockProducts.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('security')}
-                style={{
-                  flex: 1,
-                  padding: '8px 4px',
-                  border: 'none',
-                  background: 'none',
-                  color: activeTab === 'security' ? '#f87171' : 'var(--text-secondary)',
-                  borderBottom: activeTab === 'security' ? '2px solid #f87171' : 'none',
-                  fontSize: '0.82rem',
-                  fontWeight: activeTab === 'security' ? '600' : '400',
-                  cursor: 'pointer',
-                }}
-              >
-                🛡️ Alertas de Seguridad ({securityAlerts.length})
+                <RefreshCw size={14} className={loading ? 'spin' : ''} />
               </button>
             </div>
-          )}
 
-          {/* Tab Contents */}
-          <div style={{ maxHeight: '320px', overflowY: 'auto', padding: '12px' }}>
-            {(!user?.is_superuser || activeTab === 'stock') &&
-              (lowStockProducts.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {lowStockProducts.map((p) => (
-                    <div
-                      key={p.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        background: 'rgba(245, 158, 11, 0.1)',
-                        border: '1px solid rgba(245, 158, 11, 0.2)',
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            fontWeight: '600',
-                            fontSize: '0.85rem',
-                            color: 'var(--text-primary)',
-                          }}
-                        >
-                          {p.nombre}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--warning-text)' }}>
-                          Stock actual: <strong>{p.stock_actual}</strong> (Mínimo: {p.stock_minimo})
-                        </div>
-                      </div>
-                      <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>
-                        Bajo Stock
-                      </span>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => {
-                      setOpen(false)
-                      navigate('/products')
-                    }}
-                    style={{
-                      marginTop: '4px',
-                      padding: '8px',
-                      background: 'var(--surface-2)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
-                      color: 'var(--primary-300)',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    Ver todo en Inventario <ArrowRight size={12} />
-                  </button>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    padding: '24px 12px',
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.85rem',
-                  }}
+            {/* Sub-tabs only for SuperUser */}
+            {user?.is_superuser && (
+              <div className="notification-tabs">
+                <button
+                  onClick={() => setActiveTab('stock')}
+                  className={`notification-tab-btn stock ${activeTab === 'stock' ? 'active' : ''}`}
                 >
-                  <Package size={28} style={{ opacity: 0.5, marginBottom: '6px' }} />
-                  <p style={{ margin: 0 }}>No hay productos bajo stock mínimo.</p>
-                </div>
-              ))}
+                  <span className="tab-label-full">⚠️ Bajo Stock ({lowStockProducts.length})</span>
+                  <span className="tab-label-short">⚠️ Stock ({lowStockProducts.length})</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('security')}
+                  className={`notification-tab-btn security ${activeTab === 'security' ? 'active' : ''}`}
+                >
+                  <span className="tab-label-full">🛡️ Alertas de Seguridad ({securityAlerts.length})</span>
+                  <span className="tab-label-short">🛡️ Alertas ({securityAlerts.length})</span>
+                </button>
+              </div>
+            )}
 
-            {user?.is_superuser &&
-              activeTab === 'security' &&
-              (securityAlerts.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {securityAlerts.map((s) => (
-                    <div
-                      key={s.id}
-                      style={{
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.2)',
+            {/* Tab Contents */}
+            <div className="notification-body">
+              {(!user?.is_superuser || activeTab === 'stock') &&
+                (lowStockProducts.length > 0 ? (
+                  <>
+                    {lowStockProducts.map((p) => (
+                      <div key={p.id} className="notification-card">
+                        <div className="notification-card-info">
+                          <div className="notification-card-title" title={p.nombre}>
+                            {p.nombre}
+                          </div>
+                          <div className="notification-card-subtitle">
+                            Stock: <strong>{p.stock_actual}</strong> <span style={{ opacity: 0.8 }}>(Mín: {p.stock_minimo})</span>
+                          </div>
+                        </div>
+                        <span className="badge badge-warning notification-card-badge">
+                          Bajo Stock
+                        </span>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        setOpen(false)
+                        navigate('/products')
                       }}
+                      className="notification-footer-btn"
                     >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          color: '#f87171',
-                          fontWeight: '600',
-                          fontSize: '0.82rem',
-                        }}
-                      >
-                        <ShieldAlert size={14} />
-                        {s.title}
+                      Ver todo en Inventario <ArrowRight size={13} />
+                    </button>
+                  </>
+                ) : (
+                  <div className="notification-empty">
+                    <Package size={28} />
+                    <p>No hay productos bajo stock mínimo.</p>
+                  </div>
+                ))}
+
+              {user?.is_superuser &&
+                activeTab === 'security' &&
+                (securityAlerts.length > 0 ? (
+                  <>
+                    {securityAlerts.map((s) => (
+                      <div key={s.id} className="notification-card danger">
+                        <div className="notification-card-info">
+                          <div className="notification-card-title danger" title={s.title}>
+                            <ShieldAlert size={14} style={{ flexShrink: 0 }} />
+                            <span>{s.title}</span>
+                          </div>
+                          <div className="notification-card-subtitle muted" title={s.detail}>
+                            {s.detail}
+                          </div>
+                        </div>
                       </div>
-                      <div
-                        style={{
-                          fontSize: '0.75rem',
-                          color: 'var(--text-secondary)',
-                          marginTop: '2px',
-                        }}
-                      >
-                        {s.detail}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    padding: '24px 12px',
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  <ShieldAlert size={28} style={{ opacity: 0.5, marginBottom: '6px' }} />
-                  <p style={{ margin: 0 }}>No hay alertas de seguridad registradas.</p>
-                </div>
-              ))}
+                    ))}
+                  </>
+                ) : (
+                  <div className="notification-empty">
+                    <ShieldAlert size={28} />
+                    <p>No hay alertas de seguridad registradas.</p>
+                  </div>
+                ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

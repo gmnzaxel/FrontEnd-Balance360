@@ -50,9 +50,9 @@
   font-size: 0.78rem !important;
   font-weight: 700 !important;
   padding: 5px 10px !important;
-  background: rgba(99, 102, 241, 0.12) !important;
-  border: 1px solid rgba(99, 102, 241, 0.28) !important;
-  color: var(--primary-300, #a5b4fc) !important;
+  background: rgba(94, 106, 210, 0.16) !important;
+  border: 1px solid rgba(94, 106, 210, 0.3) !important;
+  color: var(--primary-300) !important;
   border-radius: 9px !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -104,7 +104,7 @@
 }
 
 .quote-item-price-edit-wrap:focus-within {
-  border-color: var(--primary-500, #6366f1) !important;
+  border-color: var(--primary-500) !important;
 }
 
 .pos-mobile-drawer .quote-item-price-edit-wrap {
@@ -174,12 +174,12 @@
 }
 
 .quotes-page .quote-client-box:focus-within {
-  border-color: var(--primary-500, #6366f1) !important;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+  border-color: var(--primary-500) !important;
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.25) !important;
 }
 
 .quotes-page .quote-client-icon {
-  color: var(--primary-400, #818cf8) !important;
+  color: var(--primary-400) !important;
   flex-shrink: 0 !important;
 }
 
@@ -260,8 +260,8 @@
 }
 
 .quotes-page .quote-global-discount-input:focus {
-  border-color: var(--primary-500, #6366f1) !important;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+  border-color: var(--primary-500) !important;
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.25) !important;
 }
 
 .quotes-page .pos-global-discount-type-btn {
@@ -271,13 +271,13 @@
   font-size: 1rem !important;
   background: var(--surface-1, rgba(30, 41, 59, 0.5)) !important;
   border: 1px solid var(--border-subtle) !important;
-  color: var(--primary-300, #a5b4fc) !important;
+  color: var(--primary-300) !important;
   transition: all 0.15s ease !important;
 }
 
 .quotes-page .pos-global-discount-type-btn:hover {
-  background: rgba(99, 102, 241, 0.2) !important;
-  border-color: rgba(99, 102, 241, 0.5) !important;
+  background: rgba(94, 106, 210, 0.2) !important;
+  border-color: rgba(94, 106, 210, 0.5) !important;
   color: #ffffff !important;
 }
 
@@ -305,20 +305,20 @@
 }
 
 .quotes-page .quote-validity-select:focus {
-  border-color: var(--primary-500, #6366f1) !important;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+  border-color: var(--primary-500) !important;
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.25) !important;
 }
 
 .quotes-page .quote-validity-select option {
-  background-color: #0f172a !important;
+  background-color: #16171b !important;
   color: #f8fafc !important;
   padding: 8px !important;
 }
 
 /* ─── Total Highlight Card ────────────────────────────────────── */
 .quotes-page .quote-total-card {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.03) 100%) !important;
-  border: 1px solid rgba(99, 102, 241, 0.28) !important;
+  background: linear-gradient(135deg, rgba(94, 106, 210, 0.14) 0%, rgba(94, 106, 210, 0.03) 100%) !important;
+  border: 1px solid rgba(94, 106, 210, 0.3) !important;
   border-radius: 12px !important;
   padding: 14px 18px !important;
   display: flex !important;
@@ -384,10 +384,17 @@
 
 @media (max-width: 768px) {
   .quotes-page .quote-client-box {
-    background: var(--surface-0, #090e1a) !important;
+    background: var(--surface-0) !important;
   }
 
   .quotes-page .quote-validity-select {
-    background-color: var(--surface-0, #090e1a) !important;
+    background-color: var(--surface-0) !important;
+  }
+}
+
+@media (max-width: 440px) {
+  .quotes-page .pos-item-controls-row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
   }
 }

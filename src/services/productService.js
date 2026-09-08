@@ -19,7 +19,7 @@ export const productService = {
   },
 
   update: async (id, data) => {
-    const response = await api.put(`${ENDPOINT}${id}/`, data)
+    const response = await api.patch(`${ENDPOINT}${id}/`, data)
     return response.data
   },
 

@@ -47,7 +47,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 14px;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--surface-1);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
 }
@@ -80,7 +80,7 @@
 .settings-preview-wrap {
   display: flex;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--surface-1);
   padding: 18px;
   border-radius: 14px;
   border: 1px solid var(--border-subtle);
@@ -185,7 +185,7 @@
 .settings-logo-upload-btn:hover {
   border-color: var(--primary-500);
   color: var(--primary-400);
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(94, 106, 210, 0.08);
 }
 
 .settings-logo-preview {

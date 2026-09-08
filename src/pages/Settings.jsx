@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from 'react'
 import api from '../api/axios'
 import { toast } from 'react-toastify'
+import { getErrorMessage } from '../utils/errorUtils'
 import { Save, Store, Eye, ImageIcon, X, Upload } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import { AuthContext } from '../context/AuthContext'
@@ -66,7 +67,7 @@ const Settings = () => {
       toast.success('Configuración guardada.')
     } catch (error) {
       console.error(error)
-      toast.error('Error al guardar')
+      toast.error(getErrorMessage(error))
     } finally {
       setSaving(false)
     }

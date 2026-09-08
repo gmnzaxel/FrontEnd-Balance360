@@ -41,7 +41,6 @@ const formatCompactARS = (value) => {
 
 const Reports = () => {
   const isMobile = useMediaQuery('(max-width: 640px)')
-  const isTablet = useMediaQuery('(max-width: 1024px)')
   const [months] = useState(6)
   const [series, setSeries] = useState([])
   const [stats, setStats] = useState(null)
@@ -184,7 +183,7 @@ const Reports = () => {
   )
 
   const chartData = useMemo(() => {
-    if (chartType === 'monthly') return series || []
+    if (chartType === 'monthly') return [...(series || [])].reverse()
     return stats?.sales_by_day || []
   }, [chartType, series, stats])
 
@@ -386,12 +385,12 @@ const Reports = () => {
                   >
                     <defs>
                       <linearGradient id="revenueBarGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#818cf8" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.85} />
+                        <stop offset="0%" stopColor="#7c86eb" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#4d56be" stopOpacity={0.85} />
                       </linearGradient>
                       <linearGradient id="barHoverGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#a5b4fc" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0.95} />
+                        <stop offset="0%" stopColor="#9ea6f1" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#5e6ad2" stopOpacity={0.95} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
@@ -417,13 +416,13 @@ const Reports = () => {
                       dx={-6}
                     />
                     <Tooltip
-                      cursor={{ fill: 'rgba(99, 102, 241, 0.08)' }}
+                      cursor={{ fill: 'rgba(94, 106, 210, 0.1)' }}
                       contentStyle={{
                         borderRadius: '12px',
-                        background: '#0f172a',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
-                        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.6)',
-                        color: '#f8fafc',
+                        background: 'var(--surface-elevated, #1d1e24)',
+                        border: '1px solid var(--border-subtle)',
+                        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.7)',
+                        color: 'var(--text-primary)',
                         padding: '10px 14px',
                       }}
                       formatter={(value) => [formatCurrency(value), 'Total Vendido']}

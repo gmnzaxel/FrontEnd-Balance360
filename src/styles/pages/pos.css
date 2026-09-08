@@ -213,7 +213,7 @@
   flex: 1;
   padding: 12px;
   overflow-y: auto;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--surface-muted);
 }
 
 @keyframes liquidGrow {
@@ -407,9 +407,12 @@
 }
 
 .pos-discount-input {
-  width: 26px;
+  field-sizing: content;
+  min-width: 22px;
+  max-width: 85px;
+  width: auto;
   height: 22px;
-  padding: 0;
+  padding: 0 3px;
   font-size: 0.78rem;
   font-weight: 600;
   background: transparent;
@@ -417,7 +420,9 @@
   color: var(--text-primary);
   outline: none;
   text-align: center;
+  box-sizing: content-box;
   -moz-appearance: textfield;
+  transition: width 0.12s ease;
 }
 
 .pos-discount-input::-webkit-outer-spin-button,
@@ -573,10 +578,10 @@
 }
 
 .pos-payment-toggle.active {
-  border-color: rgba(99, 102, 241, 0.5);
-  background: rgba(99, 102, 241, 0.18);
-  color: var(--primary-300, #a5b4fc);
-  box-shadow: 0 0 14px rgba(99, 102, 241, 0.25);
+  border-color: rgba(94, 106, 210, 0.5);
+  background: rgba(94, 106, 210, 0.18);
+  color: var(--primary-300);
+  box-shadow: 0 0 14px rgba(94, 106, 210, 0.25);
 }
 
 .pos-payment-toggle svg {
@@ -842,7 +847,7 @@
 }
 
 .pos-split-fill-1 {
-  background: linear-gradient(90deg, #6366f1, #818cf8);
+  background: linear-gradient(90deg, #5e6ad2, #7c86eb);
   transition: width 0.3s ease;
 }
 

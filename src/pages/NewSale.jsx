@@ -29,20 +29,7 @@ import Modal from '../components/ui/Modal'
 import Select from '../components/ui/Select'
 import Skeleton from '../components/ui/Skeleton'
 import ConfirmModal from '../components/ui/ConfirmModal'
-
-const loadHtml2Pdf = () => {
-  return new Promise((resolve, reject) => {
-    if (window.html2pdf) {
-      resolve(window.html2pdf)
-      return
-    }
-    const script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
-    script.onload = () => resolve(window.html2pdf)
-    script.onerror = (err) => reject(err)
-    document.body.appendChild(script)
-  })
-}
+import { loadHtml2Pdf } from '../utils/pdfUtils'
 
 const PAGE_SIZE = 12
 
@@ -127,11 +114,17 @@ const PosCartItem = React.memo(
             <input
               type="number"
               className="pos-discount-input"
-              value={item.discountValue || ''}
+              value={item.discountValue ?? ''}
+              style={{
+                width: `${Math.max(2.2, (String(item.discountValue ?? '').length || 1) + 0.4)}ch`,
+              }}
               onChange={(e) =>
                 onUpdateDiscount(item.id, e.target.value, item.discountType || '$')
               }
               placeholder="0"
+              min="0"
+              step="any"
+              aria-label="Descuento unitario"
             />
             <button
               type="button"
@@ -650,7 +643,7 @@ const NewSale = () => {
         setLoadingSale(false)
       }
     },
-    [navigate, normalizeSaleItems],
+    [navigate, normalizeSaleItems, setCart, setDiscount],
   )
 
   useEffect(() => {
@@ -1155,7 +1148,11 @@ const NewSale = () => {
             `No podés agregar más de este producto. Stock disponible: ${product.stock_actual}`,
           )
           setMultiplier(1)
-          searchInputRef.current?.focus()
+          if (!isMobile) {
+            searchInputRef.current?.focus()
+          } else {
+            searchInputRef.current?.blur()
+          }
           return
         } else {
           toast.warning(
@@ -1167,9 +1164,13 @@ const NewSale = () => {
       setCartAnimKey((k) => k + 1)
       triggerCartPulse()
       setMultiplier(1)
-      searchInputRef.current?.focus()
+      if (!isMobile) {
+        searchInputRef.current?.focus()
+      } else {
+        searchInputRef.current?.blur()
+      }
     },
-    [multiplier, triggerCartPulse],
+    [multiplier, triggerCartPulse, setCart, isMobile],
   )
 
   const addService = useCallback(() => {
@@ -1213,7 +1214,7 @@ const NewSale = () => {
     if (isStockExceeded) {
       toast.warning(`Cantidad limitada al stock disponible (${maxAllowed} unidades).`)
     }
-  }, [])
+  }, [setCart])
 
   // cartCount viene de useCart
 
@@ -1368,6 +1369,9 @@ const NewSale = () => {
     normalizeSaleItems,
     navigate,
     submitting,
+    setCart,
+    setDiscount,
+    setDiscountType,
   ])
 
   useEffect(() => {
@@ -1470,7 +1474,9 @@ const NewSale = () => {
               <button
                 onClick={() => {
                   setSearch('')
-                  searchInputRef.current?.focus()
+                  if (!isMobile) {
+                    searchInputRef.current?.focus()
+                  }
                 }}
                 aria-label="Limpiar búsqueda"
                 style={{

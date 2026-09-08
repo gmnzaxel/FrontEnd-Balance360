@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useRef } from 'react'
+import React, { useEffect, useState, useContext, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Edit,
@@ -90,7 +90,7 @@ const Products = () => {
   })
 
   // --- Carga Inicial ---
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const promises = [
@@ -133,11 +133,11 @@ const Products = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showArchivedProducts, page, pageSize, searchTerm, sortField, sortDir, isAdmin])
 
   useEffect(() => {
     loadData()
-  }, [showArchivedProducts, page, searchTerm, sortField, sortDir])
+  }, [loadData])
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -145,6 +145,10 @@ const Products = () => {
     }, 350)
     return () => clearTimeout(handler)
   }, [searchInput])
+
+  useEffect(() => {
+    setPage(1)
+  }, [searchTerm, showArchivedProducts, sortField, sortDir])
 
   useEffect(() => {
     setSelectedProductIds([])
@@ -173,84 +177,34 @@ const Products = () => {
     setFocusedIndex(-1)
   }, [products])
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      const isInput =
-        e.target.tagName === 'INPUT' ||
-        e.target.tagName === 'TEXTAREA' ||
-        e.target.tagName === 'SELECT' ||
-        e.target.isContentEditable
-
-      if (isInput) {
-        if (e.key === 'ArrowDown' && e.target === searchInputRef.current) {
-          e.preventDefault()
-          setFocusedIndex(0)
-        }
+  // --- Acciones de Producto ---
+  const handleArchive = useCallback(
+    (id) => {
+      if (!isAdmin) {
+        toast.error('Solo los administradores pueden archivar productos')
         return
       }
-
-      if (e.key === 'F2' || e.key === '/') {
-        e.preventDefault()
-        searchInputRef.current?.focus()
-      } else if (e.altKey && (e.key === 'n' || e.key === 'N')) {
-        e.preventDefault()
-        if (isAdmin) handleCreate()
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        setFocusedIndex((i) => Math.min(products.length - 1, i + 1))
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        setFocusedIndex((i) => Math.max(0, i - 1))
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        setPage((p) => Math.max(1, p - 1))
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        setPage((p) => Math.min(totalPages, p + 1))
-      } else if (focusedIndex >= 0 && focusedIndex < products.length) {
-        const activeProduct = products[focusedIndex]
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          handleViewDetails(activeProduct)
-        } else if (e.key === 'e' || e.key === 'E') {
-          e.preventDefault()
-          if (isAdmin) handleEdit(activeProduct)
-        } else if (e.key === 'Delete' || e.key === 'd' || e.key === 'D') {
-          e.preventDefault()
-          if (isAdmin) handleArchive(activeProduct.id)
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [products, focusedIndex, totalPages, isAdmin])
-
-  // --- Acciones de Producto ---
-  const handleArchive = (id) => {
-    if (!isAdmin) {
-      toast.error('Solo los administradores pueden archivar productos')
-      return
-    }
-    setConfirmConfig({
-      isOpen: true,
-      title: 'Archivar producto',
-      message: '¿Archivar este producto? Podrás restaurarlo luego.',
-      confirmLabel: 'Archivar',
-      variant: 'warning',
-      onConfirm: async () => {
-        setConfirmConfig((prev) => ({ ...prev, isOpen: false }))
-        try {
-          await productService.delete(id)
-          toast.success('Producto archivado correctamente')
-          loadData()
-        } catch (error) {
-          console.error(error)
-          toast.error(getErrorMessage(error))
-        }
-      },
-    })
-  }
+      setConfirmConfig({
+        isOpen: true,
+        title: 'Archivar producto',
+        message: '¿Archivar este producto? Podrás restaurarlo luego.',
+        confirmLabel: 'Archivar',
+        variant: 'warning',
+        onConfirm: async () => {
+          setConfirmConfig((prev) => ({ ...prev, isOpen: false }))
+          try {
+            await productService.delete(id)
+            toast.success('Producto archivado correctamente')
+            loadData()
+          } catch (error) {
+            console.error(error)
+            toast.error(getErrorMessage(error))
+          }
+        },
+      })
+    },
+    [isAdmin, loadData],
+  )
 
   const handleRestore = async (id) => {
     if (!isAdmin) {
@@ -424,7 +378,7 @@ const Products = () => {
     URL.revokeObjectURL(url)
   }
 
-  const handleEdit = (product) => {
+  const handleEdit = useCallback((product) => {
     setHoveredProduct(null)
     setEditingProduct(product)
     setFormData({
@@ -432,13 +386,13 @@ const Products = () => {
       imagen_base64: product.imagen_base64 || '',
     })
     setShowModal(true)
-  }
+  }, [])
 
-  const handleViewDetails = (product) => {
+  const handleViewDetails = useCallback((product) => {
     setHoveredProduct(null)
     setSelectedProduct(product)
     setShowDetailsModal(true)
-  }
+  }, [])
 
   const processImageFile = (file) => {
     if (!file.type.startsWith('image/')) {
@@ -516,7 +470,7 @@ const Products = () => {
     setFormData((prev) => ({ ...prev, imagen_base64: '' }))
   }
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     setEditingProduct(null)
     setFormData({
       codigo: '',
@@ -530,7 +484,69 @@ const Products = () => {
       imagen_base64: '',
     })
     setShowModal(true)
-  }
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isInput =
+        e.target.tagName === 'INPUT' ||
+        e.target.tagName === 'TEXTAREA' ||
+        e.target.tagName === 'SELECT' ||
+        e.target.isContentEditable
+
+      if (isInput) {
+        if (e.key === 'ArrowDown' && e.target === searchInputRef.current) {
+          e.preventDefault()
+          setFocusedIndex(0)
+        }
+        return
+      }
+
+      if (e.key === 'F2' || e.key === '/') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      } else if (e.altKey && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault()
+        if (isAdmin) handleCreate()
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setFocusedIndex((i) => Math.min(products.length - 1, i + 1))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setFocusedIndex((i) => Math.max(0, i - 1))
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        setPage((p) => Math.max(1, p - 1))
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        setPage((p) => Math.min(totalPages, p + 1))
+      } else if (focusedIndex >= 0 && focusedIndex < products.length) {
+        const activeProduct = products[focusedIndex]
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          handleViewDetails(activeProduct)
+        } else if (e.key === 'e' || e.key === 'E') {
+          e.preventDefault()
+          if (isAdmin) handleEdit(activeProduct)
+        } else if (e.key === 'Delete' || e.key === 'd' || e.key === 'D') {
+          e.preventDefault()
+          if (isAdmin) handleArchive(activeProduct.id)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [
+    products,
+    focusedIndex,
+    totalPages,
+    isAdmin,
+    handleCreate,
+    handleViewDetails,
+    handleEdit,
+    handleArchive,
+  ])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -574,7 +590,7 @@ const Products = () => {
       const { created, updated, errors, processed_rows, total_rows, skipped_rows } =
         await productService.importCSV(file)
 
-      let msg = `Proceso finalizado. Nuevos: ${created}, Actualizados: ${updated}.`
+      let msg = `Importación finalizada. Creados: ${created}, Con stock sumado: ${updated}.`
       if (typeof total_rows === 'number' && typeof processed_rows === 'number') {
         msg += ` Procesadas: ${processed_rows}/${total_rows}.`
       }
@@ -749,6 +765,7 @@ const Products = () => {
           <label
             className={`ui-btn ui-btn-secondary ${submitting || !isAdmin ? 'disabled' : ''}`}
             style={{ cursor: submitting || !isAdmin ? 'not-allowed' : 'pointer' }}
+            title="Importar archivo Excel (.xlsx) o CSV. Si el producto ya existe, suma el stock cargado al stock actual y actualiza datos/precios. Si no existe, lo crea."
           >
             <Upload size={16} /> Importar
             <input

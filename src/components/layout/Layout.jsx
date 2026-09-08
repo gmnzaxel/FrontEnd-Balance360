@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo, useState, useContext, useEffect } from 'react'
+import React, { Suspense, useMemo, useState, useContext, useEffect, useCallback } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Header from './Header'
@@ -54,7 +54,7 @@ const Layout = () => {
     }
 
     return items
-  }, [isAdmin, user, location.pathname])
+  }, [isAdmin, user])
 
   const pageTitle = useMemo(() => {
     const current = navItems.find((item) => item.path === location.pathname)
@@ -65,10 +65,13 @@ const Layout = () => {
     return 'Balance360'
   }, [location.pathname, navItems])
 
-  const handleNavigate = (path) => {
-    navigate(path)
-    setSidebarOpen(false)
-  }
+  const handleNavigate = useCallback(
+    (path) => {
+      navigate(path)
+      setSidebarOpen(false)
+    },
+    [navigate],
+  )
 
   useEffect(() => {
     const handleGlobalKeys = (e) => {
@@ -84,7 +87,7 @@ const Layout = () => {
 
     window.addEventListener('keydown', handleGlobalKeys)
     return () => window.removeEventListener('keydown', handleGlobalKeys)
-  }, [navItems])
+  }, [navItems, handleNavigate])
 
   const effectiveUser = user ? { ...user, role: effectiveRole || user.role } : user
 

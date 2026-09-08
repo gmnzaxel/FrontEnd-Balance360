@@ -6,6 +6,31 @@ import { User, Key, Building, ShieldCheck } from 'lucide-react'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 
+const InfoCard = ({ icon, title, children, innerRef }) => (
+  <div className="card profile-card" ref={innerRef}>
+    <div className="profile-card-header">
+      <div className="profile-card-icon">{icon}</div>
+      <h3 className="text-lg font-semibold m-0">{title}</h3>
+    </div>
+    <div className="profile-card-body">{children}</div>
+  </div>
+)
+
+const InfoRow = ({ label, value, badge }) => (
+  <div>
+    <label className="text-xs font-semibold text-muted uppercase tracking-wide block mb-1">
+      {label}
+    </label>
+    {badge ? (
+      <span className={`badge ${badge === 'primary' ? 'badge-primary' : 'badge-neutral'}`}>
+        {value}
+      </span>
+    ) : (
+      <p className="font-medium m-0">{value}</p>
+    )}
+  </div>
+)
+
 const Profile = () => {
   const [profileData, setProfileData] = useState(null)
   const [passwordData, setPasswordData] = useState({
@@ -65,30 +90,6 @@ const Profile = () => {
 
   if (!profileData) return <div className="p-8 text-center text-muted">Cargando perfil…</div>
 
-  const InfoCard = ({ icon, title, children, innerRef }) => (
-    <div className="card profile-card" ref={innerRef}>
-      <div className="profile-card-header">
-        <div className="profile-card-icon">{icon}</div>
-        <h3 className="text-lg font-semibold m-0">{title}</h3>
-      </div>
-      <div className="profile-card-body">{children}</div>
-    </div>
-  )
-
-  const InfoRow = ({ label, value, badge }) => (
-    <div>
-      <label className="text-xs font-semibold text-muted uppercase tracking-wide block mb-1">
-        {label}
-      </label>
-      {badge ? (
-        <span className={`badge ${badge === 'primary' ? 'badge-primary' : 'badge-neutral'}`}>
-          {value}
-        </span>
-      ) : (
-        <p className="font-medium m-0">{value}</p>
-      )}
-    </div>
-  )
 
   return (
     <div className="profile-page page page-container">

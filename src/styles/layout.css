@@ -5,8 +5,8 @@
   grid-template-rows: auto 1fr;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top right, rgba(99, 102, 241, 0.03), transparent 50%),
-    radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.02), transparent 50%), var(--bg-app);
+    radial-gradient(circle at top right, rgba(94, 106, 210, 0.05), transparent 50%),
+    radial-gradient(circle at bottom left, rgba(124, 58, 237, 0.03), transparent 50%), var(--bg-app);
 }
 
 .app-main {
@@ -248,8 +248,8 @@
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.16);
   border-top-color: transparent;
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.65), rgba(9, 15, 29, 0.75));
-  box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.04);
+  background: linear-gradient(145deg, rgba(22, 23, 27, 0.75), rgba(16, 17, 20, 0.85));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   display: flex;
   flex-direction: column;
 }
@@ -413,9 +413,9 @@
   padding: 12px 14px;
   margin: 10px;
   border-radius: 16px;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(22, 23, 27, 0.8);
   border: 1px solid var(--border-subtle);
-  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   animation: sidebar-rise 0.45s var(--ease-smooth) both;
 }
 
@@ -568,7 +568,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(26, 27, 34, 0.9);
   color: var(--primary-300);
   display: grid;
   place-items: center;
@@ -696,9 +696,9 @@
     border-radius: 0 22px 22px 0 !important;
     border: none !important;
     border-right: 1px solid var(--border-subtle) !important;
-    background: var(--surface-0, #090e1a) !important;
-    background: linear-gradient(180deg, #0d1527 0%, #080d1a 100%) !important;
-    box-shadow: 12px 0 48px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    background: var(--surface-0) !important;
+    background: linear-gradient(180deg, #131418 0%, #0a0a0d 100%) !important;
+    box-shadow: 12px 0 48px rgba(0, 0, 0, 0.85), 0 0 0 1px var(--border-subtle) !important;
     transform: translateX(-105%) !important;
     pointer-events: none !important;
     transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
@@ -743,7 +743,7 @@
     justify-content: space-between;
     padding: 16px 18px 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(15, 23, 42, 0.4);
+    background: rgba(22, 23, 27, 0.6);
   }
 
   .sidebar.mobile-mode .sidebar-brand {
@@ -781,7 +781,7 @@
   }
 
   .sidebar.mobile-mode .sidebar-section {
-    background: rgba(15, 23, 42, 0.55);
+    background: rgba(22, 23, 27, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 14px;
     padding: 10px;
@@ -811,7 +811,7 @@
     flex-shrink: 0;
     padding: 12px 14px;
     padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    background: rgba(10, 16, 30, 0.95);
+    background: rgba(16, 17, 20, 0.98);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
