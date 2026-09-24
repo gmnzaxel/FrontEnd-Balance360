@@ -65,6 +65,10 @@ const refreshAccessToken = async () => {
       if (newAccess) {
         localStorage.setItem('access_token', newAccess)
       }
+      const newRefresh = response.data.refresh
+      if (newRefresh) {
+        localStorage.setItem('refresh_token', newRefresh)
+      }
       return newAccess
     })
     .finally(() => {

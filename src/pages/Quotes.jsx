@@ -24,7 +24,11 @@ import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Skeleton from '../components/ui/Skeleton'
 import ConfirmModal from '../components/ui/ConfirmModal'
-import { loadHtml2Pdf } from '../utils/pdfUtils'
+import PosCartItem from '../components/pos/PosCartItem'
+import {
+  printCommercialQuoteTicket,
+  downloadCommercialQuotePdf,
+} from '../utils/ticketGenerator'
 
 const PAGE_SIZE = 12
 
@@ -97,139 +101,6 @@ const ProductRow = memo(
 )
 ProductRow.displayName = 'ProductRow'
 
-const QuoteCartItem = memo(
-  ({ item, onRemove, onUpdatePrice, onUpdateDiscount, onUpdateQuantity, isClearing }) => {
-    const qty = parseInt(item.quantity, 10) || 1
-    const price = parseFloat(item.price) || 0
-    const sub = price * qty
-    const dv = parseFloat(item.discountValue)
-    const discountAmount =
-      !item.discountValue || isNaN(dv)
-        ? 0
-        : item.discountType === '%'
-          ? sub * (dv / 100)
-          : dv
-    const itemTotal = Math.max(0, sub - discountAmount)
-
-    return (
-      <div className={`pos-cart-item ${isClearing ? 'clearing' : ''}`}>
-        <div className="pos-item-header">
-          <div className="pos-item-info">
-            <span className="pos-item-name" title={item.nombre}>
-              {item.nombre}
-            </span>
-            {qty > 1 && (
-              <span className="pos-item-unit-tag">
-                ({formatARS(price)} c/u)
-              </span>
-            )}
-            {item.item_type === 'SERVICIO' && (
-              <span className="pos-item-badge">Servicio</span>
-            )}
-          </div>
-          <button
-            type="button"
-            className="pos-item-delete"
-            onClick={() => onRemove(item.id)}
-            aria-label="Eliminar ítem"
-            title="Eliminar"
-          >
-            <Trash2 size={15} />
-          </button>
-        </div>
-
-        <div className="pos-item-controls-row">
-          {/* Stepper */}
-          <div className="pos-stepper-wrap">
-            <button
-              type="button"
-              onClick={() => onUpdateQuantity(item.id, qty - 1)}
-              disabled={qty <= 1}
-              className="pos-stepper-btn"
-              aria-label="Disminuir cantidad"
-            >
-              -
-            </button>
-            <input
-              type="number"
-              value={item.quantity}
-              onChange={(e) =>
-                onUpdateQuantity(
-                  item.id,
-                  e.target.value === '' ? '' : parseInt(e.target.value, 10),
-                )
-              }
-              className="pos-stepper-input"
-              aria-label="Cantidad"
-            />
-            <button
-              type="button"
-              onClick={() => onUpdateQuantity(item.id, qty + 1)}
-              className="pos-stepper-btn"
-              aria-label="Aumentar cantidad"
-            >
-              +
-            </button>
-          </div>
-
-          {/* Editable Unit Price Pill */}
-          <div className="quote-item-price-edit-wrap" title="Precio unitario (haga clic para editar)">
-            <span className="quote-price-symbol">$</span>
-            <input
-              type="number"
-              value={item.price}
-              onChange={(e) => onUpdatePrice(item.id, e.target.value)}
-              className="quote-price-input"
-              placeholder="0.00"
-              aria-label="Precio unitario"
-            />
-          </div>
-
-          {/* Item Discount Inline */}
-          <div className="pos-item-discount-wrap">
-            <span className="pos-discount-label">Desc:</span>
-            <input
-              type="number"
-              className="pos-discount-input"
-              value={item.discountValue ?? ''}
-              style={{
-                width: `${Math.max(2.2, (String(item.discountValue ?? '').length || 1) + 0.4)}ch`,
-              }}
-              onChange={(e) =>
-                onUpdateDiscount(item.id, e.target.value, item.discountType || '$')
-              }
-              placeholder="0"
-              min="0"
-              step="any"
-              aria-label="Descuento unitario"
-            />
-            <button
-              type="button"
-              className="pos-discount-type-btn"
-              onClick={() =>
-                onUpdateDiscount(
-                  item.id,
-                  item.discountValue || '',
-                  (item.discountType || '$') === '$' ? '%' : '$',
-                )
-              }
-              title="Cambiar tipo de descuento ($ / %)"
-              aria-label="Tipo de descuento"
-            >
-              {item.discountType || '$'}
-            </button>
-          </div>
-
-          {/* Subtotal */}
-          <div className="pos-item-price-wrap">
-            <span className="pos-item-subtotal">{formatARS(itemTotal)}</span>
-          </div>
-        </div>
-      </div>
-    )
-  },
-)
-QuoteCartItem.displayName = 'QuoteCartItem'
 
 // ─── Componente principal ───────────────────────────────────────────────────────
 
@@ -438,471 +309,33 @@ const Quotes = () => {
   // ─── Generar / imprimir presupuesto ─────────────────────────────────────────
 
   const handleGenerateQuote = useCallback(() => {
-    if (!cart.length) {
-      toast.warning('El presupuesto está vacío')
-      return
-    }
-    const invalidItem = cart.find((item) => !item.quantity || parseInt(item.quantity, 10) <= 0)
-    if (invalidItem) {
-      toast.warning(`La cantidad para el producto "${invalidItem.nombre}" debe ser mayor a 0.`)
-      return
-    }
-
-    const branchName = ticketConfigRef.current?.branch_name || 'TU NEGOCIO'
-    const headerText = ticketConfigRef.current?.ticket_header || 'BALANCE 360'
-    const address = ticketConfigRef.current?.ticket_address
-    const cuit = ticketConfigRef.current?.ticket_cuit
-    const iibb = ticketConfigRef.current?.ticket_iibb
-    const iva = ticketConfigRef.current?.ticket_iva
-    const phone = ticketConfigRef.current?.ticket_phone
-    const email = ticketConfigRef.current?.ticket_email
-    const dateStr = new Date().toLocaleString('es-AR', { hour12: false })
-    const logoDataUrl =
-      ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || ''
-    const ticketWidth = ticketConfigRef.current?.ticket_width || '58mm'
-    const is58mm = ticketWidth === '58mm'
-
-    // Lógica de descuentos para presupuesto
-    const itemsBaseSubtotal = cart.reduce(
-      (acc, item) => acc + (parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1),
-      0,
-    )
-    const itemsDiscountTotal = cart.reduce((acc, item) => {
-      const baseSub = (parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1)
-      const dv = parseFloat(item.discountValue)
-      const descItem =
-        !item.discountValue || isNaN(dv) ? 0 : item.discountType === '%' ? baseSub * (dv / 100) : dv
-      return acc + descItem
-    }, 0)
-    const globalDiscount = (() => {
-      const currentSub = itemsBaseSubtotal - itemsDiscountTotal
-      const dv = parseFloat(discount)
-      if (isNaN(dv) || dv <= 0) return 0
-      return discountType === '%' ? currentSub * (dv / 100) : dv
-    })()
-    const totalDiscount = itemsDiscountTotal + globalDiscount
-    const finalTotal = itemsBaseSubtotal - totalDiscount
-
-    const htmlContent = `
-      <html>
-        <head>
-          <title>Presupuesto${clientName ? ` - ${clientName}` : ''}</title>
-          <meta charset="UTF-8">
-          <style>
-            @media print {
-              @page {
-                size: ${ticketWidth} auto;
-                margin: 0;
-              }
-              body {
-                margin: 0;
-                padding: ${is58mm ? '1mm 2.5mm' : '2mm 4mm'};
-              }
-            }
-            body {
-              font-family: system-ui, -apple-system, sans-serif;
-              width: ${ticketWidth};
-              max-width: ${ticketWidth};
-              margin: 0 auto;
-              padding: ${is58mm ? '1mm 2.5mm' : '2mm 4mm'};
-              font-size: ${is58mm ? '11px' : '12px'};
-              box-sizing: border-box;
-              color: #000;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 8px;
-              border-bottom: 1px dashed #000;
-              padding-bottom: 8px;
-            }
-            .branch-title {
-              font-size: ${is58mm ? '14px' : '16px'};
-              font-weight: bold;
-              text-transform: uppercase;
-            }
-            .company {
-              font-size: ${is58mm ? '10px' : '11px'};
-              color: #000;
-              margin-bottom: 4px;
-              white-space: pre-wrap;
-            }
-            .info {
-              font-size: ${is58mm ? '9px' : '10px'};
-              margin-bottom: 3px;
-              color: #000;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 8px;
-            }
-            th {
-              text-align: left;
-              border-bottom: 1px solid #000;
-              font-size: ${is58mm ? '10px' : '12px'};
-              color: #000;
-            }
-            td {
-              padding: 3px 0;
-              color: #000;
-            }
-            .text-right {
-              text-align: right;
-            }
-            .totals {
-              border-top: 1px dashed #000;
-              padding-top: 6px;
-              margin-top: 4px;
-            }
-            .row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 3px;
-              font-size: ${is58mm ? '11px' : '12px'};
-              color: #000;
-            }
-            .footer {
-              text-align: center;
-              margin-top: 15px;
-              font-size: ${is58mm ? '9px' : '10px'};
-              white-space: pre-wrap;
-              color: #000;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div style="display:flex;align-items:center;justify-content:center;gap:12px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
-              ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:${is58mm ? '35px' : '44px'};max-width:${is58mm ? '50px' : '60px'};object-fit:contain;flex-shrink:0;" />` : ''}
-              <div class="branch-title">${branchName}</div>
-            </div>
-            <div class="company">${headerText}</div>
-            ${address ? `<div class="info">Dirección: ${address}</div>` : ''}
-            ${cuit ? `<div class="info">CUIT: ${cuit}</div>` : ''}
-            ${iibb ? `<div class="info">IIBB: ${iibb}</div>` : ''}
-            ${iva ? `<div class="info">IVA: ${iva}</div>` : ''}
-            ${phone ? `<div class="info">Tel: ${phone}</div>` : ''}
-            ${email ? `<div class="info">Email: ${email}</div>` : ''}
-            <div class="info">Validez: ${validityDays} días</div>
-            ${clientName ? `<div class="info">Cliente: ${clientName}</div>` : ''}
-            <div class="info">Fecha: ${dateStr}</div>
-          </div>
-          
-          <table>
-            <thead>
-              <tr>
-                <th style="width: ${is58mm ? '50%' : '55%'};">Producto</th>
-                <th class="text-right" style="width: 20%;">Cant</th>
-                <th class="text-right" style="width: 30%;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${cart
-                .map((item) => {
-                  const baseSub = (parseFloat(item.price) || 0) * item.quantity
-                  const dv = parseFloat(item.discountValue)
-                  const descItem =
-                    !item.discountValue || isNaN(dv)
-                      ? 0
-                      : item.discountType === '%'
-                        ? baseSub * (dv / 100)
-                        : dv
-                  const itemPrice = parseFloat(item.price) || 0
-                  const itemLabel = item.nombre || 'Producto'
-
-                  if (is58mm) {
-                    return `
-                    <tr>
-                      <td colspan="3" style="font-weight: bold; font-size: 11px; padding-top: 4px;">${itemLabel}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px dashed #eee;">
-                      <td style="font-size: 10px; color: #000; padding-bottom: 4px; padding-left: 5px;">
-                        $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                        ${item.quantity > 1 ? ` x ${item.quantity}` : ''}
-                        ${descItem > 0 ? `<span style="font-weight: bold; text-decoration: underline; margin-left: 4px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>` : ''}
-                      </td>
-                      <td class="text-right" style="vertical-align: top; font-size: 10px; color: #000; padding-bottom: 4px;">${item.quantity}</td>
-                      <td class="text-right" style="vertical-align: top; font-size: 11px; font-weight: bold; padding-bottom: 4px;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                    </tr>
-                  `
-                  } else {
-                    return `
-                    <tr style="border-bottom: 1px solid #eee;">
-                      <td style="padding: 4px 0;">
-                        <div style="font-weight: bold;">${itemLabel}</div>
-                        ${
-                          descItem > 0
-                            ? `
-                          <div style="font-size: 10px; color: #000; margin-top: 2px;">
-                            Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                            ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
-                            <span style="font-weight: bold; margin-left: 6px; text-decoration: underline;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
-                          </div>
-                        `
-                            : `
-                          <div style="font-size: 10px; color: #000; margin-top: 2px;">
-                            Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                          </div>
-                        `
-                        }
-                      </td>
-                      <td class="text-right" style="vertical-align: top; padding: 4px 0;">${item.quantity}</td>
-                      <td class="text-right" style="vertical-align: top; padding: 4px 0;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                    </tr>
-                  `
-                  }
-                })
-                .join('')}
-            </tbody>
-          </table>
-
-          <div class="totals">
-            <div class="row">
-              <span>Subtotal:</span>
-              <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-            </div>
-            ${
-              totalDiscount > 0
-                ? `
-            <div class="row">
-              <span>Descuento:</span>
-              <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-            </div>`
-                : ''
-            }
-            <div class="row" style="font-weight: bold; font-size: ${is58mm ? '13px' : '14px'}; margin-top: 5px; border-top: 1px solid #000; padding-top: 3px;">
-              <span>TOTAL PREVISTO:</span>
-              <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-            </div>
-          </div>
-
-          <div class="footer">
-            <p>Los precios pueden estar sujetos a modificaciones sin previo aviso luego de su expiración.</p>
-          </div>
-        </body>
-      </html>
-    `
-
-    const iframe = document.createElement('iframe')
-    iframe.style.position = 'absolute'
-    iframe.style.width = '0px'
-    iframe.style.height = '0px'
-    iframe.style.border = 'none'
-    iframe.style.top = '-9999px'
-    iframe.style.left = '-9999px'
-    document.body.appendChild(iframe)
-
-    const doc = iframe.contentWindow.document
-    doc.open()
-    doc.write(htmlContent)
-    doc.close()
-
-    setTimeout(() => {
-      iframe.contentWindow.focus()
-      iframe.contentWindow.print()
-      setTimeout(() => {
-        document.body.removeChild(iframe)
-      }, 1000)
-    }, 300)
-  }, [cart, discount, discountType, validityDays, clientName])
+    printCommercialQuoteTicket({
+      cart,
+      clientName,
+      validityDays,
+      discount,
+      discountType,
+      ticketConfig: ticketConfigRef.current,
+    })
+  }, [cart, clientName, validityDays, discount, discountType])
 
   const [downloadingPDF, setDownloadingPDF] = useState(false)
 
   const handleDownloadQuotePDF = useCallback(async () => {
-    if (!cart.length) {
-      toast.warning('El presupuesto está vacío')
-      return
-    }
-    const invalidItem = cart.find((item) => !item.quantity || parseInt(item.quantity, 10) <= 0)
-    if (invalidItem) {
-      toast.warning(`La cantidad para el producto "${invalidItem.nombre}" debe ser mayor a 0.`)
-      return
-    }
     setDownloadingPDF(true)
-
-    const branchName = ticketConfigRef.current?.branch_name || 'TU NEGOCIO'
-    const headerText = ticketConfigRef.current?.ticket_header || 'BALANCE 360'
-    const address = ticketConfigRef.current?.ticket_address
-    const cuit = ticketConfigRef.current?.ticket_cuit
-    const iibb = ticketConfigRef.current?.ticket_iibb
-    const iva = ticketConfigRef.current?.ticket_iva
-    const phone = ticketConfigRef.current?.ticket_phone
-    const email = ticketConfigRef.current?.ticket_email
-    const dateStr = new Date().toLocaleString('es-AR', { hour12: false })
-    const logoDataUrl =
-      ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || ''
-
-    // Lógica de descuentos para presupuesto en PDF
-    const itemsBaseSubtotal = cart.reduce(
-      (acc, item) => acc + (parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1),
-      0,
-    )
-    const itemsDiscountTotal = cart.reduce((acc, item) => {
-      const baseSub = (parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1)
-      const dv = parseFloat(item.discountValue)
-      const descItem =
-        !item.discountValue || isNaN(dv) ? 0 : item.discountType === '%' ? baseSub * (dv / 100) : dv
-      return acc + descItem
-    }, 0)
-    const globalDiscount = (() => {
-      const currentSub = itemsBaseSubtotal - itemsDiscountTotal
-      const dv = parseFloat(discount)
-      if (isNaN(dv) || dv <= 0) return 0
-      return discountType === '%' ? currentSub * (dv / 100) : dv
-    })()
-    const totalDiscount = itemsDiscountTotal + globalDiscount
-    const finalTotal = itemsBaseSubtotal - totalDiscount
-
-    const htmlContent = `
-      <div style="font-family: system-ui, -apple-system, sans-serif; padding: 20px; font-size: 11px; box-sizing: border-box; background: white; color: #1e293b; line-height: 1.5;">
-        <!-- Header Grid -->
-        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px;">
-          <!-- Left: Logo & Business Details -->
-          <div style="display: flex; align-items: flex-start; gap: 15px;">
-            ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height: 60px; max-width: 90px; object-fit: contain;" />` : ''}
-            <div>
-              <h1 style="font-size: 20px; font-weight: 800; margin: 0; text-transform: uppercase; color: #0f172a; letter-spacing: -0.5px;">${branchName}</h1>
-              <p style="font-size: 11px; color: #64748b; margin: 4px 0 6px 0; white-space: pre-wrap; max-width: 320px;">${headerText}</p>
-              <div style="font-size: 10px; color: #475569; display: flex; flex-direction: column; gap: 2px;">
-                ${address ? `<div>Dirección: ${address}</div>` : ''}
-                ${phone ? `<div>Teléfono: ${phone}</div>` : ''}
-                ${email ? `<div>Email: ${email}</div>` : ''}
-              </div>
-            </div>
-          </div>
-          <!-- Right: Document Info & Legal details -->
-          <div style="text-align: right;">
-            <h2 style="font-size: 12px; font-weight: 800; color: #0f172a; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Presupuesto Valorado</h2>
-            <div style="font-size: 10px; color: #475569; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; margin-top: 6px;">
-              ${cuit ? `<div><strong>CUIT:</strong> ${cuit}</div>` : ''}
-              ${iibb ? `<div><strong>Ingresos Brutos:</strong> ${iibb}</div>` : ''}
-              ${iva ? `<div><strong>Cond. IVA:</strong> ${iva}</div>` : ''}
-            </div>
-          </div>
-        </div>
-
-        <!-- Info bar: Date, Client, Validity -->
-        <div style="display: flex; justify-content: space-between; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 25px; font-size: 10px; color: #334155;">
-          <div>
-            <strong>Fecha:</strong> ${dateStr}
-          </div>
-          ${
-            clientName
-              ? `
-          <div>
-            <strong>Cliente:</strong> ${clientName}
-          </div>`
-              : ''
-          }
-          <div>
-            <strong>Validez:</strong> ${validityDays} días
-          </div>
-        </div>
-
-        <!-- Items Table -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px;">
-          <thead>
-            <tr style="background: #0f172a; color: white;">
-              <th style="text-align: left; padding: 8px 10px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; font-weight: 600;">Detalle / Producto</th>
-              <th style="text-align: right; padding: 8px 10px; font-weight: 600; width: 15%;">Precio Unit.</th>
-              <th style="text-align: right; padding: 8px 10px; font-weight: 600; width: 10%;">Cant.</th>
-              <th style="text-align: right; padding: 8px 10px; font-weight: 600; width: 15%;">Descuento</th>
-              <th style="text-align: right; padding: 8px 10px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; font-weight: 600; width: 18%;">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${cart
-              .map((item) => {
-                const baseSub = (parseFloat(item.price) || 0) * item.quantity
-                const dv = parseFloat(item.discountValue)
-                const descItem =
-                  !item.discountValue || isNaN(dv)
-                    ? 0
-                    : item.discountType === '%'
-                      ? baseSub * (dv / 100)
-                      : dv
-                const lineTotal = baseSub - descItem
-                return `
-              <tr style="border-bottom: 1px solid #e2e8f0;">
-                <td style="padding: 8px 10px; text-align: left; vertical-align: middle; font-weight: 500; color: #1e293b;">${item.nombre}</td>
-                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; color: #475569;">$${(parseFloat(item.price) || 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; color: #475569;">${item.quantity}</td>
-                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; color: #ef4444;">${descItem > 0 ? `-$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '-'}</td>
-                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; font-weight: 700; color: #0f172a;">$${lineTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-              </tr>
-            `
-              })
-              .join('')}
-          </tbody>
-        </table>
-
-        <!-- Totals -->
-        <div style="display: flex; justify-content: flex-end; margin-top: 10px; margin-bottom: 30px;">
-          <table style="border-collapse: collapse; font-size: 11px; min-width: 240px;">
-            <tr>
-              <td style="padding: 5px 10px; color: #64748b;">Subtotal</td>
-              <td style="padding: 5px 10px; text-align: right; font-weight: 600; color: #334155;">$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-            </tr>
-            ${
-              totalDiscount > 0
-                ? `
-            <tr>
-              <td style="padding: 5px 10px; color: #ef4444;">Descuento Total</td>
-              <td style="padding: 5px 10px; text-align: right; font-weight: 600; color: #ef4444;">-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-            </tr>`
-                : ''
-            }
-            <tr style="border-top: 2px solid #0f172a;">
-              <td style="padding: 8px 10px; font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase;">Total Previsto</td>
-              <td style="padding: 8px 10px; text-align: right; font-size: 14px; font-weight: 800; color: #0284c7;">$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-            </tr>
-          </table>
-        </div>
-
-        <!-- Footer -->
-        <div style="text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 9px; color: #64748b; white-space: pre-wrap; line-height: 1.6;">
-          <p style="margin: 0;">Los precios pueden estar sujetos a modificaciones sin previo aviso luego de su expiración.</p>
-        </div>
-      </div>
-    `
-
     try {
-      const html2pdf = await loadHtml2Pdf()
-      const element = document.createElement('div')
-      element.innerHTML = htmlContent
-      const opt = {
-        margin: 15,
-        filename: `Presupuesto_${clientName ? clientName.replace(/\s+/g, '_') : 'Cliente'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      }
-      await html2pdf().from(element).set(opt).save()
-    } catch (error) {
-      console.error('html2pdf failed, attempting native print fallback:', error)
-      try {
-        const printWindow = window.open('', '_blank')
-        if (printWindow) {
-          printWindow.document.write(htmlContent)
-          printWindow.document.close()
-          printWindow.focus()
-          setTimeout(() => {
-            printWindow.print()
-          }, 300)
-          toast.info('Se abrió el diálogo de impresión nativo para Guardar como PDF.')
-        } else {
-          toast.error(
-            'Error al generar el PDF. Verifique su conexión o permita ventanas emergentes.',
-          )
-        }
-      } catch (fallbackErr) {
-        console.error('Fallback print error:', fallbackErr)
-        toast.error('Error al generar el PDF')
-      }
+      await downloadCommercialQuotePdf({
+        cart,
+        clientName,
+        validityDays,
+        discount,
+        discountType,
+        ticketConfig: ticketConfigRef.current,
+      })
     } finally {
       setDownloadingPDF(false)
     }
-  }, [cart, discount, discountType, validityDays, clientName])
+  }, [cart, clientName, validityDays, discount, discountType])
 
   useEffect(() => {
     setFocusedIndex(-1)
@@ -1114,29 +547,29 @@ const Quotes = () => {
               <tbody>
                 {loading
                   ? Array.from({ length: 8 }).map((_, i) => (
-                      <tr key={i}>
-                        <td colSpan="5">
-                          <Skeleton height={20} />
-                        </td>
-                      </tr>
-                    ))
+                    <tr key={i}>
+                      <td colSpan="5">
+                        <Skeleton height={20} />
+                      </td>
+                    </tr>
+                  ))
                   : products.map((p, idx) => (
-                      <ProductRow
-                        key={p.id}
-                        product={p}
-                        onAdd={addToCart}
-                        isFocused={focusedIndex === idx}
-                        onMouseEnter={() => {
-                          setFocusedIndex(idx)
-                          setHoveredProduct(p)
-                        }}
-                        onMouseLeave={() => {
-                          setFocusedIndex((prev) => (prev === idx ? -1 : prev))
-                          setHoveredProduct(null)
-                        }}
-                        onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
-                      />
-                    ))}
+                    <ProductRow
+                      key={p.id}
+                      product={p}
+                      onAdd={addToCart}
+                      isFocused={focusedIndex === idx}
+                      onMouseEnter={() => {
+                        setFocusedIndex(idx)
+                        setHoveredProduct(p)
+                      }}
+                      onMouseLeave={() => {
+                        setFocusedIndex((prev) => (prev === idx ? -1 : prev))
+                        setHoveredProduct(null)
+                      }}
+                      onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+                    />
+                  ))}
                 {!loading && fetchError && (
                   <tr>
                     <td colSpan="5" className="pos-empty-cell">
@@ -1242,7 +675,7 @@ const Quotes = () => {
               </div>
             ) : (
               cart.map((item) => (
-                <QuoteCartItem
+                <PosCartItem editablePrice={true}
                   key={item.id}
                   item={item}
                   onRemove={removeItem}
@@ -1485,7 +918,7 @@ const Quotes = () => {
                   ) : (
                     <div className="pos-items-list">
                       {cart.map((item) => (
-                        <QuoteCartItem
+                        <PosCartItem editablePrice={true}
                           key={item.id}
                           item={item}
                           onRemove={removeItem}

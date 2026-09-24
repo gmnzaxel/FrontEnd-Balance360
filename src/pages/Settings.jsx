@@ -1,8 +1,22 @@
 import React, { useState, useEffect, useContext, useRef } from 'react'
 import api from '../api/axios'
+import arcaService from '../services/arcaService'
 import { toast } from 'react-toastify'
 import { getErrorMessage } from '../utils/errorUtils'
-import { Save, Store, Eye, ImageIcon, X, Upload } from 'lucide-react'
+import {
+  Save,
+  Store,
+  Eye,
+  ImageIcon,
+  X,
+  Upload,
+  FileText,
+  CheckCircle2,
+  AlertTriangle,
+  Key,
+  ShieldCheck,
+  RefreshCw,
+} from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import { AuthContext } from '../context/AuthContext'
 import Input from '../components/ui/Input'
@@ -26,10 +40,31 @@ const Settings = () => {
     ticket_email: '',
     daily_sales_goal: 100000.0,
   })
+
+  // Estado para Facturación Electrónica ARCA
+  const [fiscalConfig, setFiscalConfig] = useState({
+    cuit: '',
+    razon_social: '',
+    condicion_iva: 'MONOTRIBUTO',
+    punto_venta: 1,
+    iibb: '',
+    inicio_actividades: '',
+    domicilio_comercial: '',
+    certificate_crt: '',
+    private_key: '',
+    is_production: false,
+    has_certificate: false,
+    has_private_key: false,
+  })
+  const [testingArca, setTestingArca] = useState(false)
+  const [savingFiscal, setSavingFiscal] = useState(false)
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [logoDataUrl, setLogoDataUrl] = useState(() => localStorage.getItem('ticket_logo') || '')
   const logoInputRef = useRef(null)
+  const crtInputRef = useRef(null)
+  const keyInputRef = useRef(null)
 
   const [showPreview, setShowPreview] = useState(false)
   const [localViewAsSeller, setLocalViewAsSeller] = useState(false)
@@ -44,11 +79,17 @@ const Settings = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await api.get('settings/')
-      setSettings(response.data)
-      if (response.data.ticket_logo) {
-        setLogoDataUrl(response.data.ticket_logo)
-        localStorage.setItem('ticket_logo', response.data.ticket_logo)
+      const [appRes, fiscalRes] = await Promise.all([
+        api.get('settings/'),
+        arcaService.getFiscalConfig().catch(() => ({ data: {} })),
+      ])
+      setSettings(appRes.data)
+      if (fiscalRes) {
+        setFiscalConfig((prev) => ({ ...prev, ...fiscalRes }))
+      }
+      if (appRes.data.ticket_logo) {
+        setLogoDataUrl(appRes.data.ticket_logo)
+        localStorage.setItem('ticket_logo', appRes.data.ticket_logo)
       }
     } catch (error) {
       console.error(error)
@@ -56,6 +97,55 @@ const Settings = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSaveFiscal = async (e) => {
+    if (e) e.preventDefault()
+    setSavingFiscal(true)
+    try {
+      const updated = await arcaService.updateFiscalConfig(fiscalConfig)
+      setFiscalConfig((prev) => ({ ...prev, ...updated }))
+      toast.success('Configuración fiscal de ARCA guardada con éxito.')
+    } catch (error) {
+      console.error(error)
+      toast.error(getErrorMessage(error))
+    } finally {
+      setSavingFiscal(false)
+    }
+  }
+
+  const handleTestArcaConnection = async () => {
+    setTestingArca(true)
+    try {
+      const res = await arcaService.testConnection()
+      if (res.connected) {
+        toast.success(res.message, { autoClose: 6000 })
+      } else {
+        toast.warn(res.message || 'Verificá los certificados en ARCA.')
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error(getErrorMessage(error) || 'Fallo de conexión con ARCA.')
+    } finally {
+      setTestingArca(false)
+    }
+  }
+
+  const handleUploadCertFile = (e, type) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const text = event.target.result
+      if (type === 'crt') {
+        setFiscalConfig((prev) => ({ ...prev, certificate_crt: text, has_certificate: true }))
+        toast.info('Certificado .crt cargado en memoria. Hacé clic en Guardar.')
+      } else if (type === 'key') {
+        setFiscalConfig((prev) => ({ ...prev, private_key: text, has_private_key: true }))
+        toast.info('Clave privada .key cargada en memoria. Hacé clic en Guardar.')
+      }
+    }
+    reader.readAsText(file)
   }
 
   const handleSave = async (e) => {
@@ -374,6 +464,214 @@ const Settings = () => {
                 />
               </div>
             </label>
+          </div>
+        </div>
+
+        {/* Card: Facturación Electrónica ARCA */}
+        <div className="card">
+          <div className="card-header flex justify-between items-center">
+            <div>
+              <div className="flex items-center gap-xs">
+                <ShieldCheck size={20} className="text-primary-500" />
+                <h3 className="font-bold text-lg">Facturación Electrónica ARCA</h3>
+              </div>
+              <p className="text-xs text-muted">
+                Emisión legal de Factura A, B, C y Notas de Crédito con CAE y Código QR reglamentario oficial.
+              </p>
+            </div>
+            <div className="flex items-center gap-xs">
+              <span className={`badge ${fiscalConfig.is_production ? 'badge-danger' : 'badge-warning'}`}>
+                {fiscalConfig.is_production ? 'PRODUCCIÓN (Real)' : 'HOMOLOGACIÓN (Pruebas)'}
+              </span>
+            </div>
+          </div>
+
+          <div className="card-body flex flex-col gap-md">
+            <div className="grid two-cols gap-sm">
+              <Input
+                label="CUIT del Emisor"
+                type="text"
+                value={fiscalConfig.cuit || ''}
+                onChange={(e) => setFiscalConfig({ ...fiscalConfig, cuit: e.target.value.replace(/\D/g, '') })}
+                placeholder="Ej: 20123456789 (11 dígitos sin guiones)"
+                maxLength={11}
+              />
+              <Input
+                label="Razón Social / Nombre Legal"
+                type="text"
+                value={fiscalConfig.razon_social || ''}
+                onChange={(e) => setFiscalConfig({ ...fiscalConfig, razon_social: e.target.value })}
+                placeholder="Ej: Juan Perez o Mi Empresa SRL"
+              />
+            </div>
+
+            <div className="grid three-cols gap-sm">
+              <Select
+                label="Condición frente al IVA"
+                value={fiscalConfig.condicion_iva || 'MONOTRIBUTO'}
+                onChange={(e) => setFiscalConfig({ ...fiscalConfig, condicion_iva: e.target.value })}
+              >
+                <option value="MONOTRIBUTO">Responsable Monotributo</option>
+                <option value="RESPONSABLE_INSCRIPTO">IVA Responsable Inscripto</option>
+                <option value="EXENTO">IVA Exento</option>
+              </Select>
+              <Input
+                label="Punto de Venta Web Services"
+                type="number"
+                value={fiscalConfig.punto_venta || 1}
+                onChange={(e) => setFiscalConfig({ ...fiscalConfig, punto_venta: parseInt(e.target.value, 10) || 1 })}
+                placeholder="Ej: 1 o 2 (dado de alta en ARCA)"
+              />
+              <Input
+                label="N° Ingresos Brutos (IIBB)"
+                type="text"
+                value={fiscalConfig.iibb || ''}
+                onChange={(e) => setFiscalConfig({ ...fiscalConfig, iibb: e.target.value })}
+                placeholder="Ej: 20-12345678-9"
+              />
+            </div>
+
+            <div className="grid two-cols gap-sm">
+              <Input
+                label="Domicilio Comercial Fiscal"
+                type="text"
+                value={fiscalConfig.domicilio_comercial || ''}
+                onChange={(e) => setFiscalConfig({ ...fiscalConfig, domicilio_comercial: e.target.value })}
+                placeholder="Ej: Av. Rivadavia 1234, CABA"
+              />
+              <Input
+                label="Fecha de Inicio de Actividades"
+                type="date"
+                value={fiscalConfig.inicio_actividades || ''}
+                onChange={(e) => setFiscalConfig({ ...fiscalConfig, inicio_actividades: e.target.value })}
+              />
+            </div>
+
+            {/* Selector de Ambiente */}
+            <div
+              className="p-3 rounded-lg border flex justify-between items-center"
+              style={{
+                background: fiscalConfig.is_production
+                  ? 'rgba(239, 68, 68, 0.12)'
+                  : 'rgba(59, 130, 246, 0.12)',
+                borderColor: fiscalConfig.is_production
+                  ? 'rgba(239, 68, 68, 0.3)'
+                  : 'rgba(59, 130, 246, 0.3)',
+              }}
+            >
+              <div>
+                <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                  Entorno de Operación
+                </p>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  {fiscalConfig.is_production
+                    ? 'Atención: En modo Producción los comprobantes son reales y tienen valor fiscal ante ARCA.'
+                    : 'Modo Homologación: Permite emitir facturas de prueba sin valor fiscal usando los servidores de testing de ARCA.'}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant={fiscalConfig.is_production ? 'danger' : 'secondary'}
+                onClick={() => setFiscalConfig({ ...fiscalConfig, is_production: !fiscalConfig.is_production })}
+              >
+                {fiscalConfig.is_production ? 'Cambiar a Modo Pruebas' : 'Cambiar a Modo Producción'}
+              </Button>
+            </div>
+
+            {/* Certificados Digitales */}
+            <div className="flex flex-col gap-sm p-4 rounded-lg border border-subtle">
+              <div className="flex items-center gap-xs">
+                <Key size={18} className="text-primary-500" />
+                <h4 className="font-bold text-sm">Certificados Digitales X.509 de ARCA</h4>
+              </div>
+              <p className="text-xs text-muted">
+                Para facturar con ARCA necesitás el certificado (.crt) emitido en el sitio de ARCA y la llave privada (.key). Si aún no los subiste, el sistema operará en modo Simulación.
+              </p>
+
+              <div className="grid two-cols gap-md mt-2">
+                <div className="flex flex-col gap-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-semibold">Certificado Público (.crt)</span>
+                    {fiscalConfig.has_certificate ? (
+                      <span className="badge badge-success flex items-center gap-xs" style={{ fontSize: '0.7rem' }}>
+                        <CheckCircle2 size={12} /> Cargado
+                      </span>
+                    ) : (
+                      <span className="badge badge-warning flex items-center gap-xs" style={{ fontSize: '0.7rem' }}>
+                        <AlertTriangle size={12} /> Pendiente
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    icon={<Upload size={14} />}
+                    onClick={() => crtInputRef.current?.click()}
+                  >
+                    {fiscalConfig.has_certificate ? 'Reemplazar archivo .crt' : 'Subir certificado .crt'}
+                  </Button>
+                  <input
+                    ref={crtInputRef}
+                    type="file"
+                    accept=".crt,.pem,.txt"
+                    style={{ display: 'none' }}
+                    onChange={(e) => handleUploadCertFile(e, 'crt')}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-semibold">Clave Privada (.key)</span>
+                    {fiscalConfig.has_private_key ? (
+                      <span className="badge badge-success flex items-center gap-xs" style={{ fontSize: '0.7rem' }}>
+                        <CheckCircle2 size={12} /> Cargada
+                      </span>
+                    ) : (
+                      <span className="badge badge-warning flex items-center gap-xs" style={{ fontSize: '0.7rem' }}>
+                        <AlertTriangle size={12} /> Pendiente
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    icon={<Upload size={14} />}
+                    onClick={() => keyInputRef.current?.click()}
+                  >
+                    {fiscalConfig.has_private_key ? 'Reemplazar archivo .key' : 'Subir clave privada .key'}
+                  </Button>
+                  <input
+                    ref={keyInputRef}
+                    type="file"
+                    accept=".key,.pem,.txt"
+                    style={{ display: 'none' }}
+                    onChange={(e) => handleUploadCertFile(e, 'key')}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Botones de Acción Fiscal */}
+            <div className="flex justify-end gap-sm pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                icon={<RefreshCw size={16} className={testingArca ? 'spin' : ''} />}
+                onClick={handleTestArcaConnection}
+                disabled={testingArca}
+              >
+                {testingArca ? 'Probando conexión...' : 'Probar Conexión con ARCA'}
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                icon={<Save size={16} />}
+                onClick={handleSaveFiscal}
+                disabled={savingFiscal}
+              >
+                {savingFiscal ? 'Guardando...' : 'Guardar Configuración Fiscal'}
+              </Button>
+            </div>
           </div>
         </div>
       </form>

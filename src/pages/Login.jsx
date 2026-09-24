@@ -55,6 +55,7 @@ const Login = () => {
     } else {
       usernameInputRef.current?.focus()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleUsernameChange = (e) => {

@@ -77,8 +77,23 @@ const NotificationCenter = () => {
 
   useEffect(() => {
     fetchAlerts()
-    const interval = setInterval(fetchAlerts, 60000)
-    return () => clearInterval(interval)
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        fetchAlerts()
+      }
+    }, 120000)
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchAlerts()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [fetchAlerts])
 
   useEffect(() => {

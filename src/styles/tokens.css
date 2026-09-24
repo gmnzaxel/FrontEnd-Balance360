@@ -40,6 +40,7 @@
   --surface-glass: rgba(18, 19, 23, 0.75);
   --surface-elevated: rgba(29, 30, 36, 0.98);
   --surface-muted: #0c0d10;
+  --bg-subtle: rgba(255, 255, 255, 0.04);
 
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
@@ -129,6 +130,7 @@
   --surface-glass: rgba(255, 255, 255, 0.65);
   --surface-elevated: #ffffff;
   --surface-muted: #e2e8f0;
+  --bg-subtle: #f8fafc;
 
   --border-subtle: #e2e8f0;
   --border-strong: #cbd5e1;

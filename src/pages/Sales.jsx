@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useRef, useCallback } from 'rea
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
+import salesService from '../services/salesService'
 import { AuthContext } from '../context/AuthContext'
 import {
   Eye,
@@ -17,13 +18,17 @@ import {
   Edit,
   Printer,
   FileDown,
+  FileText,
+  ShieldCheck,
 } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { formatCurrency, formatDate, formatDateOnly } from '../utils/format'
-import Modal from '../components/ui/Modal'
 import ConfirmModal from '../components/ui/ConfirmModal'
 import Input from '../components/ui/Input'
-import { loadHtml2Pdf } from '../utils/pdfUtils'
+import arcaService from '../services/arcaService'
+import SaleDetailModal from '../components/sales/SaleDetailModal'
+import SaleActionModal from '../components/sales/SaleActionModal'
+import { printSaleThermalTicket, downloadSaleReceiptPdf } from '../utils/ticketGenerator'
 
 const Sales = () => {
   const { user, isAdmin } = useContext(AuthContext)
@@ -35,7 +40,6 @@ const Sales = () => {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [showActionModal, setShowActionModal] = useState(null) // 'anular' or 'reembolsar'
   const [confirmText, setConfirmText] = useState('')
-  const [showAdminMenu, setShowAdminMenu] = useState(false)
   const [reason, setReason] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -107,10 +111,10 @@ const Sales = () => {
   }, [])
 
   useEffect(() => {
-    api
-      .get('settings/')
-      .then((res) => {
-        ticketConfigRef.current = res.data
+    salesService
+      .getSettings()
+      .then((data) => {
+        ticketConfigRef.current = data
       })
       .catch((err) => console.error('Error loading ticket settings', err))
   }, [])
@@ -229,6 +233,7 @@ const Sales = () => {
   const canEditSale = useCallback(
     (sale) => {
       if (!sale || sale.is_voided || sale.is_refunded) return false
+      if (sale.is_fiscal || sale.electronic_invoice?.status === 'APPROVED') return false
       if (isAdmin) return true
       if (!user) return false
       const currentId = user.user_id || user.id
@@ -320,11 +325,7 @@ const Sales = () => {
         params.date = dateFilter
       }
 
-      const response = await api.get('sales/sales/', {
-        params,
-        signal: controller.signal,
-      })
-      const data = response.data
+      const data = await salesService.getAll(params, controller.signal)
       const results = data.results || data
       setSales(Array.isArray(results) ? results : [])
       if (data.count !== undefined) {
@@ -367,12 +368,19 @@ const Sales = () => {
 
     setActionLoading(true)
     try {
-      const endpoint = actionType === 'anular' ? 'anular' : 'reembolsar'
-      await api.post(`sales/sales/${id}/${endpoint}/`, {
-        confirm_text: confirmText,
-        reason: reason,
-      })
-      toast.success(`Venta ${actionType === 'anular' ? 'anulada' : 'reembolsada'} con éxito`)
+      if (actionType === 'anular' && selectedSale?.electronic_invoice?.status === 'APPROVED') {
+        // Venta fiscal con ARCA: debe emitirse Nota de Crédito
+        await arcaService.emitCreditNote(id, reason || 'Anulación de venta y emisión de Nota de Crédito')
+        toast.success('Nota de Crédito emitida en ARCA y venta anulada con éxito.')
+      } else {
+        const payload = { confirm_text: confirmText, reason }
+        if (actionType === 'anular') {
+          await salesService.anular(id, payload)
+        } else {
+          await salesService.reembolsar(id, payload)
+        }
+        toast.success(`Venta ${actionType === 'anular' ? 'anulada' : 'reembolsada'} con éxito`)
+      }
       setShowActionModal(null)
       setConfirmText('')
       setReason('')
@@ -386,6 +394,30 @@ const Sales = () => {
     }
   }
 
+  const handleDownloadOfficialArcaPDF = async (sale) => {
+    if (!sale?.id) return
+    const letter = sale.electronic_invoice?.voucher_letter || 'B'
+    const number = sale.electronic_invoice?.formatted_number || sale.id
+    try {
+      await arcaService.downloadInvoicePdf(sale.id, `Factura_${letter}_${number}.pdf`)
+    } catch {
+      toast.error('Error al generar PDF oficial de ARCA')
+    }
+  }
+
+  const handleAuthorizeArcaRetroactive = async (sale) => {
+    if (!sale?.id) return
+    try {
+      toast.info('Solicitando autorización a ARCA...', { toastId: 'arca-authorizing' })
+      await arcaService.authorizeSale(sale.id)
+      toast.success('Factura autorizada exitosamente en ARCA.', { toastId: 'arca-success' })
+      fetchSales()
+      setSelectedSale(null)
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al autorizar factura en ARCA')
+    }
+  }
+
   const handleHardDelete = () => {
     if (!selectedSale) return
     setShowConfirmDeleteModal(true)
@@ -394,7 +426,7 @@ const Sales = () => {
   const confirmHardDelete = async () => {
     setDeleteLoading(true)
     try {
-      await api.delete(`sales/sales/${selectedSale.id}/hard-delete/`)
+      await salesService.hardDelete(selectedSale.id)
       toast.success('Venta eliminada definitivamente')
       setShowConfirmDeleteModal(false)
       setShowActionModal(null)
@@ -408,411 +440,13 @@ const Sales = () => {
   }
 
   const handlePrintTicket = (sale) => {
-    if (!sale) return
-
-    const branchName = ticketConfigRef.current?.branch_name || 'TU NEGOCIO'
-    const headerText = ticketConfigRef.current?.ticket_header || 'BALANCE 360'
-    const footerText = ticketConfigRef.current?.ticket_footer || '¡Gracias por su compra!'
-    const address = ticketConfigRef.current?.ticket_address
-    const cuit = ticketConfigRef.current?.ticket_cuit
-    const iibb = ticketConfigRef.current?.ticket_iibb
-    const iva = ticketConfigRef.current?.ticket_iva
-    const phone = ticketConfigRef.current?.ticket_phone
-    const email = ticketConfigRef.current?.ticket_email
-    const logoDataUrl =
-      ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || ''
-    const ticketWidth = ticketConfigRef.current?.ticket_width || '58mm'
-    const is58mm = ticketWidth === '58mm'
-
-    // Lógica corregida de descuentos
-    const itemsBaseSubtotal = sale.items.reduce(
-      (acc, item) => acc + parseFloat(item.price) * item.quantity,
-      0,
-    )
-    const itemsDiscountTotal = sale.items.reduce(
-      (acc, item) => acc + (parseFloat(item.discount) || 0),
-      0,
-    )
-    const globalDiscount = parseFloat(sale.discount) || 0
-    const totalDiscount = itemsDiscountTotal + globalDiscount
-    const finalTotal = parseFloat(sale.total)
-
-    const htmlContent = `
-      <html>
-        <head>
-          <title>Ticket de Venta #${sale.sale_number || sale.id}</title>
-          <meta charset="UTF-8">
-          <style>
-            @media print {
-              @page {
-                size: ${ticketWidth} auto;
-                margin: 0;
-              }
-              body {
-                margin: 0;
-                padding: ${is58mm ? '1mm 2.5mm' : '2mm 4mm'};
-              }
-            }
-            body {
-              font-family: system-ui, -apple-system, sans-serif;
-              width: ${ticketWidth};
-              max-width: ${ticketWidth};
-              margin: 0 auto;
-              padding: ${is58mm ? '1mm 2.5mm' : '2mm 4mm'};
-              font-size: ${is58mm ? '11px' : '12px'};
-              box-sizing: border-box;
-              color: #000;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 8px;
-              border-bottom: 1px dashed #000;
-              padding-bottom: 8px;
-            }
-            .branch-title {
-              font-size: ${is58mm ? '14px' : '16px'};
-              font-weight: bold;
-              text-transform: uppercase;
-            }
-            .company {
-              font-size: ${is58mm ? '10px' : '11px'};
-              color: #000;
-              margin-bottom: 4px;
-              white-space: pre-wrap;
-            }
-            .info {
-              font-size: ${is58mm ? '9px' : '10px'};
-              margin-bottom: 3px;
-              color: #000;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 8px;
-            }
-            th {
-              text-align: left;
-              border-bottom: 1px solid #000;
-              font-size: ${is58mm ? '10px' : '12px'};
-              color: #000;
-            }
-            td {
-              padding: 3px 0;
-              color: #000;
-            }
-            .text-right {
-              text-align: right;
-            }
-            .totals {
-              border-top: 1px dashed #000;
-              padding-top: 6px;
-              margin-top: 4px;
-            }
-            .row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 3px;
-              font-size: ${is58mm ? '11px' : '12px'};
-              color: #000;
-            }
-            .footer {
-              text-align: center;
-              margin-top: 15px;
-              font-size: ${is58mm ? '9px' : '10px'};
-              white-space: pre-wrap;
-              color: #000;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div style="display:flex;align-items:center;justify-content:center;gap:12px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px;">
-              ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height:${is58mm ? '35px' : '44px'};max-width:${is58mm ? '50px' : '60px'};object-fit:contain;flex-shrink:0;" />` : ''}
-              <div class="branch-title">${branchName}</div>
-            </div>
-            <div class="company">${headerText}</div>
-            ${address ? `<div class="info">Dirección: ${address}</div>` : ''}
-            ${cuit ? `<div class="info">CUIT: ${cuit}</div>` : ''}
-            ${iibb ? `<div class="info">IIBB: ${iibb}</div>` : ''}
-            ${iva ? `<div class="info">IVA: ${iva}</div>` : ''}
-            ${phone ? `<div class="info">Tel: ${phone}</div>` : ''}
-            ${email ? `<div class="info">Email: ${email}</div>` : ''}
-            <div class="info">Fecha: ${new Date(sale.date).toLocaleString('es-AR', { hour12: false })}</div>
-            <div class="info">Ticket #${sale.sale_number || sale.id}</div>
-            <div class="info">Pago: ${
-              sale.payment_method === 'MIXTO' && sale.payment_details
-                ? `Dividido (${sale.payment_details.method_1}: $${Number(sale.payment_details.amount_1 || 0).toLocaleString('es-AR')} + ${sale.payment_details.method_2}: $${Number(sale.payment_details.amount_2 || 0).toLocaleString('es-AR')})`
-                : sale.payment_method
-            }</div>
-          </div>
-          
-          <table>
-            <thead>
-              <tr>
-                <th style="width: ${is58mm ? '50%' : '55%'};">Producto</th>
-                <th class="text-right" style="width: 20%;">Cant</th>
-                <th class="text-right" style="width: 30%;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${sale.items
-                .map((item) => {
-                  const itemPrice = parseFloat(item.price) || 0
-                  const baseSub = itemPrice * item.quantity
-                  const descItem = parseFloat(item.discount) || 0
-                  const itemLabel =
-                    item.item_type === 'SERVICIO'
-                      ? item.description || 'Servicio'
-                      : item.producto_nombre || item.nombre || 'Producto'
-
-                  if (is58mm) {
-                    return `
-                    <tr>
-                      <td colspan="3" style="font-weight: bold; font-size: 11px; padding-top: 4px;">${itemLabel}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px dashed #eee;">
-                      <td style="font-size: 10px; color: #000; padding-bottom: 4px; padding-left: 5px;">
-                        $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                        ${item.quantity > 1 ? ` x ${item.quantity}` : ''}
-                        ${descItem > 0 ? `<span style="font-weight: bold; text-decoration: underline; margin-left: 4px;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>` : ''}
-                      </td>
-                      <td class="text-right" style="vertical-align: top; font-size: 10px; color: #000; padding-bottom: 4px;">${item.quantity}</td>
-                      <td class="text-right" style="vertical-align: top; font-size: 11px; font-weight: bold; padding-bottom: 4px;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                    </tr>
-                  `
-                  } else {
-                    return `
-                    <tr style="border-bottom: 1px solid #eee;">
-                      <td style="padding: 4px 0;">
-                        <div style="font-weight: bold;">${itemLabel}</div>
-                        ${
-                          descItem > 0
-                            ? `
-                          <div style="font-size: 10px; color: #000; margin-top: 2px;">
-                            Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                            ${item.quantity > 1 ? ` x ${item.quantity} un.` : ''}
-                            <span style="font-weight: bold; margin-left: 6px; text-decoration: underline;">(Desc. -$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
-                          </div>
-                        `
-                            : `
-                          <div style="font-size: 10px; color: #000; margin-top: 2px;">
-                            Precio: $${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                          </div>
-                        `
-                        }
-                      </td>
-                      <td class="text-right" style="vertical-align: top; padding: 4px 0;">${item.quantity}</td>
-                      <td class="text-right" style="vertical-align: top; padding: 4px 0;">$${(baseSub - descItem).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                    </tr>
-                  `
-                  }
-                })
-                .join('')}
-            </tbody>
-          </table>
-
-          <div class="totals">
-            <div class="row">
-              <span>Subtotal:</span>
-              <span>$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-            </div>
-            ${
-              totalDiscount > 0
-                ? `
-            <div class="row">
-              <span>Descuento:</span>
-              <span>-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-            </div>`
-                : ''
-            }
-            <div class="row" style="font-weight: bold; font-size: ${is58mm ? '13px' : '14px'}; margin-top: 5px; border-top: 1px solid #000; padding-top: 3px;">
-              <span>TOTAL:</span>
-              <span>$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
-            </div>
-          </div>
-
-          <div class="footer">
-            <p>${footerText}</p>
-            <p style="border-top: 1px dashed #000; padding-top: 6px; margin-top: 8px; font-size: ${is58mm ? '8px' : '9px'}; color: #000;">*** Copia Cliente ***</p>
-          </div>
-        </body>
-      </html>
-    `
-
-    const iframe = document.createElement('iframe')
-    iframe.style.position = 'absolute'
-    iframe.style.width = '0px'
-    iframe.style.height = '0px'
-    iframe.style.border = 'none'
-    iframe.style.top = '-9999px'
-    iframe.style.left = '-9999px'
-    document.body.appendChild(iframe)
-
-    const doc = iframe.contentWindow.document
-    doc.open()
-    doc.write(htmlContent)
-    doc.close()
-
-    setTimeout(() => {
-      iframe.contentWindow.focus()
-      iframe.contentWindow.print()
-      setTimeout(() => {
-        document.body.removeChild(iframe)
-      }, 1000)
-    }, 300)
+    printSaleThermalTicket(sale, ticketConfigRef.current)
   }
 
   const handleDownloadTicketPDF = async (sale) => {
-    if (!sale) return
     setDownloadingPDF(true)
-
-    const branchName = ticketConfigRef.current?.branch_name || 'TU NEGOCIO'
-    const headerText = ticketConfigRef.current?.ticket_header || 'BALANCE 360'
-    const footerText = ticketConfigRef.current?.ticket_footer || '¡Gracias por su compra!'
-    const address = ticketConfigRef.current?.ticket_address
-    const cuit = ticketConfigRef.current?.ticket_cuit
-    const iibb = ticketConfigRef.current?.ticket_iibb
-    const iva = ticketConfigRef.current?.ticket_iva
-    const phone = ticketConfigRef.current?.ticket_phone
-    const email = ticketConfigRef.current?.ticket_email
-    const logoDataUrl =
-      ticketConfigRef.current?.ticket_logo || localStorage.getItem('ticket_logo') || ''
-    const itemsBaseSubtotal = sale.items.reduce(
-      (acc, item) => acc + parseFloat(item.price) * item.quantity,
-      0,
-    )
-    const itemsDiscountTotal = sale.items.reduce(
-      (acc, item) => acc + (parseFloat(item.discount) || 0),
-      0,
-    )
-    const globalDiscount = parseFloat(sale.discount) || 0
-    const totalDiscount = itemsDiscountTotal + globalDiscount
-    const finalTotal = parseFloat(sale.total)
-
-    const htmlContent = `
-      <div style="font-family: system-ui, -apple-system, sans-serif; padding: 20px; font-size: 11px; box-sizing: border-box; background: white; color: #1e293b; line-height: 1.5;">
-        <!-- Header Grid -->
-        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px;">
-          <!-- Left: Logo & Business Details -->
-          <div style="display: flex; align-items: flex-start; gap: 15px;">
-            ${logoDataUrl ? `<img src="${logoDataUrl}" alt="Logo" style="max-height: 60px; max-width: 90px; object-fit: contain;" />` : ''}
-            <div>
-              <h1 style="font-size: 20px; font-weight: 800; margin: 0; text-transform: uppercase; color: #0f172a; letter-spacing: -0.5px;">${branchName}</h1>
-              <p style="font-size: 11px; color: #64748b; margin: 4px 0 6px 0; white-space: pre-wrap; max-width: 320px;">${headerText}</p>
-              <div style="font-size: 10px; color: #475569; display: flex; flex-direction: column; gap: 2px;">
-                ${address ? `<div>Dirección: ${address}</div>` : ''}
-                ${phone ? `<div>Teléfono: ${phone}</div>` : ''}
-                ${email ? `<div>Email: ${email}</div>` : ''}
-              </div>
-            </div>
-          </div>
-          <!-- Right: Document Info & Legal details -->
-          <div style="text-align: right;">
-            <h2 style="font-size: 12px; font-weight: 800; color: #0f172a; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Comprobante de Venta</h2>
-            <p style="font-size: 18px; font-weight: 800; color: #0284c7; margin: 4px 0 8px 0;">#${sale.sale_number || sale.id}</p>
-            <div style="font-size: 10px; color: #475569; display: flex; flex-direction: column; gap: 3px; align-items: flex-end;">
-              ${cuit ? `<div><strong>CUIT:</strong> ${cuit}</div>` : ''}
-              ${iibb ? `<div><strong>Ingresos Brutos:</strong> ${iibb}</div>` : ''}
-              ${iva ? `<div><strong>Cond. IVA:</strong> ${iva}</div>` : ''}
-            </div>
-          </div>
-        </div>
-
-        <!-- Info bar: Date, Payment Method -->
-        <div style="display: flex; justify-content: space-between; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 25px; font-size: 10px; color: #334155;">
-          <div>
-            <strong>Fecha:</strong> ${new Date(sale.date).toLocaleString('es-AR', { hour12: false })}
-          </div>
-          <div>
-            <strong>Método de Pago:</strong> ${
-              sale.payment_method === 'MIXTO' && sale.payment_details
-                ? `Pago Dividido (${sale.payment_details.method_1}: $${Number(sale.payment_details.amount_1 || 0).toLocaleString('es-AR')} / ${sale.payment_details.method_2}: $${Number(sale.payment_details.amount_2 || 0).toLocaleString('es-AR')})`
-                : sale.payment_method
-            }
-          </div>
-        </div>
-
-        <!-- Items Table -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px;">
-          <thead>
-            <tr style="background: #0f172a; color: white;">
-              <th style="text-align: left; padding: 8px 10px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; font-weight: 600;">Detalle / Producto</th>
-              <th style="text-align: right; padding: 8px 10px; font-weight: 600; width: 15%;">Precio Unit.</th>
-              <th style="text-align: right; padding: 8px 10px; font-weight: 600; width: 10%;">Cant.</th>
-              <th style="text-align: right; padding: 8px 10px; font-weight: 600; width: 15%;">Descuento</th>
-              <th style="text-align: right; padding: 8px 10px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; font-weight: 600; width: 18%;">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${sale.items
-              .map((item) => {
-                const itemPrice = parseFloat(item.price) || 0
-                const baseSub = itemPrice * item.quantity
-                const descItem = parseFloat(item.discount) || 0
-                const itemLabel =
-                  item.item_type === 'SERVICIO'
-                    ? item.description || 'Servicio'
-                    : item.producto_nombre || item.nombre || 'Producto'
-                const lineTotal = baseSub - descItem
-                return `
-              <tr style="border-bottom: 1px solid #e2e8f0;">
-                <td style="padding: 8px 10px; text-align: left; vertical-align: middle; font-weight: 500; color: #1e293b;">${itemLabel}</td>
-                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; color: #475569;">$${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; color: #475569;">${item.quantity}</td>
-                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; color: #ef4444;">${descItem > 0 ? `-$${descItem.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '-'}</td>
-                <td style="padding: 8px 10px; text-align: right; vertical-align: middle; font-weight: 700; color: #0f172a;">$${lineTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-              </tr>
-            `
-              })
-              .join('')}
-          </tbody>
-        </table>
-
-        <!-- Totals -->
-        <div style="display: flex; justify-content: flex-end; margin-top: 10px; margin-bottom: 30px;">
-          <table style="border-collapse: collapse; font-size: 11px; min-width: 240px;">
-            <tr>
-              <td style="padding: 5px 10px; color: #64748b;">Subtotal</td>
-              <td style="padding: 5px 10px; text-align: right; font-weight: 600; color: #334155;">$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-            </tr>
-            ${
-              totalDiscount > 0
-                ? `
-            <tr>
-              <td style="padding: 5px 10px; color: #ef4444;">Descuento Total</td>
-              <td style="padding: 5px 10px; text-align: right; font-weight: 600; color: #ef4444;">-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-            </tr>`
-                : ''
-            }
-            <tr style="border-top: 2px solid #0f172a;">
-              <td style="padding: 8px 10px; font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase;">Total</td>
-              <td style="padding: 8px 10px; text-align: right; font-size: 14px; font-weight: 800; color: #0284c7;">$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-            </tr>
-          </table>
-        </div>
-
-        <!-- Footer -->
-        <div style="text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 9px; color: #64748b; white-space: pre-wrap; line-height: 1.6;">
-          <p style="margin: 0;">${footerText}</p>
-        </div>
-      </div>
-    `
-
     try {
-      const html2pdf = await loadHtml2Pdf()
-      const element = document.createElement('div')
-      element.innerHTML = htmlContent
-      const opt = {
-        margin: 15,
-        filename: `Comprobante_Venta_${sale.sale_number || sale.id}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      }
-      await html2pdf().from(element).set(opt).save()
-    } catch (error) {
-      console.error(error)
-      toast.error('Error al generar el PDF')
+      await downloadSaleReceiptPdf(sale, ticketConfigRef.current)
     } finally {
       setDownloadingPDF(false)
     }
@@ -820,9 +454,7 @@ const Sales = () => {
 
   const handleCloseDetail = () => {
     setSelectedSale(null)
-    setShowAdminMenu(false)
   }
-
   const hasActions =
     selectedSale &&
     ((isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded) ||
@@ -1299,30 +931,65 @@ const Sales = () => {
                     {formatCurrency(sale.total)}
                   </td>
                   <td className="cell-sale-status" data-label="Estado">
-                    {sale.is_voided ? (
-                      <span className="badge badge-danger">ANULADA</span>
-                    ) : sale.is_refunded ? (
-                      <span className="badge badge-warning">REEMBOLSADA</span>
-                    ) : (
-                      <span className="badge badge-success">COMPLETA</span>
-                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start' }}>
+                      {sale.is_voided ? (
+                        <span className="badge badge-danger">ANULADA</span>
+                      ) : sale.is_refunded ? (
+                        <span className="badge badge-warning">REEMBOLSADA</span>
+                      ) : (
+                        <span className="badge badge-success">COMPLETA</span>
+                      )}
+                      {sale.electronic_invoice?.status === 'APPROVED' && (
+                        <span
+                          className="badge"
+                          style={{
+                            background: 'rgba(37, 99, 235, 0.1)',
+                            color: '#2563eb',
+                            border: '1px solid rgba(37, 99, 235, 0.25)',
+                            fontSize: '0.68rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                          }}
+                        >
+                          <ShieldCheck size={11} />
+                          {sale.electronic_invoice.voucher_letter} #{sale.electronic_invoice.formatted_number}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td
                     style={{ textAlign: 'right' }}
                     data-label="Acciones"
                     className="cell-sale-actions"
                   >
-                    <button
-                      className="btn-icon sale-view-btn"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedSale(sale)
-                      }}
-                      title="Ver detalle"
-                      aria-label={`Ver detalle de venta #${sale.sale_number || sale.id}`}
-                    >
-                      <Eye size={18} />
-                    </button>
+                    <div style={{ display: 'inline-flex', gap: '4px', alignItems: 'center' }}>
+                      {sale.electronic_invoice?.status === 'APPROVED' && (
+                        <button
+                          className="btn-icon"
+                          style={{ color: '#2563eb' }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDownloadOfficialArcaPDF(sale)
+                          }}
+                          title="Descargar / Imprimir Factura Oficial A4"
+                          aria-label={`Factura A4 venta #${sale.sale_number || sale.id}`}
+                        >
+                          <FileText size={18} />
+                        </button>
+                      )}
+                      <button
+                        className="btn-icon sale-view-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedSale(sale)
+                        }}
+                        title="Ver detalle"
+                        aria-label={`Ver detalle de venta #${sale.sale_number || sale.id}`}
+                      >
+                        <Eye size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -1354,539 +1021,42 @@ const Sales = () => {
       )}
 
       {/* Sale Detail Modal */}
-      {selectedSale && !showActionModal && (
-        <Modal
-          title={`Detalle de venta #${selectedSale.sale_number || selectedSale.id}`}
-          onClose={handleCloseDetail}
-          size="lg"
-          className="sale-detail-modal-container"
-          footer={
-            isMobile ? (
-              <div className="sale-detail-foot-mobile">
-                <div className="sale-detail-foot-row">
-                  <button
-                    onClick={() => handleDownloadTicketPDF(selectedSale)}
-                    className="ui-btn ui-btn-secondary"
-                    disabled={downloadingPDF}
-                  >
-                    <FileDown size={14} /> PDF
-                  </button>
-                  <button
-                    onClick={() => handlePrintTicket(selectedSale)}
-                    className="ui-btn ui-btn-secondary"
-                  >
-                    <Printer size={14} /> Ticket
-                  </button>
-                </div>
-
-                <div className="sale-detail-foot-row">
-                  {hasActions && (
-                    <div className="sale-detail-admin-wrapper">
-                      <button
-                        onClick={() => setShowAdminMenu(!showAdminMenu)}
-                        className="ui-btn ui-btn-secondary sale-admin-toggle-btn"
-                      >
-                        <span>Acciones</span>
-                        <span style={{ fontSize: '0.65rem' }}>▼</span>
-                      </button>
-                      {showAdminMenu && (
-                        <div className="sale-admin-dropdown-menu">
-                          {isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded && (
-                            <button
-                              onClick={() => {
-                                setShowActionModal('reembolsar')
-                                setShowAdminMenu(false)
-                              }}
-                              className="sale-admin-item text-warning"
-                            >
-                              <RotateCcw size={14} /> Reembolsar venta
-                            </button>
-                          )}
-                          {canEditSale(selectedSale) && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setShowActionModal('anular')
-                                  setShowAdminMenu(false)
-                                }}
-                                className="sale-admin-item text-danger"
-                              >
-                                <Trash2 size={14} /> Anular venta
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handleEditSale(selectedSale)
-                                  setShowAdminMenu(false)
-                                }}
-                                className="sale-admin-item"
-                              >
-                                <Edit size={14} /> Editar venta
-                              </button>
-                            </>
-                          )}
-                          {isAdmin && selectedSale.is_voided && (
-                            <button
-                              onClick={() => {
-                                handleHardDelete()
-                                setShowAdminMenu(false)
-                              }}
-                              className="sale-admin-item text-danger"
-                            >
-                              <Trash2 size={14} /> Eliminar venta
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <button
-                    className="ui-btn ui-btn-primary sale-detail-close-btn"
-                    onClick={handleCloseDetail}
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  width: '100%',
-                  gap: '8px',
-                }}
-              >
-                {/* Actions Dropdown for Desktop */}
-                {hasActions ? (
-                  <div style={{ position: 'relative' }}>
-                    <button
-                      onClick={() => setShowAdminMenu(!showAdminMenu)}
-                      className="ui-btn ui-btn-secondary"
-                      style={{
-                        height: '34px',
-                        minHeight: '34px',
-                        padding: '6px 12px',
-                        fontSize: '0.8rem',
-                        gap: '6px',
-                      }}
-                    >
-                      <span>Acciones</span>
-                      <span style={{ fontSize: '0.65rem' }}>▼</span>
-                    </button>
-                    {showAdminMenu && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          bottom: '100%',
-                          left: 0,
-                          marginBottom: '6px',
-                          background: 'var(--surface-elevated)',
-                          border: '1px solid var(--border-subtle)',
-                          borderRadius: '8px',
-                          boxShadow: 'var(--shadow-lg)',
-                          padding: '6px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                          zIndex: 100,
-                          minWidth: '160px',
-                        }}
-                      >
-                        {isAdmin && !selectedSale.is_voided && !selectedSale.is_refunded && (
-                          <button
-                            onClick={() => {
-                              setShowActionModal('reembolsar')
-                              setShowAdminMenu(false)
-                            }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.background = 'var(--surface-hover)')
-                            }
-                            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              width: '100%',
-                              padding: '8px 12px',
-                              border: 'none',
-                              background: 'transparent',
-                              color: 'var(--warning-text)',
-                              fontSize: '0.8rem',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                              borderRadius: '6px',
-                              fontWeight: 'bold',
-                              transition: 'background 0.15s',
-                            }}
-                          >
-                            <RotateCcw size={14} /> Reembolsar
-                          </button>
-                        )}
-                        {canEditSale(selectedSale) && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setShowActionModal('anular')
-                                setShowAdminMenu(false)
-                              }}
-                              onMouseEnter={(e) =>
-                                (e.currentTarget.style.background = 'var(--surface-hover)')
-                              }
-                              onMouseLeave={(e) =>
-                                (e.currentTarget.style.background = 'transparent')
-                              }
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                width: '100%',
-                                padding: '8px 12px',
-                                border: 'none',
-                                background: 'transparent',
-                                color: 'var(--danger-text)',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                                borderRadius: '6px',
-                                fontWeight: 'bold',
-                                transition: 'background 0.15s',
-                              }}
-                            >
-                              <Trash2 size={14} /> Anular
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleEditSale(selectedSale)
-                                setShowAdminMenu(false)
-                              }}
-                              onMouseEnter={(e) =>
-                                (e.currentTarget.style.background = 'var(--surface-hover)')
-                              }
-                              onMouseLeave={(e) =>
-                                (e.currentTarget.style.background = 'transparent')
-                              }
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                width: '100%',
-                                padding: '8px 12px',
-                                border: 'none',
-                                background: 'transparent',
-                                color: 'var(--text-primary)',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                textAlign: 'left',
-                                borderRadius: '6px',
-                                fontWeight: 'bold',
-                                transition: 'background 0.15s',
-                              }}
-                            >
-                              <Edit size={14} /> Editar
-                            </button>
-                          </>
-                        )}
-                        {isAdmin && selectedSale.is_voided && (
-                          <button
-                            onClick={() => {
-                              handleHardDelete()
-                              setShowAdminMenu(false)
-                            }}
-                            onMouseEnter={(e) =>
-                              (e.currentTarget.style.background = 'var(--surface-hover)')
-                            }
-                            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              width: '100%',
-                              padding: '8px 12px',
-                              border: 'none',
-                              background: 'transparent',
-                              color: 'var(--danger-text)',
-                              fontSize: '0.8rem',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                              borderRadius: '6px',
-                              fontWeight: 'bold',
-                              transition: 'background 0.15s',
-                            }}
-                          >
-                            <Trash2 size={14} /> Eliminar
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div />
-                )}
-
-                {/* Secondary Output Actions & Close for Desktop */}
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    gap: '6px',
-                    alignItems: 'center',
-                  }}
-                >
-                  <button
-                    onClick={() => handleDownloadTicketPDF(selectedSale)}
-                    className="ui-btn ui-btn-secondary"
-                    disabled={downloadingPDF}
-                    style={{
-                      height: '34px',
-                      minHeight: '34px',
-                      padding: '6px 12px',
-                      fontSize: '0.8rem',
-                      gap: '6px',
-                    }}
-                  >
-                    <FileDown size={14} /> PDF
-                  </button>
-                  <button
-                    onClick={() => handlePrintTicket(selectedSale)}
-                    className="ui-btn ui-btn-secondary"
-                    style={{
-                      height: '34px',
-                      minHeight: '34px',
-                      padding: '6px 12px',
-                      fontSize: '0.8rem',
-                      gap: '6px',
-                    }}
-                  >
-                    <Printer size={14} /> Ticket
-                  </button>
-                  <button
-                    className="ui-btn ui-btn-primary"
-                    onClick={handleCloseDetail}
-                    style={{
-                      height: '34px',
-                      minHeight: '34px',
-                      padding: '6px 12px',
-                      fontSize: '0.85rem',
-                    }}
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              </div>
-            )
-          }
-        >
-          <div className="sale-detail-modal stack gap-md">
-            {/* Summary Header */}
-            <div
-              className="sale-detail-summary grid four-cols gap-md p-md"
-              style={{
-                background: 'var(--surface-muted)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-lg)',
-              }}
-            >
-              <div className="stack gap-xs">
-                <span className="eyebrow">Fecha</span>
-                <span className="font-medium">{formatDate(selectedSale.date)}</span>
-              </div>
-              <div className="stack gap-xs">
-                <span className="eyebrow">Vendedor</span>
-                <div className="flex-row gap-xs items-center">
-                  <div className="avatar" style={{ width: 24, height: 24, fontSize: '0.7rem' }}>
-                    {selectedSale.user_name?.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="font-medium">{selectedSale.user_name}</span>
-                </div>
-              </div>
-              <div className="stack gap-xs">
-                <span className="eyebrow">Método</span>
-                {selectedSale.payment_method === 'MIXTO' && selectedSale.payment_details ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span
-                      className="badge badge-primary"
-                      style={{ alignSelf: 'flex-start', fontSize: '0.72rem' }}
-                    >
-                      Pago Dividido
-                    </span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      • {selectedSale.payment_details.method_1}: $
-                      {Number(selectedSale.payment_details.amount_1 || 0).toLocaleString('es-AR')}
-                    </span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      • {selectedSale.payment_details.method_2}: $
-                      {Number(selectedSale.payment_details.amount_2 || 0).toLocaleString('es-AR')}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="font-medium">{selectedSale.payment_method}</span>
-                )}
-              </div>
-              <div className="stack gap-xs">
-                <span className="eyebrow">Estado</span>
-                <div>
-                  {selectedSale.is_voided ? (
-                    <span className="badge badge-danger">ANULADA</span>
-                  ) : selectedSale.is_refunded ? (
-                    <span className="badge badge-warning">REEMBOLSADA</span>
-                  ) : (
-                    <span className="badge badge-success">COMPLETADA</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Items Table */}
-            <div className="table-container compact sale-detail-items">
-              <table className="styled-table">
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th style={{ textAlign: 'right' }}>Cant.</th>
-                    <th style={{ textAlign: 'right' }}>Precio</th>
-                    <th style={{ textAlign: 'right' }}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedSale.items.map((item) => {
-                    const itemLabel =
-                      item.item_type === 'SERVICIO'
-                        ? item.description || 'Servicio'
-                        : item.producto_nombre || 'Producto'
-                    const itemDiscount = parseFloat(item.discount) || 0
-                    return (
-                      <tr
-                        key={item.id}
-                        onMouseEnter={() => {
-                          if (item.producto_imagen_base64) {
-                            setHoveredProduct({
-                              nombre: itemLabel,
-                              imagen_base64: item.producto_imagen_base64,
-                            })
-                          }
-                        }}
-                        onMouseLeave={() => setHoveredProduct(null)}
-                        onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
-                      >
-                        <td data-label="Producto">
-                          {itemLabel}
-                          {itemDiscount > 0 && (
-                            <>
-                              <br />
-                              <span className="muted tiny">
-                                Desc: -{formatCurrency(itemDiscount)}
-                              </span>
-                            </>
-                          )}
-                        </td>
-                        <td style={{ textAlign: 'right' }} data-label="Cant.">
-                          {item.quantity}
-                        </td>
-                        <td style={{ textAlign: 'right' }} data-label="Precio">
-                          {formatCurrency(parseFloat(item.price) || 0)}
-                        </td>
-                        <td style={{ textAlign: 'right', fontWeight: 600 }} data-label="Total">
-                          {formatCurrency(
-                            (parseFloat(item.quantity) || 1) * (parseFloat(item.price) || 0) -
-                              itemDiscount,
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Totals */}
-            <div
-              className="flex-col items-end gap-xs pt-sm"
-              style={{ borderTop: '1px solid var(--border-subtle)' }}
-            >
-              {parseFloat(selectedSale.discount) > 0 && (
-                <div className="flex-row gap-lg text-sm text-danger-text">
-                  <span>Descuento:</span>
-                  <span>- {formatCurrency(selectedSale.discount)}</span>
-                </div>
-              )}
-              <div className="flex-row gap-lg text-lg font-bold">
-                <span>Total:</span>
-                <span>{formatCurrency(selectedSale.total)}</span>
-              </div>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <SaleDetailModal
+        selectedSale={!showActionModal ? selectedSale : null}
+        onClose={handleCloseDetail}
+        isMobile={isMobile}
+        isAdmin={isAdmin}
+        hasActions={hasActions}
+        downloadingPDF={downloadingPDF}
+        handleDownloadOfficialArcaPDF={handleDownloadOfficialArcaPDF}
+        handleDownloadTicketPDF={handleDownloadTicketPDF}
+        handlePrintTicket={handlePrintTicket}
+        setShowActionModal={setShowActionModal}
+        handleAuthorizeArcaRetroactive={handleAuthorizeArcaRetroactive}
+        canEditSale={canEditSale}
+        handleEditSale={handleEditSale}
+        handleHardDelete={handleHardDelete}
+        setHoveredProduct={setHoveredProduct}
+        setMousePos={setMousePos}
+        formatDate={formatDate}
+        formatCurrency={formatCurrency}
+      />
 
       {/* Confirmation Action Modal */}
-      {showActionModal && (
-        <Modal
-          title={showActionModal === 'anular' ? 'Anular venta' : 'Reembolsar venta'}
-          onClose={() => {
-            setShowActionModal(null)
-            setConfirmText('')
-            setReason('')
-          }}
-          size="md"
-        >
-          <form onSubmit={handleAction}>
-            <p className="text-sm text-muted mb-4">
-              Para confirmar esta acción irreversible, escribí{' '}
-              <strong>{showActionModal === 'anular' ? 'borrar' : 'reembolsar'}</strong> en el campo
-              de abajo.
-            </p>
-            <div className="form-group mb-4">
-              <input
-                className="input-control w-full"
-                type="text"
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                placeholder={showActionModal === 'anular' ? 'borrar' : 'reembolsar'}
-                required
-                autoFocus
-              />
-            </div>
-            <div className="form-group mb-4">
-              <label className="text-sm font-medium mb-1 block">Motivo (opcional)</label>
-              <textarea
-                className="input-control w-full"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Escribí el motivo (opcional)…"
-                rows={3}
-              />
-            </div>
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  setShowActionModal(null)
-                  setConfirmText('')
-                  setReason('')
-                }}
-                disabled={actionLoading}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className={`btn confirm-action ${showActionModal === 'anular' ? 'confirm-danger' : 'confirm-warning'}`}
-                style={{ width: 'auto', paddingLeft: '1rem', paddingRight: '1rem' }}
-                disabled={actionLoading}
-              >
-                {actionLoading
-                  ? 'Procesando…'
-                  : showActionModal === 'anular'
-                    ? 'Anular venta'
-                    : 'Reembolsar venta'}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      <SaleActionModal
+        actionType={showActionModal}
+        onClose={() => {
+          setShowActionModal(null)
+          setConfirmText('')
+          setReason('')
+        }}
+        confirmText={confirmText}
+        setConfirmText={setConfirmText}
+        reason={reason}
+        setReason={setReason}
+        onSubmit={handleAction}
+        actionLoading={actionLoading}
+      />
 
       {showConfirmDeleteModal && (
         <ConfirmModal
