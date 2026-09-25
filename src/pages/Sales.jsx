@@ -394,12 +394,18 @@ const Sales = () => {
     }
   }
 
-  const handleDownloadOfficialArcaPDF = async (sale) => {
+  const handleDownloadOfficialArcaPDF = async (sale, invoiceId = null, voucherLabel = null) => {
     if (!sale?.id) return
-    const letter = sale.electronic_invoice?.voucher_letter || 'B'
-    const number = sale.electronic_invoice?.formatted_number || sale.id
+    const targetInv =
+      invoiceId && sale.electronic_invoices
+        ? sale.electronic_invoices.find((i) => i.id === invoiceId)
+        : sale.electronic_invoice
+    const letter = targetInv?.voucher_letter || 'B'
+    const number = targetInv?.formatted_number || sale.id
+    const isCreditNote = [2, 3, 7, 8, 12, 13].includes(targetInv?.voucher_type)
+    const prefix = voucherLabel || (isCreditNote ? 'NC' : 'Factura')
     try {
-      await arcaService.downloadInvoicePdf(sale.id, `Factura_${letter}_${number}.pdf`)
+      await arcaService.downloadInvoicePdf(sale.id, `${prefix}_${letter}_${number}.pdf`, invoiceId)
     } catch {
       toast.error('Error al generar PDF oficial de ARCA')
     }

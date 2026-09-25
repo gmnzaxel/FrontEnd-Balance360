@@ -444,36 +444,65 @@ const SaleDetailModal = ({
       }
     >
       <div className="sale-detail-modal stack gap-md">
-        {/* Banner Fiscal ARCA si la venta está autorizada */}
-        {selectedSale.electronic_invoice?.status === 'APPROVED' && (
-          <div
-            className="p-3 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-sm"
-            style={{
-              background: 'rgba(37, 99, 235, 0.08)',
-              border: '1px solid rgba(37, 99, 235, 0.25)',
-              borderRadius: 'var(--radius-lg)',
-            }}
-          >
-            <div>
-              <div className="flex items-center gap-xs text-primary-600 font-bold text-sm">
-                <ShieldCheck size={18} />
-                <span>Factura Electrónica ARCA: {selectedSale.electronic_invoice.voucher_name} #{selectedSale.electronic_invoice.formatted_number}</span>
-              </div>
-              <div className="text-xs text-muted mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                <span><strong>CAE:</strong> {selectedSale.electronic_invoice.cae}</span>
-                <span><strong>Vto. CAE:</strong> {selectedSale.electronic_invoice.cae_due_date || '-'}</span>
-                <span><strong>Cliente:</strong> {selectedSale.customer_name || 'Consumidor Final'} {selectedSale.customer_doc_number ? `(${selectedSale.customer_doc_number})` : ''}</span>
-              </div>
+        {/* Banners Fiscales ARCA si la venta tiene comprobantes autorizados (Factura y/o Nota de Crédito) */}
+        {(() => {
+          const approvedInvoices =
+            selectedSale.electronic_invoices && selectedSale.electronic_invoices.length > 0
+              ? selectedSale.electronic_invoices.filter((inv) => inv.status === 'APPROVED')
+              : selectedSale.electronic_invoice && selectedSale.electronic_invoice.status === 'APPROVED'
+                ? [selectedSale.electronic_invoice]
+                : []
+
+          if (approvedInvoices.length === 0) return null
+
+          return (
+            <div className="stack gap-xs">
+              {approvedInvoices.map((inv) => {
+                const isNC = [2, 3, 7, 8, 12, 13].includes(inv.voucher_type)
+                const bannerBg = isNC ? 'rgba(239, 68, 68, 0.08)' : 'rgba(37, 99, 235, 0.08)'
+                const bannerBorder = isNC ? 'rgba(239, 68, 68, 0.25)' : 'rgba(37, 99, 235, 0.25)'
+                const titleColor = isNC ? '#dc2626' : '#2563eb'
+                const btnClass = isNC ? 'ui-btn-danger' : 'ui-btn-primary'
+
+                return (
+                  <div
+                    key={inv.id || inv.cbte_numero}
+                    className="p-3 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-sm"
+                    style={{
+                      background: bannerBg,
+                      border: `1px solid ${bannerBorder}`,
+                      borderRadius: 'var(--radius-lg)',
+                    }}
+                  >
+                    <div>
+                      <div className="flex items-center gap-xs font-bold text-sm" style={{ color: titleColor }}>
+                        <ShieldCheck size={18} />
+                        <span>
+                          {isNC ? 'Nota de Crédito Oficial ARCA:' : 'Factura Electrónica ARCA:'} {inv.voucher_name} #{inv.formatted_number}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                        <span><strong>CAE:</strong> {inv.cae}</span>
+                        <span><strong>Vto. CAE:</strong> {inv.cae_due_date || '-'}</span>
+                        <span>
+                          <strong>Cliente:</strong> {selectedSale.customer_name || 'Consumidor Final'}{' '}
+                          {selectedSale.customer_doc_number ? `(${selectedSale.customer_doc_number})` : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      className={`ui-btn ui-btn-sm ${btnClass}`}
+                      onClick={() => handleDownloadOfficialArcaPDF(selectedSale, inv.id, isNC ? 'NC' : 'Factura')}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      <FileText size={14} /> Imprimir A4
+                    </button>
+                  </div>
+                )
+              })}
             </div>
-            <button
-              className="ui-btn ui-btn-sm ui-btn-primary"
-              onClick={() => handleDownloadOfficialArcaPDF(selectedSale)}
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              <FileText size={14} /> Imprimir A4
-            </button>
-          </div>
-        )}
+          )
+        })()}
 
         {/* Summary Header */}
         <div

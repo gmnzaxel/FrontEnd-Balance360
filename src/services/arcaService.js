@@ -30,8 +30,10 @@ export const arcaService = {
   },
 
   // Descarga / Apertura del PDF Oficial A4
-  downloadInvoicePdf: async (saleId, fileName = 'Factura_ARCA.pdf') => {
+  downloadInvoicePdf: async (saleId, fileName = 'Factura_ARCA.pdf', invoiceId = null) => {
+    const params = invoiceId ? { invoice_id: invoiceId } : {}
     const res = await api.get(`sales/sales/${saleId}/invoice-pdf/`, {
+      params,
       responseType: 'blob',
     })
     const blob = new Blob([res.data], { type: 'application/pdf' })
