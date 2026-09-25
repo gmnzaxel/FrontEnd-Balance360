@@ -490,6 +490,19 @@ const NewSale = () => {
       }
     }
 
+    // Validación de Tope RG 4444 para Consumidor Final sin identificar
+    if (isArcaInvoice && customerIvaCondition === 'CONSUMIDOR_FINAL') {
+      const cleanDoc = customerDocNumber.replace(/\D/g, '')
+      const isCash = (!isSplitPayment && paymentMethod === 'EFECTIVO') || (isSplitPayment && (splitMethod1 === 'EFECTIVO' || splitMethod2 === 'EFECTIVO'))
+      const rg4444Limit = isCash ? 344488 : 688976
+      if (cleanDoc.length === 0 && total >= rg4444Limit) {
+        toast.error(
+          `Para ventas a Consumidor Final desde $${rg4444Limit.toLocaleString('es-AR')}, ARCA exige identificar al cliente con DNI o CUIT (RG 4444).`,
+        )
+        return
+      }
+    }
+
     setSubmitting(true)
     try {
       const wasEditing = Boolean(editingSaleId)
@@ -1158,6 +1171,8 @@ const NewSale = () => {
                 setCustomerName={setCustomerName}
                 customerAddress={customerAddress}
                 setCustomerAddress={setCustomerAddress}
+                total={total}
+                paymentMethod={isSplitPayment ? 'MIXTO' : paymentMethod}
               />
             </div>
           </>
@@ -1429,6 +1444,8 @@ const NewSale = () => {
                       setCustomerName={setCustomerName}
                       customerAddress={customerAddress}
                       setCustomerAddress={setCustomerAddress}
+                      total={total}
+                      paymentMethod={isSplitPayment ? 'MIXTO' : paymentMethod}
                     />
 
                     {/* Section: Summary Breakdown */}

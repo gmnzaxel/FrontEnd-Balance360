@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { ShieldCheck, Loader2, CheckCircle2 } from 'lucide-react'
+import { ShieldCheck, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { salesService } from '../../services/salesService'
 import { toast } from 'react-toastify'
 
@@ -53,6 +53,8 @@ const FiscalAndDateSection = ({
   setCustomerName,
   customerAddress,
   setCustomerAddress,
+  total = 0,
+  paymentMethod = '',
 }) => {
   const [isLookingUpCuit, setIsLookingUpCuit] = useState(false)
   const [cuitLookupSuccess, setCuitLookupSuccess] = useState(false)
@@ -75,6 +77,16 @@ const FiscalAndDateSection = ({
     setCustomerDocType('80')
     setCustomerDocNumber(cuit)
   }
+
+  // Alerta de límite reglamentario ARCA para Consumidor Final sin identificar (RG 4444)
+  const isCash = paymentMethod === 'EFECTIVO'
+  const rg4444Limit = isCash ? 344488 : 688976
+  const numTotal = Number(total) || 0
+  const isRg4444Exceeded =
+    isArcaInvoice &&
+    customerIvaCondition === 'CONSUMIDOR_FINAL' &&
+    cleanDoc.length === 0 &&
+    numTotal >= rg4444Limit
 
   // Búsqueda automática de Razón Social al ingresar 11 dígitos de CUIT
   useEffect(() => {
@@ -172,6 +184,29 @@ const FiscalAndDateSection = ({
                 Factura A
               </button>
             </div>
+
+            {/* Alerta de Tope RG 4444 para Consumidor Final sin Identificar */}
+            {isRg4444Exceeded && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '8px',
+                  padding: '7px 9px',
+                  borderRadius: '7px',
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  border: '1px solid rgba(245, 158, 11, 0.45)',
+                  color: '#fcd34d',
+                  fontSize: '0.69rem',
+                  lineHeight: '1.3',
+                }}
+              >
+                <AlertTriangle size={15} style={{ flexShrink: 0, color: '#f59e0b', marginTop: '1px' }} />
+                <span>
+                  <strong>Tope ARCA (RG 4444):</strong> En ventas desde <strong>${rg4444Limit.toLocaleString('es-AR')}</strong> a Consumidor Final, ARCA exige identificar al cliente con DNI o CUIT.
+                </span>
+              </div>
+            )}
 
             {/* Documento (DNI o CUIT) */}
             <div>

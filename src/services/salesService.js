@@ -88,6 +88,30 @@ export const salesService = {
     })
     return response.data
   },
+
+  /**
+   * Emite una Nota de Crédito oficial autorizada por ARCA para anular una factura previa.
+   * @param {number|string} id
+   * @param {Object} payload - { reason, restore_stock }
+   */
+  emitCreditNote: async (id, payload = {}) => {
+    const response = await api.post(`${ENDPOINT}${id}/credit-note/`, payload)
+    return response.data
+  },
+
+  /**
+   * Descarga el PDF oficial de ARCA para una venta o nota de crédito.
+   * @param {number|string} id
+   * @param {number|string} [invoiceId]
+   */
+  downloadInvoicePdf: async (id, invoiceId) => {
+    const params = invoiceId ? { invoice_id: invoiceId } : {}
+    const response = await api.get(`${ENDPOINT}${id}/invoice-pdf/`, {
+      params,
+      responseType: 'blob',
+    })
+    return response.data
+  },
 }
 
 export default salesService
