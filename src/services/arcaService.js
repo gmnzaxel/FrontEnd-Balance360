@@ -40,7 +40,7 @@ export const arcaService = {
     const url = window.URL.createObjectURL(blob)
     
     // Abrir en pestaña nueva para previsualizar/imprimir directamente en A4
-    const newWindow = window.open(url, '_blank')
+    const newWindow = window.open(url, '_blank', 'noopener,noreferrer')
     if (!newWindow) {
       // Si el navegador bloqueó el popup, forzar descarga como archivo
       const link = document.createElement('a')
@@ -50,6 +50,10 @@ export const arcaService = {
       link.click()
       link.remove()
     }
+    // Liberar memoria del blob tras unos minutos
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url)
+    }, 60000)
     return url
   },
 }
