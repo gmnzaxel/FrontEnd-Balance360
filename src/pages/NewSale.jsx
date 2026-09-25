@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import api from '../api/axios'
 import { toast } from 'react-toastify'
+import arcaService from '../services/arcaService'
 import { getErrorMessage } from '../utils/errorUtils'
 import { formatARS } from '../utils/format'
 import Input from '../components/ui/Input'
@@ -128,7 +129,8 @@ const NewSale = () => {
     return now.toISOString().slice(0, 16)
   })
   const [isArcaInvoice, setIsArcaInvoice] = useState(false)
-  const [voucherType, setVoucherType] = useState(11) // 11: Factura C (primera opción por defecto), 6: Factura B, 1: Factura A
+  const [voucherType, setVoucherType] = useState(11) // 11: Factura C (por defecto), 6: Factura B, 1: Factura A
+  const [emitterIvaCondition, setEmitterIvaCondition] = useState('MONOTRIBUTO')
   const [customerDocType, setCustomerDocType] = useState('96') // 96: DNI, 80: CUIT, 99: Sin Identificar
   const [customerDocNumber, setCustomerDocNumber] = useState('')
   const [customerName, setCustomerName] = useState('')
@@ -167,14 +169,38 @@ const NewSale = () => {
     fetchProducts()
   }, [fetchProducts])
 
-  // Settings se carga una sola vez al montar
+  // Settings y Configuración Fiscal se cargan al montar
   useEffect(() => {
     api
       .get('settings/')
       .then((res) => {
         ticketConfigRef.current = res.data
+        if (res.data?.fiscal_condicion_iva) {
+          setEmitterIvaCondition(res.data.fiscal_condicion_iva)
+          if (res.data.fiscal_condicion_iva === 'RESPONSABLE_INSCRIPTO') {
+            setVoucherType(6)
+          } else {
+            setVoucherType(11)
+          }
+        }
       })
       .catch((err) => console.error('Error loading ticket settings', err))
+
+    arcaService
+      .getFiscalConfig()
+      .then((cfg) => {
+        if (cfg?.condicion_iva) {
+          setEmitterIvaCondition(cfg.condicion_iva)
+          if (cfg.condicion_iva === 'RESPONSABLE_INSCRIPTO') {
+            setVoucherType(6)
+          } else {
+            setVoucherType(11)
+          }
+        }
+      })
+      .catch(() => {
+        // Si el usuario no es admin, se utiliza el valor entregado por settings/
+      })
   }, [])
 
   useEffect(() => {
@@ -1173,6 +1199,7 @@ const NewSale = () => {
                 setCustomerAddress={setCustomerAddress}
                 total={total}
                 paymentMethod={isSplitPayment ? 'MIXTO' : paymentMethod}
+                emitterIvaCondition={emitterIvaCondition}
               />
             </div>
           </>
@@ -1446,6 +1473,7 @@ const NewSale = () => {
                       setCustomerAddress={setCustomerAddress}
                       total={total}
                       paymentMethod={isSplitPayment ? 'MIXTO' : paymentMethod}
+                      emitterIvaCondition={emitterIvaCondition}
                     />
 
                     {/* Section: Summary Breakdown */}

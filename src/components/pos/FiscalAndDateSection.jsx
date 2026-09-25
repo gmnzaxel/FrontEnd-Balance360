@@ -55,11 +55,46 @@ const FiscalAndDateSection = ({
   setCustomerAddress,
   total = 0,
   paymentMethod = '',
+  emitterIvaCondition = 'MONOTRIBUTO',
 }) => {
   const [isLookingUpCuit, setIsLookingUpCuit] = useState(false)
   const [cuitLookupSuccess, setCuitLookupSuccess] = useState(false)
   const [showAddressField, setShowAddressField] = useState(Boolean(customerAddress))
   const lastLookedUpCuitRef = useRef('')
+
+  const isMonotributo = emitterIvaCondition === 'MONOTRIBUTO' || emitterIvaCondition === 'EXENTO'
+  const isResponsableInscripto = emitterIvaCondition === 'RESPONSABLE_INSCRIPTO'
+
+  // 1. Sincronización forzada según la condición del emisor
+  useEffect(() => {
+    if (isMonotributo) {
+      if (voucherType !== 11) {
+        setVoucherType(11)
+      }
+    } else if (isResponsableInscripto) {
+      if (voucherType === 11) {
+        setVoucherType(6)
+      }
+    }
+  }, [isMonotributo, isResponsableInscripto, voucherType, setVoucherType])
+
+  // 2. Para Responsable Inscripto: Auto-selección inteligente de comprobante (A vs B) según condición del cliente
+  useEffect(() => {
+    if (isResponsableInscripto) {
+      if (customerIvaCondition === 'RESPONSABLE_INSCRIPTO' || customerIvaCondition === 'MONOTRIBUTO') {
+        if (voucherType !== 1) {
+          setVoucherType(1)
+        }
+        if (customerDocType !== '80') {
+          setCustomerDocType('80')
+        }
+      } else if (customerIvaCondition === 'CONSUMIDOR_FINAL' || customerIvaCondition === 'EXENTO') {
+        if (voucherType !== 6) {
+          setVoucherType(6)
+        }
+      }
+    }
+  }, [isResponsableInscripto, customerIvaCondition, voucherType, customerDocType, setVoucherType, setCustomerDocType])
 
   // Sugerencias de CUIT si el usuario escribe un DNI (7 u 8 dígitos)
   const cleanDoc = String(customerDocNumber || '').replace(/\D/g, '')
@@ -150,40 +185,67 @@ const FiscalAndDateSection = ({
 
         {isArcaInvoice && (
           <div className="pos-cfg-body">
-            {/* Selector de Comprobante (C / B / A) */}
-            <div className="pos-segmented-control">
-              <button
-                type="button"
-                className={`pos-segmented-btn ${voucherType === 11 ? 'active' : ''}`}
-                onClick={() => {
-                  setVoucherType(11)
+            {/* Selector o Indicador de Comprobante según Condición del Emisor */}
+            {isMonotributo ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '7px 11px',
+                  borderRadius: '8px',
+                  background: 'rgba(37, 99, 235, 0.08)',
+                  border: '1px solid rgba(37, 99, 235, 0.25)',
                 }}
               >
-                Factura C
-              </button>
-              <button
-                type="button"
-                className={`pos-segmented-btn ${voucherType === 6 ? 'active' : ''}`}
-                onClick={() => {
-                  setVoucherType(6)
-                }}
-              >
-                Factura B
-              </button>
-              <button
-                type="button"
-                className={`pos-segmented-btn ${voucherType === 1 ? 'active' : ''}`}
-                onClick={() => {
-                  setVoucherType(1)
-                  setCustomerDocType('80')
-                  if (setCustomerIvaCondition && (!customerIvaCondition || customerIvaCondition === 'CONSUMIDOR_FINAL')) {
-                    setCustomerIvaCondition('RESPONSABLE_INSCRIPTO')
-                  }
-                }}
-              >
-                Factura A
-              </button>
-            </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 600, color: '#2563eb' }}>
+                  <ShieldCheck size={16} />
+                  <span>Comprobante Oficial: <strong>Factura C</strong></span>
+                </div>
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    color: 'var(--text-muted)',
+                    background: 'var(--surface-subtle)',
+                    padding: '2px 7px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border-subtle)',
+                  }}
+                >
+                  Emisor Monotributista
+                </span>
+              </div>
+            ) : (
+              <div className="pos-segmented-control">
+                <button
+                  type="button"
+                  className={`pos-segmented-btn ${voucherType === 6 ? 'active' : ''}`}
+                  onClick={() => {
+                    setVoucherType(6)
+                    if (customerIvaCondition === 'RESPONSABLE_INSCRIPTO') {
+                      setCustomerIvaCondition('CONSUMIDOR_FINAL')
+                    }
+                  }}
+                  title="Factura B: para Consumidor Final y Exentos"
+                >
+                  Factura B (Consumidor Final)
+                </button>
+                <button
+                  type="button"
+                  className={`pos-segmented-btn ${voucherType === 1 ? 'active' : ''}`}
+                  onClick={() => {
+                    setVoucherType(1)
+                    setCustomerDocType('80')
+                    if (!customerIvaCondition || customerIvaCondition === 'CONSUMIDOR_FINAL') {
+                      setCustomerIvaCondition('RESPONSABLE_INSCRIPTO')
+                    }
+                  }}
+                  title="Factura A: para Responsables Inscriptos y Monotributistas con CUIT"
+                >
+                  Factura A (Con CUIT)
+                </button>
+              </div>
+            )}
 
             {/* Alerta de Tope RG 4444 para Consumidor Final sin Identificar */}
             {isRg4444Exceeded && (
