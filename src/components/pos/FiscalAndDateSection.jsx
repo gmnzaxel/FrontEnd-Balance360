@@ -43,6 +43,7 @@ const FiscalAndDateSection = ({
   setIsArcaInvoice,
   voucherType,
   setVoucherType,
+  customerIvaCondition = 'CONSUMIDOR_FINAL',
   setCustomerIvaCondition,
   customerDocType,
   setCustomerDocType,
@@ -90,7 +91,7 @@ const FiscalAndDateSection = ({
               setCustomerAddress(res.address)
               setShowAddressField(true)
             }
-            if (res.iva_condition) {
+            if (res.iva_condition && setCustomerIvaCondition) {
               setCustomerIvaCondition(res.iva_condition)
             }
             setCuitLookupSuccess(true)
@@ -144,7 +145,9 @@ const FiscalAndDateSection = ({
                 className={`pos-segmented-btn ${voucherType === 11 ? 'active' : ''}`}
                 onClick={() => {
                   setVoucherType(11)
-                  setCustomerIvaCondition('CONSUMIDOR_FINAL')
+                  if (setCustomerIvaCondition && customerIvaCondition === 'RESPONSABLE_INSCRIPTO') {
+                    setCustomerIvaCondition('CONSUMIDOR_FINAL')
+                  }
                 }}
               >
                 Factura C
@@ -154,7 +157,9 @@ const FiscalAndDateSection = ({
                 className={`pos-segmented-btn ${voucherType === 6 ? 'active' : ''}`}
                 onClick={() => {
                   setVoucherType(6)
-                  setCustomerIvaCondition('CONSUMIDOR_FINAL')
+                  if (setCustomerIvaCondition && customerIvaCondition === 'RESPONSABLE_INSCRIPTO') {
+                    setCustomerIvaCondition('CONSUMIDOR_FINAL')
+                  }
                 }}
               >
                 Factura B
@@ -164,7 +169,9 @@ const FiscalAndDateSection = ({
                 className={`pos-segmented-btn ${voucherType === 1 ? 'active' : ''}`}
                 onClick={() => {
                   setVoucherType(1)
-                  setCustomerIvaCondition('RESPONSABLE_INSCRIPTO')
+                  if (setCustomerIvaCondition) {
+                    setCustomerIvaCondition('RESPONSABLE_INSCRIPTO')
+                  }
                   setCustomerDocType('80')
                 }}
               >
@@ -251,21 +258,44 @@ const FiscalAndDateSection = ({
               </div>
             )}
 
-            {/* Razón Social / Nombre: se muestra si es Factura A, o si ya tiene datos / autocompletado */}
-            {(voucherType === 1 || customerName || cleanDoc.length >= 7) && (
-              <div>
-                <span className="pos-cfg-label">
-                  {voucherType === 1 ? 'Razón Social (Obligatoria)' : 'Nombre / Razón Social'}
-                </span>
-                <input
-                  type="text"
-                  className="pos-cfg-input"
-                  placeholder={voucherType === 1 ? 'Nombre de la empresa o titular' : 'Opcional'}
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                />
-              </div>
-            )}
+            {/* Condición frente al IVA (Inteligente y configurable) */}
+            <div>
+              <span className="pos-cfg-label">Condición frente al IVA del Cliente</span>
+              <select
+                className="pos-cfg-input"
+                value={customerIvaCondition || (voucherType === 1 ? 'RESPONSABLE_INSCRIPTO' : 'CONSUMIDOR_FINAL')}
+                onChange={(e) => setCustomerIvaCondition && setCustomerIvaCondition(e.target.value)}
+                style={{ cursor: 'pointer' }}
+              >
+                {voucherType === 1 ? (
+                  <>
+                    <option value="RESPONSABLE_INSCRIPTO">IVA Responsable Inscripto (Requerido Factura A)</option>
+                    <option value="MONOTRIBUTO">Responsable Monotributo</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="CONSUMIDOR_FINAL">Consumidor Final</option>
+                    <option value="MONOTRIBUTO">Responsable Monotributo</option>
+                    <option value="RESPONSABLE_INSCRIPTO">IVA Responsable Inscripto</option>
+                    <option value="EXENTO">IVA Exento</option>
+                  </>
+                )}
+              </select>
+            </div>
+
+            {/* Razón Social / Nombre: SIEMPRE visible para que el usuario pueda escribirlo o editarlo */}
+            <div>
+              <span className="pos-cfg-label">
+                {voucherType === 1 ? 'Razón Social (Obligatoria)' : 'Nombre / Razón Social'}
+              </span>
+              <input
+                type="text"
+                className="pos-cfg-input"
+                placeholder={voucherType === 1 ? 'Nombre de la empresa o titular' : 'Ej: Juan Pérez (o Consumidor Final)'}
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+            </div>
 
             {/* Domicilio Comercial colapsable / sutil */}
             {voucherType === 1 && (
