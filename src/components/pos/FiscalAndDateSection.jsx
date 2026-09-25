@@ -145,9 +145,6 @@ const FiscalAndDateSection = ({
                 className={`pos-segmented-btn ${voucherType === 11 ? 'active' : ''}`}
                 onClick={() => {
                   setVoucherType(11)
-                  if (setCustomerIvaCondition && customerIvaCondition === 'RESPONSABLE_INSCRIPTO') {
-                    setCustomerIvaCondition('CONSUMIDOR_FINAL')
-                  }
                 }}
               >
                 Factura C
@@ -157,9 +154,6 @@ const FiscalAndDateSection = ({
                 className={`pos-segmented-btn ${voucherType === 6 ? 'active' : ''}`}
                 onClick={() => {
                   setVoucherType(6)
-                  if (setCustomerIvaCondition && customerIvaCondition === 'RESPONSABLE_INSCRIPTO') {
-                    setCustomerIvaCondition('CONSUMIDOR_FINAL')
-                  }
                 }}
               >
                 Factura B
@@ -169,10 +163,10 @@ const FiscalAndDateSection = ({
                 className={`pos-segmented-btn ${voucherType === 1 ? 'active' : ''}`}
                 onClick={() => {
                   setVoucherType(1)
-                  if (setCustomerIvaCondition) {
+                  setCustomerDocType('80')
+                  if (setCustomerIvaCondition && (!customerIvaCondition || customerIvaCondition === 'CONSUMIDOR_FINAL')) {
                     setCustomerIvaCondition('RESPONSABLE_INSCRIPTO')
                   }
-                  setCustomerDocType('80')
                 }}
               >
                 Factura A
@@ -258,28 +252,19 @@ const FiscalAndDateSection = ({
               </div>
             )}
 
-            {/* Condición frente al IVA (Inteligente y configurable) */}
+            {/* Condición frente al IVA (Seleccionable siempre para cualquier comprobante) */}
             <div>
               <span className="pos-cfg-label">Condición frente al IVA del Cliente</span>
               <select
                 className="pos-cfg-input"
-                value={customerIvaCondition || (voucherType === 1 ? 'RESPONSABLE_INSCRIPTO' : 'CONSUMIDOR_FINAL')}
+                value={customerIvaCondition}
                 onChange={(e) => setCustomerIvaCondition && setCustomerIvaCondition(e.target.value)}
                 style={{ cursor: 'pointer' }}
               >
-                {voucherType === 1 ? (
-                  <>
-                    <option value="RESPONSABLE_INSCRIPTO">IVA Responsable Inscripto (Requerido Factura A)</option>
-                    <option value="MONOTRIBUTO">Responsable Monotributo</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="CONSUMIDOR_FINAL">Consumidor Final</option>
-                    <option value="MONOTRIBUTO">Responsable Monotributo</option>
-                    <option value="RESPONSABLE_INSCRIPTO">IVA Responsable Inscripto</option>
-                    <option value="EXENTO">IVA Exento</option>
-                  </>
-                )}
+                <option value="CONSUMIDOR_FINAL">Consumidor Final</option>
+                <option value="MONOTRIBUTO">Responsable Monotributo</option>
+                <option value="RESPONSABLE_INSCRIPTO">IVA Responsable Inscripto</option>
+                <option value="EXENTO">IVA Exento</option>
               </select>
             </div>
 
