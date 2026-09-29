@@ -259,11 +259,15 @@ const NewSale = () => {
 
       const newCartItems = parsedData.items.map((it, idx) => {
         if (it.item_type === 'SERVICIO' || !it.product_id) {
+          const isService = it.item_type === 'SERVICIO'
+          const cleanName = it.nombre || 'Ítem'
           return {
-            id: `svc-${Date.now()}-${idx}`,
+            id: `adhoc-${Date.now()}-${idx}`,
             item_type: 'SERVICIO',
-            description: it.nombre,
-            nombre: `[Servicio] ${it.nombre}`,
+            description: cleanName,
+            nombre: isService
+              ? (cleanName.startsWith('[Servicio]') ? cleanName : `[Servicio] ${cleanName}`)
+              : cleanName,
             price: parseFloat(it.price) || 0,
             quantity: parseInt(it.quantity, 10) || 1,
             product: null,
