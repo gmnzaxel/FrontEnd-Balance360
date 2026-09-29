@@ -39,7 +39,7 @@ const Products = () => {
   const [products, setProducts] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const { isAdmin } = useContext(AuthContext)
-  const columnCount = isAdmin ? 8 : 7
+  const columnCount = isAdmin ? 8 : 6
 
   // --- Estados de UI ---
   const [loading, setLoading] = useState(true)
@@ -77,6 +77,7 @@ const Products = () => {
     costo_compra: 0,
     precio_venta: 0,
     supplier_name: '',
+    alicuota_iva: '21.00',
   })
   const [editingSupplier, setEditingSupplier] = useState(null)
   const [supplierForm, setSupplierForm] = useState({ name: '', contact_phone: '' })
@@ -383,6 +384,7 @@ const Products = () => {
     setEditingProduct(product)
     setFormData({
       ...product,
+      alicuota_iva: product.alicuota_iva != null ? String(product.alicuota_iva) : '21.00',
       imagen_base64: product.imagen_base64 || '',
     })
     setShowModal(true)
@@ -481,6 +483,7 @@ const Products = () => {
       costo_compra: 0,
       precio_venta: 0,
       supplier_name: '',
+      alicuota_iva: '21.00',
       imagen_base64: '',
     })
     setShowModal(true)
@@ -822,8 +825,12 @@ const Products = () => {
               <option value="stock_actual:desc">Stock (Mayor primero)</option>
               <option value="precio_venta:asc">Precio (Menor primero)</option>
               <option value="precio_venta:desc">Precio (Mayor primero)</option>
-              <option value="costo_compra:asc">Costo (Menor primero)</option>
-              <option value="costo_compra:desc">Costo (Mayor primero)</option>
+              {isAdmin && (
+                <>
+                  <option value="costo_compra:asc">Costo (Menor primero)</option>
+                  <option value="costo_compra:desc">Costo (Mayor primero)</option>
+                </>
+              )}
             </Select>
           </div>
 
@@ -930,13 +937,15 @@ const Products = () => {
                 sortDir={sortDir}
                 onSort={handleSort}
               />
-              <SortableTh
-                field="costo_compra"
-                label="Costo"
-                sortField={sortField}
-                sortDir={sortDir}
-                onSort={handleSort}
-              />
+              {isAdmin && (
+                <SortableTh
+                  field="costo_compra"
+                  label="Costo"
+                  sortField={sortField}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                />
+              )}
               <SortableTh
                 field="precio_venta"
                 label="Precio Venta"
@@ -1036,9 +1045,11 @@ const Products = () => {
                   <td className="text-muted cell-max" data-label="Max">
                     {p.stock_maximo || '-'}
                   </td>
-                  <td className="text-muted cell-cost" data-label="Costo">
-                    {formatARS(p.costo_compra)}
-                  </td>
+                  {isAdmin && (
+                    <td className="text-muted cell-cost" data-label="Costo">
+                      {formatARS(p.costo_compra)}
+                    </td>
+                  )}
                   <td className="font-bold cell-price" data-label="Precio Venta">
                     {formatARS(p.precio_venta)}
                   </td>
@@ -1177,11 +1188,13 @@ const Products = () => {
                 <p className="font-semibold text-base">{selectedProduct.stock_maximo || '—'}</p>
               </div>
             </div>
-            <div className="grid two-cols">
-              <div className="detail-stat-box">
-                <p className="text-xs muted">Costo</p>
-                <p className="font-medium">{formatARS(selectedProduct.costo_compra)}</p>
-              </div>
+            <div className={isAdmin ? 'grid two-cols' : 'grid'}>
+              {isAdmin && (
+                <div className="detail-stat-box">
+                  <p className="text-xs muted">Costo</p>
+                  <p className="font-medium">{formatARS(selectedProduct.costo_compra)}</p>
+                </div>
+              )}
               <div className="detail-stat-box">
                 <p className="text-xs muted">Precio venta</p>
                 <p className="font-bold text-primary-400">
@@ -1298,6 +1311,17 @@ const Products = () => {
                 required
               />
             </div>
+
+            <Select
+              label="Alícuota IVA"
+              value={formData.alicuota_iva || '21.00'}
+              onChange={(e) => setFormData({ ...formData, alicuota_iva: e.target.value })}
+            >
+              <option value="21.00">21% (Tasa general)</option>
+              <option value="10.50">10.5% (Tasa reducida)</option>
+              <option value="27.00">27% (Servicios y alícuota especial)</option>
+              <option value="0.00">0% (Exento / No gravado)</option>
+            </Select>
 
             <div style={{ marginTop: '16px' }}>
               <label

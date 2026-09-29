@@ -41,4 +41,18 @@ describe('Utilidades de formato (format.js)', () => {
       expect(formatDateOnly(null)).toBe('-')
     })
   })
+
+  describe('getCurrentMonthBounds (QuickMonthReportModal)', () => {
+    it('calcula los límites exactos del mes actual', async () => {
+      const { getCurrentMonthBounds } = await import('../components/sales/QuickMonthReportModal')
+      const bounds = getCurrentMonthBounds()
+      const now = new Date()
+
+      expect(bounds.startDate).toMatch(/^\d{4}-\d{2}-01$/)
+      expect(bounds.endDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      expect(bounds.monthLabel).toBeTruthy()
+      expect(bounds.daysInMonth).toBeGreaterThanOrEqual(28)
+      expect(bounds.currentDay).toBe(now.getDate())
+    })
+  })
 })

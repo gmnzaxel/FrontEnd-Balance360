@@ -556,6 +556,11 @@
     font-weight: 600;
   }
 
+  .products-page .table-container .styled-table tbody tr:not(:has(.cell-cost)) td.cell-price {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
   .products-page .table-container .styled-table .badge {
     font-size: 0.7rem;
     padding: 3px 7px;

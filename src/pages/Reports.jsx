@@ -44,7 +44,7 @@ const formatCompactARS = (value) => {
 }
 
 const Reports = () => {
-  const isMobile = useMediaQuery('(max-width: 640px)')
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const [activeTab, setActiveTab] = useState('analytics') // 'analytics' | 'libro_iva'
   const [months] = useState(6)
   const [series, setSeries] = useState([])
@@ -347,25 +347,23 @@ const Reports = () => {
               <span>{exporting ? 'Generando…' : 'Exportar Excel'}</span>
             </button>
           ) : (
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="reports-actions-group-fiscal">
               <button
                 type="button"
-                className="reports-export-btn"
+                className="reports-export-btn reports-export-green"
                 onClick={handleExportLibroIvaExcel}
                 disabled={exportingLibroExcel}
                 title="Descargar planilla Excel formateada para el contador"
-                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', borderColor: '#059669' }}
               >
                 <FileSpreadsheet size={16} />
                 <span>{exportingLibroExcel ? 'Generando…' : 'Excel Contador'}</span>
               </button>
               <button
                 type="button"
-                className="reports-export-btn"
+                className="reports-export-btn reports-export-indigo"
                 onClick={handleExportLibroIvaTxt}
                 disabled={exportingLibroTxt}
                 title="Descargar archivos TXT reglamentarios para Portal IVA Digital de ARCA"
-                style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', borderColor: '#6366f1' }}
               >
                 <FileDown size={16} />
                 <span>{exportingLibroTxt ? 'Generando…' : 'TXT ARCA'}</span>
@@ -376,22 +374,22 @@ const Reports = () => {
       </div>
 
       {/* Selector de Pestañas: Analítica vs Libro IVA Ventas */}
-      <div style={{ display: 'flex', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
+      <div className="reports-tabs-nav">
         <button
           type="button"
           onClick={() => setActiveTab('analytics')}
-          className={`ui-btn ${activeTab === 'analytics' ? 'ui-btn-primary' : 'ui-btn-secondary'}`}
-          style={{ height: '34px', fontSize: '0.82rem', gap: '6px' }}
+          className={`reports-tab-pill ${activeTab === 'analytics' ? 'active' : ''}`}
         >
-          <BarChart3 size={15} /> Analítica y Métricas
+          <BarChart3 size={15} />
+          <span>{isMobile ? 'Métricas' : 'Analítica y Métricas'}</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('libro_iva')}
-          className={`ui-btn ${activeTab === 'libro_iva' ? 'ui-btn-primary' : 'ui-btn-secondary'}`}
-          style={{ height: '34px', fontSize: '0.82rem', gap: '6px' }}
+          className={`reports-tab-pill ${activeTab === 'libro_iva' ? 'active' : ''}`}
         >
-          <ShieldCheck size={15} /> Libro IVA Ventas Digital (ARCA)
+          <ShieldCheck size={15} />
+          <span>{isMobile ? 'Libro IVA ARCA' : 'Libro IVA Ventas Digital (ARCA)'}</span>
         </button>
       </div>
 
@@ -525,7 +523,7 @@ const Reports = () => {
               </div>
 
               <div className="reports-chart-wrapper">
-                <ResponsiveContainer width="100%" height={320}>
+                <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
                   <BarChart
                     data={chartData}
                     margin={{
@@ -663,87 +661,160 @@ const Reports = () => {
                 <span style={{ fontSize: '0.8rem' }}>Las ventas con facturación ARCA activada aparecerán detalladas aquí con su CAE.</span>
               </div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table className="table" style={{ width: '100%', fontSize: '0.78rem' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ padding: '8px 10px' }}>Fecha</th>
-                      <th style={{ padding: '8px 10px' }}>Comprobante</th>
-                      <th style={{ padding: '8px 10px' }}>Número</th>
-                      <th style={{ padding: '8px 10px' }}>Documento</th>
-                      <th style={{ padding: '8px 10px' }}>Cliente / Razón Social</th>
-                      <th style={{ padding: '8px 10px' }}>Condición IVA</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'right' }}>Neto</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'right' }}>IVA</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'right' }}>Total</th>
-                      <th style={{ padding: '8px 10px' }}>CAE</th>
-                      <th style={{ padding: '8px 10px', textAlign: 'center' }}>PDF</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {libroIvaData.records.map((rec) => {
-                      const isNc = [2, 3, 7, 8, 12, 13].includes(rec.voucher_type)
-                      return (
-                        <tr key={rec.id}>
-                          <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{rec.date}</td>
-                          <td style={{ padding: '8px 10px' }}>
+              <>
+                {/* Vista Tabla Desktop */}
+                <div className="reports-table-desktop" style={{ overflowX: 'auto' }}>
+                  <table className="table" style={{ width: '100%', fontSize: '0.78rem' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: '8px 10px' }}>Fecha</th>
+                        <th style={{ padding: '8px 10px' }}>Comprobante</th>
+                        <th style={{ padding: '8px 10px' }}>Número</th>
+                        <th style={{ padding: '8px 10px' }}>Documento</th>
+                        <th style={{ padding: '8px 10px' }}>Cliente / Razón Social</th>
+                        <th style={{ padding: '8px 10px' }}>Condición IVA</th>
+                        <th style={{ padding: '8px 10px', textAlign: 'right' }}>Neto</th>
+                        <th style={{ padding: '8px 10px', textAlign: 'right' }}>IVA</th>
+                        <th style={{ padding: '8px 10px', textAlign: 'right' }}>Total</th>
+                        <th style={{ padding: '8px 10px' }}>CAE</th>
+                        <th style={{ padding: '8px 10px', textAlign: 'center' }}>PDF</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {libroIvaData.records.map((rec) => {
+                        const isNc = [2, 3, 7, 8, 12, 13].includes(rec.voucher_type)
+                        return (
+                          <tr key={rec.id}>
+                            <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{rec.date}</td>
+                            <td style={{ padding: '8px 10px' }}>
+                              <span className={`badge ${isNc ? 'badge-danger' : 'badge-primary'}`}>
+                                {rec.voucher_name}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px 10px', fontWeight: 600 }}>{rec.formatted_number}</td>
+                            <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                              {rec.doc_number ? `${rec.doc_type_label}: ${rec.doc_number}` : 'Cons. Final'}
+                            </td>
+                            <td style={{ padding: '8px 10px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {rec.customer_name}
+                            </td>
+                            <td style={{ padding: '8px 10px' }}>
+                              <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>
+                                {rec.iva_condition_label}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 500 }}>
+                              {formatCurrency(rec.neto)}
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 500 }}>
+                              {formatCurrency(rec.iva)}
+                            </td>
+                            <td
+                              style={{
+                                padding: '8px 10px',
+                                textAlign: 'right',
+                                fontWeight: 700,
+                                color: isNc ? '#ef4444' : 'var(--text-primary)',
+                              }}
+                            >
+                              {formatCurrency(rec.total)}
+                            </td>
+                            <td style={{ padding: '8px 10px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                              {rec.cae || '-'}
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                className="ui-btn ui-btn-ghost"
+                                style={{ padding: '3px 7px', height: '26px' }}
+                                onClick={() =>
+                                  arcaService.downloadInvoicePdf(
+                                    rec.sale_id,
+                                    `${rec.voucher_letter}_${rec.formatted_number}.pdf`,
+                                  )
+                                }
+                                title="Descargar comprobante oficial"
+                              >
+                                <FileDown size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Vista Tarjetas Mobile */}
+                <div className="reports-cards-mobile">
+                  {libroIvaData.records.map((rec) => {
+                    const isNc = [2, 3, 7, 8, 12, 13].includes(rec.voucher_type)
+                    return (
+                      <div key={rec.id} className={`reports-fiscal-card-item ${isNc ? 'is-nc' : ''}`}>
+                        <div className="reports-fiscal-card-head">
+                          <div className="reports-fiscal-card-title-group">
                             <span className={`badge ${isNc ? 'badge-danger' : 'badge-primary'}`}>
                               {rec.voucher_name}
                             </span>
-                          </td>
-                          <td style={{ padding: '8px 10px', fontWeight: 600 }}>{rec.formatted_number}</td>
-                          <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
-                            {rec.doc_number ? `${rec.doc_type_label}: ${rec.doc_number}` : 'Cons. Final'}
-                          </td>
-                          <td style={{ padding: '8px 10px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {rec.customer_name}
-                          </td>
-                          <td style={{ padding: '8px 10px' }}>
-                            <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>
+                            <span className="reports-fiscal-card-num">{rec.formatted_number}</span>
+                          </div>
+                          <span className="reports-fiscal-card-date">{rec.date}</span>
+                        </div>
+
+                        <div className="reports-fiscal-card-client">
+                          <span className="reports-fiscal-client-name">{rec.customer_name}</span>
+                          <div className="reports-fiscal-client-meta">
+                            <span className="reports-fiscal-doc">
+                              {rec.doc_number ? `${rec.doc_type_label}: ${rec.doc_number}` : 'Cons. Final'}
+                            </span>
+                            <span className="badge badge-neutral" style={{ fontSize: '0.68rem' }}>
                               {rec.iva_condition_label}
                             </span>
-                          </td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 500 }}>
-                            {formatCurrency(rec.neto)}
-                          </td>
-                          <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 500 }}>
-                            {formatCurrency(rec.iva)}
-                          </td>
-                          <td
-                            style={{
-                              padding: '8px 10px',
-                              textAlign: 'right',
-                              fontWeight: 700,
-                              color: isNc ? '#ef4444' : 'var(--text-primary)',
-                            }}
+                          </div>
+                        </div>
+
+                        <div className="reports-fiscal-card-financials">
+                          <div className="reports-fiscal-fin-item">
+                            <span className="reports-fiscal-fin-label">Neto:</span>
+                            <span className="reports-fiscal-fin-val">{formatCurrency(rec.neto)}</span>
+                          </div>
+                          <div className="reports-fiscal-fin-item">
+                            <span className="reports-fiscal-fin-label">IVA:</span>
+                            <span className="reports-fiscal-fin-val">{formatCurrency(rec.iva)}</span>
+                          </div>
+                          <div className="reports-fiscal-fin-item total">
+                            <span className="reports-fiscal-fin-label">Total:</span>
+                            <span className={`reports-fiscal-fin-val ${isNc ? 'is-nc' : 'is-total'}`}>
+                              {formatCurrency(rec.total)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="reports-fiscal-card-footer">
+                          <div className="reports-fiscal-cae-wrap">
+                            <span className="reports-fiscal-cae-label">CAE:</span>
+                            <span className="reports-fiscal-cae-code">{rec.cae || 'Sin CAE'}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="reports-fiscal-pdf-btn"
+                            onClick={() =>
+                              arcaService.downloadInvoicePdf(
+                                rec.sale_id,
+                                `${rec.voucher_letter}_${rec.formatted_number}.pdf`,
+                              )
+                            }
+                            title="Descargar comprobante oficial"
                           >
-                            {formatCurrency(rec.total)}
-                          </td>
-                          <td style={{ padding: '8px 10px', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                            {rec.cae || '-'}
-                          </td>
-                          <td style={{ padding: '8px 10px', textAlign: 'center' }}>
-                            <button
-                              type="button"
-                              className="ui-btn ui-btn-ghost"
-                              style={{ padding: '3px 7px', height: '26px' }}
-                              onClick={() =>
-                                arcaService.downloadInvoicePdf(
-                                  rec.sale_id,
-                                  `${rec.voucher_letter}_${rec.formatted_number}.pdf`,
-                                )
-                              }
-                              title="Descargar comprobante oficial"
-                            >
-                              <FileDown size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                            <FileDown size={14} />
+                            <span>PDF</span>
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
             )}
           </div>
         </div>

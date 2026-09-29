@@ -136,4 +136,28 @@ describe('Hook useCart (Lógica de Carrito y Cálculos)', () => {
     expect(result.current.total).toBe(0)
     expect(result.current.discount).toBe('')
   })
+
+  it('permite cargar una venta completa interpretada desde WhatsApp con productos y servicios', () => {
+    const { result } = renderHook(() =>
+      useCart({ cartKey: 'test_cart_wa', discountKey: 'test_disc_wa', discountTypeKey: 'test_type_wa' }),
+    )
+
+    const parsedWhatsAppItems = [
+      { id: 101, item_type: 'PRODUCTO', nombre: 'Cerradura 852', price: 40000, quantity: 1 },
+      { id: 102, item_type: 'PRODUCTO', nombre: 'Cerrojo 504', price: 30000, quantity: 1 },
+      { id: 103, item_type: 'PRODUCTO', nombre: 'Copia de llave', price: 5000, quantity: 2 },
+      { id: 'svc-1', item_type: 'SERVICIO', description: 'Colocación', nombre: '[Servicio] Colocación', price: 35000, quantity: 1 },
+    ]
+
+    act(() => {
+      result.current.setCart(parsedWhatsAppItems)
+    })
+
+    // 40000 + 30000 + (5000*2) + 35000 = 115000
+    expect(result.current.cart.length).toBe(4)
+    expect(result.current.cartCount).toBe(5)
+    expect(result.current.subtotal).toBe(115000)
+    expect(result.current.total).toBe(115000)
+  })
 })
+

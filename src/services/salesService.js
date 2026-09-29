@@ -14,6 +14,16 @@ export const salesService = {
   },
 
   /**
+   * Obtiene métricas financieras agregadas (Solo Administradores).
+   * @param {Object} params - Filtros de búsqueda, fechas, método, estado.
+   * @param {AbortSignal} [signal]
+   */
+  getSummary: async (params = {}, signal) => {
+    const response = await api.get(`${ENDPOINT}summary/`, { params, signal })
+    return response.data
+  },
+
+  /**
    * Obtiene el detalle de una venta por ID.
    * @param {number|string} id
    */

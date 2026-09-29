@@ -99,47 +99,202 @@
   border: 1px solid var(--border-subtle);
 }
 
-@media (max-width: 768px) {
-  .settings-card-header-split {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+/* ─── Navegación por Categorías en Celular / Píldoras ───────── */
+.settings-category-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px 2px;
+  margin-bottom: 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
-@media (max-width: 390px) {
+.settings-category-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.settings-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  background: var(--surface-1, #1e293b);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.settings-category-pill:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.settings-category-pill.active {
+  background: var(--primary-600, #4f46e5);
+  border-color: var(--primary-500, #6366f1);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+}
+
+.settings-mobile-save-box {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .settings-page {
+    gap: 14px;
+    padding-bottom: 28px;
+  }
+
+  .settings-page .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
   .settings-page .page-header-actions {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    width: 100%;
   }
 
   .settings-page .page-header-actions .btn {
     width: 100%;
+    height: 44px;
+    font-size: 0.92rem;
+    justify-content: center;
+  }
+
+  .settings-card {
+    padding: 16px 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .settings-card-header-split {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .settings-card-header-split .btn,
+  .settings-card-header-split .ui-btn {
+    width: 100%;
+    height: 40px;
+    justify-content: center;
+  }
+
+  .settings-mobile-save-box {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border-subtle);
+  }
+
+  .settings-mobile-save-box .btn,
+  .settings-mobile-save-box .ui-btn {
+    height: 44px;
+    font-size: 0.92rem;
+    justify-content: center;
+  }
+
+  .settings-page .two-cols,
+  .settings-page .three-cols {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
   }
 
   .settings-row {
     flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-@media (max-width: 640px) {
-  .settings-page {
-    gap: 16px;
-    padding-bottom: 24px;
+    align-items: stretch;
+    gap: 12px;
   }
 
   .settings-preview-wrap {
-    padding: 12px;
+    padding: 10px;
   }
 
   .settings-preview-ticket {
     max-width: 100%;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
   }
 
   .settings-logo-img {
     max-height: 48px;
     max-width: 140px;
+  }
+
+  /* ARCA Fiscal Card en Mobile */
+  .arca-fiscal-card {
+    padding: 16px 14px !important;
+    border-radius: 16px !important;
+    gap: 18px !important;
+  }
+
+  .arca-header-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .arca-title {
+    font-size: 1.05rem !important;
+  }
+
+  .arca-env-pill {
+    margin-top: 4px;
+  }
+
+  .arca-form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .arca-field-cuit,
+  .arca-field-razon,
+  .arca-field-domicilio {
+    grid-column: span 1 !important;
+  }
+
+  .arca-env-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .arca-certs-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .arca-cert-card {
+    padding: 14px !important;
+  }
+
+  .arca-actions-footer {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .arca-footer-buttons {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .arca-footer-buttons .btn,
+  .arca-footer-buttons .ui-btn {
+    width: 100% !important;
+    height: 44px !important;
+    justify-content: center !important;
   }
 }
 
@@ -223,3 +378,480 @@
 .settings-logo-remove:hover {
   background: rgba(239, 68, 68, 0.1);
 }
+
+/* ─── ARCA Fiscal Card Premium Design ────────────────────────── */
+.arca-fiscal-card {
+  position: relative;
+  background: var(--surface-1, #13151b);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-xl, 20px);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  transition: border-color 0.25s ease;
+}
+
+.arca-fiscal-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 50%, #a855f7 100%);
+}
+
+.arca-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.arca-header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.arca-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
+.arca-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.arca-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary, #ffffff);
+  margin: 0;
+}
+
+.arca-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-secondary, #94a3b8);
+  margin-top: 4px;
+  margin-bottom: 0;
+  line-height: 1.45;
+}
+
+.arca-env-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+.arca-env-pill.prod {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.arca-env-pill.test {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #60a5fa;
+}
+
+.arca-env-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* Sub-secciones */
+.arca-section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.arca-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arca-section-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.arca-section-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+/* Grilla Perfecta de 3 Columnas */
+.arca-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.arca-field-cuit {
+  grid-column: span 1;
+}
+
+.arca-field-razon {
+  grid-column: span 2;
+}
+
+.arca-field-domicilio {
+  grid-column: span 2;
+}
+
+@media (max-width: 860px) {
+  .arca-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .arca-field-cuit,
+  .arca-field-razon,
+  .arca-field-domicilio {
+    grid-column: span 1;
+  }
+}
+
+/* ─── Selector de Entorno: Tarjetas Interactivas ─────────── */
+.arca-env-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 700px) {
+  .arca-env-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.arca-env-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  background: var(--surface-0, #0a0c10);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 14px);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.arca-env-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong, rgba(255, 255, 255, 0.18));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.arca-env-card.test-env.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(10, 12, 16, 0.95) 100%);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3), 0 8px 24px rgba(59, 130, 246, 0.12);
+}
+
+.arca-env-card.prod-env.active {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(10, 12, 16, 0.95) 100%);
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3), 0 8px 24px rgba(239, 68, 68, 0.12);
+}
+
+.env-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.env-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+.env-card-icon.test {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.env-card-icon.prod {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.env-card-radio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong, rgba(255, 255, 255, 0.25));
+  transition: all 0.2s ease;
+}
+
+.arca-env-card.active .env-card-radio {
+  border-color: #60a5fa;
+}
+
+.arca-env-card.prod-env.active .env-card-radio {
+  border-color: #f87171;
+}
+
+.env-card-radio-checked {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #60a5fa;
+  box-shadow: 0 0 6px #60a5fa;
+}
+
+.env-card-radio-checked.prod {
+  background: #f87171;
+  box-shadow: 0 0 6px #f87171;
+}
+
+.env-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.env-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.env-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #ffffff);
+}
+
+.env-card-chip {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.env-card-chip.test {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
+.env-card-chip.prod {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.env-card-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* ─── Certificados Digitales X.509 ────────────────────────── */
+.arca-certs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 700px) {
+  .arca-certs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.arca-cert-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+  background: var(--surface-0, #0a0c10);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 14px);
+  transition: all 0.2s ease;
+}
+
+.arca-cert-card.installed {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(10, 12, 16, 0.95) 100%);
+}
+
+.arca-cert-card.pending {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.04) 0%, rgba(10, 12, 16, 0.95) 100%);
+}
+
+.cert-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cert-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--surface-1, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  color: var(--text-primary, #ffffff);
+}
+
+.arca-cert-card.installed .cert-card-icon {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.arca-cert-card.pending .cert-card-icon {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.cert-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+}
+
+.cert-status-badge.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+.cert-status-badge.warning {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+.cert-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cert-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #ffffff);
+  margin: 0;
+}
+
+.cert-card-desc {
+  font-size: 0.76rem;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.cert-card-action {
+  margin-top: 4px;
+}
+
+.cert-card-action .btn,
+.cert-card-action .ui-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ─── Footer de Acciones ARCA ────────────────────────────── */
+.arca-actions-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.arca-footer-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.arca-footer-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .arca-actions-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .arca-footer-buttons {
+    flex-direction: column;
+  }
+  .arca-footer-buttons .btn,
+  .arca-footer-buttons .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

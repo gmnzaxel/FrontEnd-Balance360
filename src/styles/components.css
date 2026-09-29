@@ -650,7 +650,62 @@
 }
 
 .ui-modal-lg {
-  max-width: 820px;
+  max-width: 840px;
+}
+
+@media (min-width: 1600px) {
+  .ui-modal-lg {
+    max-width: clamp(880px, 50vw, 1080px);
+  }
+}
+
+@media (min-width: 2400px) {
+  .ui-modal-lg {
+    max-width: clamp(1080px, 46vw, 1320px);
+  }
+}
+
+/* Adaptación ergonómica para pantallas con poca altura vertical (Laptops 1366x768, 1280x800, etc.) */
+@media (max-height: 800px) {
+  .ui-modal,
+  .modal {
+    max-height: calc(100vh - 20px);
+    padding: 16px 20px;
+    border-radius: 16px;
+  }
+
+  .modal-head,
+  .modal-header {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+  }
+
+  .modal-foot,
+  .modal-actions {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+}
+
+@media (max-height: 700px) {
+  .ui-modal,
+  .modal {
+    max-height: calc(100vh - 12px);
+    padding: 12px 16px;
+    border-radius: 14px;
+  }
+
+  .modal-head,
+  .modal-header {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+
+  .modal-foot,
+  .modal-actions {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
 }
 
 .modal-head,

@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Trash2,
   Edit,
+  TrendingUp,
 } from 'lucide-react'
 import Modal from '../ui/Modal'
 
@@ -504,6 +505,19 @@ const SaleDetailModal = ({
           )
         })()}
 
+        {/* Banner de Auditoría de Edición */}
+        {selectedSale.is_edited && (
+          <div className="sale-edited-alert-banner">
+            <Edit size={16} className="alert-banner-icon" />
+            <div className="alert-banner-content">
+              <span className="alert-banner-title">Comprobante Modificado</span>
+              <span className="alert-banner-text">
+                Esta venta fue editada por <strong>{selectedSale.edited_by_name || 'un operador'}</strong> el {formatDate(selectedSale.edited_at)}.
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Summary Header */}
         <div
           className="sale-detail-summary grid four-cols gap-md p-md"
@@ -571,6 +585,7 @@ const SaleDetailModal = ({
                 <th>Producto</th>
                 <th style={{ textAlign: 'right' }}>Cant.</th>
                 <th style={{ textAlign: 'right' }}>Precio Unit.</th>
+                {isAdmin && <th style={{ textAlign: 'right' }}>Costo Unit.</th>}
                 <th style={{ textAlign: 'right' }}>Imp. Bonif.</th>
                 <th style={{ textAlign: 'right' }}>Total</th>
               </tr>
@@ -605,6 +620,16 @@ const SaleDetailModal = ({
                     <td style={{ textAlign: 'right' }} data-label="Precio Unit.">
                       {formatCurrency(parseFloat(item.price) || 0)}
                     </td>
+                    {isAdmin && (
+                      <td
+                        style={{ textAlign: 'right', color: 'var(--text-secondary)' }}
+                        data-label="Costo Unit."
+                      >
+                        {item.unit_cost != null
+                          ? formatCurrency(parseFloat(item.unit_cost) || 0)
+                          : '-'}
+                      </td>
+                    )}
                     <td
                       style={{
                         textAlign: 'right',
@@ -627,20 +652,70 @@ const SaleDetailModal = ({
           </table>
         </div>
 
-        {/* Totals */}
+        {/* Totals & Rentabilidad (Solo Admin) */}
         <div
-          className="flex-col items-end gap-xs pt-sm"
-          style={{ borderTop: '1px solid var(--border-subtle)' }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            borderTop: '1px solid var(--border-subtle)',
+            paddingTop: '14px',
+          }}
         >
-          {parseFloat(selectedSale.discount) > 0 && (
-            <div className="flex-row gap-lg text-sm text-danger-text">
-              <span>Bonif. General:</span>
-              <span>- {formatCurrency(selectedSale.discount)}</span>
+          {/* Tarjeta de Rentabilidad exclusiva para Administradores */}
+          {isAdmin && selectedSale.total_cost != null && (
+            <div className="sale-profit-breakdown">
+              <div className="profit-header">
+                <span className="profit-title">
+                  <TrendingUp size={15} style={{ color: '#34d399' }} />
+                  Rentabilidad de la Venta (Exclusivo Administrador)
+                </span>
+                <span
+                  className={`profit-badge ${
+                    (selectedSale.profit_margin || 0) >= 30
+                      ? 'badge-high'
+                      : (selectedSale.profit_margin || 0) > 0
+                        ? 'badge-med'
+                        : 'badge-low'
+                  }`}
+                >
+                  Margen: {selectedSale.profit_margin != null ? `${selectedSale.profit_margin}%` : '0%'}
+                </span>
+              </div>
+              <div className="profit-grid">
+                <div className="profit-item">
+                  <span className="profit-item-label">Costo Mercadería</span>
+                  <span className="profit-item-val" style={{ color: 'var(--text-secondary)' }}>
+                    {formatCurrency(selectedSale.total_cost || 0)}
+                  </span>
+                </div>
+                <div className="profit-item">
+                  <span className="profit-item-label">Ganancia Bruta</span>
+                  <span className="profit-item-val" style={{ color: '#34d399', fontWeight: 700 }}>
+                    +{formatCurrency(selectedSale.gross_profit || 0)}
+                  </span>
+                </div>
+                <div className="profit-item">
+                  <span className="profit-item-label">Margen sobre Venta</span>
+                  <span className="profit-item-val" style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {selectedSale.profit_margin != null ? `${selectedSale.profit_margin}%` : '0%'}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
-          <div className="flex-row gap-lg text-lg font-bold">
-            <span>Total:</span>
-            <span>{formatCurrency(selectedSale.total)}</span>
+
+          <div className="flex-col items-end gap-xs">
+            {parseFloat(selectedSale.discount) > 0 && (
+              <div className="flex-row gap-lg text-sm text-danger-text">
+                <span>Bonif. General:</span>
+                <span>- {formatCurrency(selectedSale.discount)}</span>
+              </div>
+            )}
+            <div className="flex-row gap-lg text-lg font-bold">
+              <span>Total:</span>
+              <span>{formatCurrency(selectedSale.total)}</span>
+            </div>
           </div>
         </div>
       </div>

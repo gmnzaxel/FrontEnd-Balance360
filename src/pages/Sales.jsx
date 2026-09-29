@@ -20,14 +20,21 @@ import {
   FileDown,
   FileText,
   ShieldCheck,
+  DollarSign,
+  TrendingUp,
+  Wallet,
+  BarChart3,
+  Clock,
 } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { formatCurrency, formatDate, formatDateOnly } from '../utils/format'
 import ConfirmModal from '../components/ui/ConfirmModal'
 import Input from '../components/ui/Input'
+import Button from '../components/ui/Button'
 import arcaService from '../services/arcaService'
 import SaleDetailModal from '../components/sales/SaleDetailModal'
 import SaleActionModal from '../components/sales/SaleActionModal'
+import QuickMonthReportModal from '../components/sales/QuickMonthReportModal'
 import { printSaleThermalTicket, downloadSaleReceiptPdf } from '../utils/ticketGenerator'
 
 const Sales = () => {
@@ -61,6 +68,7 @@ const Sales = () => {
   const filterMenuRef = useRef(null)
   const paymentMenuRef = useRef(null)
   const abortControllerRef = useRef(null)
+  const [showQuickReportModal, setShowQuickReportModal] = useState(false)
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -103,12 +111,24 @@ const Sales = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 640px)')
+    const media = window.matchMedia('(max-width: 768px)')
     const handleChange = (event) => setIsMobile(event.matches)
     setIsMobile(media.matches)
     media.addEventListener('change', handleChange)
     return () => media.removeEventListener('change', handleChange)
   }, [])
+
+  const formatMobileDate = (dateString) => {
+    if (!dateString) return '-'
+    const d = new Date(dateString)
+    if (isNaN(d.getTime())) return dateString
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const hours = String(d.getHours()).padStart(2, '0')
+    const minutes = String(d.getMinutes()).padStart(2, '0')
+    return `${day}/${month} · ${hours}:${minutes} hs`
+  }
+
 
   useEffect(() => {
     salesService
@@ -477,6 +497,19 @@ const Sales = () => {
             Registrá, revisá y administrá las operaciones del negocio.
           </p>
         </div>
+        {isAdmin && (
+          <div className="page-header-actions">
+            <Button
+              variant="secondary"
+              icon={<BarChart3 size={16} />}
+              onClick={() => setShowQuickReportModal(true)}
+              title="Ver métricas de facturación del mes actual"
+              className="sales-quick-report-btn"
+            >
+              {isMobile ? 'Reporte rápido' : 'Ver reporte rápido'}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Header / Toolbar */}
@@ -485,7 +518,11 @@ const Sales = () => {
           <Input
             ref={searchInputRef}
             className="sales-search"
-            placeholder="Buscar por ID (#), vendedor, producto o servicio…"
+            placeholder={
+              isMobile
+                ? 'Buscar ventas, #ID, producto…'
+                : 'Buscar por ID (#), vendedor, producto o servicio…'
+            }
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleSearchKeyDown}
@@ -626,8 +663,8 @@ const Sales = () => {
                       : paymentMethodFilter === 'CREDITO'
                         ? 'Crédito'
                         : paymentMethodFilter === 'TRANSFERENCIA'
-                          ? 'Transferencia'
-                          : 'Pago Dividido'}
+                          ? isMobile ? 'Transf.' : 'Transferencia'
+                          : isMobile ? 'Dividido' : 'Pago Dividido'}
               </span>
             </button>
 
@@ -704,12 +741,17 @@ const Sales = () => {
                 {statusFilter === 'ALL'
                   ? 'Estado'
                   : statusFilter === 'COMPLETED'
-                    ? 'Completas'
-                    : statusFilter === 'VOIDED'
-                      ? 'Anuladas'
-                      : 'Reembolsadas'}
+                    ? isMobile ? 'Completas' : 'Completadas'
+                    : statusFilter === 'FISCAL'
+                      ? isMobile ? 'Fiscales' : 'Solo Fiscales'
+                      : statusFilter === 'NON_FISCAL'
+                        ? isMobile ? 'Internas' : 'Solo Internas'
+                        : statusFilter === 'VOIDED'
+                          ? 'Anuladas'
+                          : isMobile ? 'Reembolso' : 'Reembolsadas'}
               </span>
             </button>
+
 
             {showFilterMenu && (
               <div className="sales-filter-dropdown">
@@ -730,6 +772,24 @@ const Sales = () => {
                   }}
                 >
                   <span className="filter-dot bg-green-500"></span> Completadas
+                </button>
+                <button
+                  className={`dropdown-item ${statusFilter === 'FISCAL' ? 'active font-bold' : ''}`}
+                  onClick={() => {
+                    setStatusFilter('FISCAL')
+                    setShowFilterMenu(false)
+                  }}
+                >
+                  <span className="filter-dot" style={{ backgroundColor: '#2563eb' }}></span> Solo Fiscales (ARCA)
+                </button>
+                <button
+                  className={`dropdown-item ${statusFilter === 'NON_FISCAL' ? 'active font-bold' : ''}`}
+                  onClick={() => {
+                    setStatusFilter('NON_FISCAL')
+                    setShowFilterMenu(false)
+                  }}
+                >
+                  <span className="filter-dot" style={{ backgroundColor: '#94a3b8' }}></span> Solo Tickets Internos
                 </button>
                 <button
                   className={`dropdown-item ${statusFilter === 'VOIDED' ? 'active font-bold' : ''}`}
@@ -826,9 +886,13 @@ const Sales = () => {
               <strong>
                 {statusFilter === 'COMPLETED'
                   ? 'Completadas'
-                  : statusFilter === 'VOIDED'
-                    ? 'Anuladas'
-                    : 'Reembolsadas'}
+                  : statusFilter === 'FISCAL'
+                    ? 'Solo Fiscales (ARCA)'
+                    : statusFilter === 'NON_FISCAL'
+                      ? 'Solo Tickets Internos'
+                      : statusFilter === 'VOIDED'
+                        ? 'Anuladas'
+                        : 'Reembolsadas'}
               </strong>
               <button
                 type="button"
@@ -850,159 +914,353 @@ const Sales = () => {
         </div>
       )}
 
-      <div className="table-container shadow-sm">
-        <table className="styled-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Fecha</th>
-              <th>Vendedor</th>
-              <th>Método</th>
-              <th>Total</th>
-              <th>Estado</th>
-              <th style={{ textAlign: 'right' }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan="7" className="text-center p-8 text-muted">
-                  Cargando ventas…
-                </td>
-              </tr>
-            ) : sales.length === 0 ? (
-              <tr>
-                <td colSpan="7" className="text-center p-8 text-muted">
-                  Todavía no hay ventas para los filtros aplicados.
-                </td>
-              </tr>
-            ) : (
-              sales.map((sale, idx) => (
-                <tr
+      {/* Modal de Reporte Rápido del Mes Actual (Exclusivo Administrador) */}
+      {isAdmin && (
+        <QuickMonthReportModal
+          isOpen={showQuickReportModal}
+          onClose={() => setShowQuickReportModal(false)}
+        />
+      )}
+
+      {/* ─── Sales List: Desktop Table vs Mobile Cards ─── */}
+      {isMobile ? (
+        /* ─── Mobile Sales Cards ─── */
+        <div className="sales-cards-mobile">
+          {loading ? (
+            <div className="sales-mobile-state">
+              <Loader2 size={24} className="sales-search-spinner" />
+              <span>Cargando ventas…</span>
+            </div>
+          ) : sales.length === 0 ? (
+            <div className="sales-mobile-state empty">
+              <AlertCircle size={32} style={{ opacity: 0.4 }} />
+              <p>Todavía no hay ventas para los filtros aplicados.</p>
+            </div>
+          ) : (
+            sales.map((sale) => {
+              const isApprovedFiscal = sale.electronic_invoice?.status === 'APPROVED'
+              const isMixto = sale.payment_method === 'MIXTO'
+
+              return (
+                <div
                   key={sale.id}
-                  className={sale.is_voided || sale.is_refunded ? 'row-muted opacity-60' : ''}
+                  className={`sales-card-item ${
+                    sale.is_voided
+                      ? 'is-voided'
+                      : sale.is_refunded
+                        ? 'is-refunded'
+                        : 'is-completed'
+                  }`}
                   onClick={() => setSelectedSale(sale)}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor: focusedIndex === idx ? 'rgba(14, 165, 233, 0.12)' : undefined,
-                    '--delay': `${idx * 25}ms`,
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      setSelectedSale(sale)
+                    }
                   }}
-                  onMouseEnter={() => setFocusedIndex(idx)}
                 >
-                  <td className="font-bold text-muted cell-sale-id" data-label="ID">
-                    <span className="sale-id-badge">#{sale.sale_number || sale.id}</span>
-                    <span className="sale-date-mobile muted tiny">{formatDate(sale.date)}</span>
-                  </td>
-                  <td className="cell-sale-date" data-label="Fecha">
-                    {formatDate(sale.date)}
-                  </td>
-                  <td className="cell-sale-seller" data-label="Vendedor">
-                    <div className="flex items-center gap-1">
-                      <div className="seller-avatar" title={sale.user_name}>
-                        {sale.user_name?.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-sm font-medium">{sale.user_name}</span>
-                    </div>
-                  </td>
-                  <td className="cell-sale-method" data-label="Método">
-                    {sale.payment_method === 'MIXTO' ? (
-                      <span
-                        className="badge sale-badge-mixto"
-                        style={{
-                          backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                          color: 'var(--primary-300, #a5b4fc)',
-                          border: '1px solid rgba(99, 102, 241, 0.35)',
-                          fontWeight: 600,
-                          fontSize: '0.75rem',
-                          padding: '3px 8px',
-                          borderRadius: '9999px',
-                          cursor: 'help',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                        title={
-                          sale.payment_details?.method_1 && sale.payment_details?.method_2
-                            ? `${sale.payment_details.method_1}: $${Number(sale.payment_details.amount_1).toLocaleString('es-AR')} | ${sale.payment_details.method_2}: $${Number(sale.payment_details.amount_2).toLocaleString('es-AR')}`
-                            : 'Pago dividido en 2 métodos'
-                        }
-                      >
-                        2 Métodos
-                      </span>
-                    ) : (
-                      sale.payment_method
-                    )}
-                  </td>
-                  <td className="font-bold cell-sale-total" data-label="Total">
-                    {formatCurrency(sale.total)}
-                  </td>
-                  <td className="cell-sale-status" data-label="Estado">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start' }}>
-                      {sale.is_voided ? (
-                        <span className="badge badge-danger">ANULADA</span>
-                      ) : sale.is_refunded ? (
-                        <span className="badge badge-warning">REEMBOLSADA</span>
-                      ) : (
-                        <span className="badge badge-success">COMPLETA</span>
-                      )}
-                      {sale.electronic_invoice?.status === 'APPROVED' && (
+                  {/* Header: ID + Badge Editada + Fecha */}
+                  <div className="sales-card-head">
+                    <div className="sales-card-id-group">
+                      <span className="sale-id-badge">#{sale.sale_number || sale.id}</span>
+                      {sale.is_edited && (
                         <span
-                          className="badge"
-                          style={{
-                            background: 'rgba(37, 99, 235, 0.1)',
-                            color: '#2563eb',
-                            border: '1px solid rgba(37, 99, 235, 0.25)',
-                            fontSize: '0.68rem',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '3px',
-                          }}
+                          className="badge badge-sale-edited"
+                          title={`Modificada por ${sale.edited_by_name || 'un operador'} el ${formatDate(sale.edited_at)}`}
                         >
-                          <ShieldCheck size={11} />
-                          {sale.electronic_invoice.voucher_letter} #{sale.electronic_invoice.formatted_number}
+                          <Edit size={10} /> Editada
                         </span>
                       )}
                     </div>
-                  </td>
-                  <td
-                    style={{ textAlign: 'right' }}
-                    data-label="Acciones"
-                    className="cell-sale-actions"
-                  >
-                    <div style={{ display: 'inline-flex', gap: '4px', alignItems: 'center' }}>
-                      {sale.electronic_invoice?.status === 'APPROVED' && (
+                    <div className="sales-card-date-wrap">
+                      <Clock size={12} className="sales-card-date-icon" />
+                      <span className="sales-card-date">{formatMobileDate(sale.date)}</span>
+                    </div>
+                  </div>
+
+                  {/* Seller & Payment Method */}
+                  <div className="sales-card-meta-row">
+                    <div className="sales-card-seller">
+                      <div className="seller-avatar" title={sale.user_name}>
+                        {sale.user_name?.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="sales-card-seller-name">{sale.user_name}</span>
+                    </div>
+
+                    <div className="sales-card-payment">
+                      {isMixto ? (
+                        <span
+                          className="badge sale-badge-mixto"
+                          title={
+                            sale.payment_details?.method_1 && sale.payment_details?.method_2
+                              ? `${sale.payment_details.method_1}: $${Number(sale.payment_details.amount_1).toLocaleString('es-AR')} | ${sale.payment_details.method_2}: $${Number(sale.payment_details.amount_2).toLocaleString('es-AR')}`
+                              : 'Pago dividido en 2 métodos'
+                          }
+                        >
+                          2 Métodos
+                        </span>
+                      ) : (
+                        <span className={`sales-card-method-pill method-${sale.payment_method?.toLowerCase()}`}>
+                          {sale.payment_method}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Badges: Status + Fiscal */}
+                  <div className="sales-card-badges-row">
+                    {sale.is_voided ? (
+                      <span className="badge badge-danger">ANULADA</span>
+                    ) : sale.is_refunded ? (
+                      <span className="badge badge-warning">REEMBOLSADA</span>
+                    ) : (
+                      <span className="badge badge-success">COMPLETA</span>
+                    )}
+
+                    {isApprovedFiscal ? (
+                      <span
+                        className="badge badge-fiscal-arca"
+                        title={`Factura autorizada ante ARCA (CAE: ${sale.electronic_invoice.cae || 'Aprobado'})`}
+                      >
+                        <ShieldCheck size={12} />
+                        <span>
+                          {sale.electronic_invoice.voucher_letter === 'A'
+                            ? 'Factura A'
+                            : sale.electronic_invoice.voucher_letter === 'C'
+                              ? 'Factura C'
+                              : 'Factura B'}{' '}
+                          Nº {sale.electronic_invoice.formatted_number}
+                        </span>
+                        <span className="cae-tag">[CAE]</span>
+                      </span>
+                    ) : (
+                      <span
+                        className="badge badge-non-fiscal"
+                        title="Operación registrada como comprobante o ticket interno"
+                      >
+                        Ticket Interno
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Bottom Row: Total & Actions */}
+                  <div className="sales-card-footer">
+                    <div className="sales-card-total-group">
+                      <span className="sales-card-total-label">Total:</span>
+                      <span className="sales-card-total-val">{formatCurrency(sale.total)}</span>
+                    </div>
+
+                    <div className="sales-card-actions">
+                      {isApprovedFiscal && (
                         <button
-                          className="btn-icon"
-                          style={{ color: '#2563eb' }}
+                          type="button"
+                          className="sales-card-action-btn invoice"
                           onClick={(e) => {
                             e.stopPropagation()
                             handleDownloadOfficialArcaPDF(sale)
                           }}
-                          title="Descargar / Imprimir Factura Oficial A4"
+                          title="Descargar Factura Oficial A4"
                           aria-label={`Factura A4 venta #${sale.sale_number || sale.id}`}
                         >
-                          <FileText size={18} />
+                          <FileText size={14} />
+                          <span>A4</span>
                         </button>
                       )}
                       <button
-                        className="btn-icon sale-view-btn"
+                        type="button"
+                        className="sales-card-action-btn view"
                         onClick={(e) => {
                           e.stopPropagation()
                           setSelectedSale(sale)
                         }}
                         title="Ver detalle"
-                        aria-label={`Ver detalle de venta #${sale.sale_number || sale.id}`}
+                        aria-label={`Ver detalle venta #${sale.sale_number || sale.id}`}
                       >
-                        <Eye size={18} />
+                        <Eye size={14} />
+                        <span>Detalle</span>
                       </button>
                     </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+      ) : (
+        /* ─── Desktop Sales Table ─── */
+        <div className="table-container shadow-sm sales-table-desktop">
+          <table className="styled-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Vendedor</th>
+                <th>Método</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th style={{ textAlign: 'right' }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="text-center p-8 text-muted">
+                    Cargando ventas…
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : sales.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center p-8 text-muted">
+                    Todavía no hay ventas para los filtros aplicados.
+                  </td>
+                </tr>
+              ) : (
+                sales.map((sale, idx) => (
+                  <tr
+                    key={sale.id}
+                    className={sale.is_voided || sale.is_refunded ? 'row-muted opacity-60' : ''}
+                    onClick={() => setSelectedSale(sale)}
+                    style={{
+                      cursor: 'pointer',
+                      backgroundColor: focusedIndex === idx ? 'rgba(14, 165, 233, 0.12)' : undefined,
+                      '--delay': `${idx * 25}ms`,
+                    }}
+                    onMouseEnter={() => setFocusedIndex(idx)}
+                  >
+                    <td className="font-bold text-muted cell-sale-id" data-label="ID">
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span className="sale-id-badge">#{sale.sale_number || sale.id}</span>
+                        {sale.is_edited && (
+                          <span
+                            className="badge badge-sale-edited"
+                            title={`Modificada por ${sale.edited_by_name || 'un operador'} el ${formatDate(sale.edited_at)}`}
+                          >
+                            <Edit size={10} /> Editada
+                          </span>
+                        )}
+                      </div>
+                      <span className="sale-date-mobile muted tiny">{formatDate(sale.date)}</span>
+                    </td>
+                    <td className="cell-sale-date" data-label="Fecha">
+                      {formatDate(sale.date)}
+                    </td>
+                    <td className="cell-sale-seller" data-label="Vendedor">
+                      <div className="flex items-center gap-1">
+                        <div className="seller-avatar" title={sale.user_name}>
+                          {sale.user_name?.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-sm font-medium">{sale.user_name}</span>
+                      </div>
+                    </td>
+                    <td className="cell-sale-method" data-label="Método">
+                      {sale.payment_method === 'MIXTO' ? (
+                        <span
+                          className="badge sale-badge-mixto"
+                          style={{
+                            backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                            color: 'var(--primary-300, #a5b4fc)',
+                            border: '1px solid rgba(99, 102, 241, 0.35)',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            padding: '3px 8px',
+                            borderRadius: '9999px',
+                            cursor: 'help',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                          title={
+                            sale.payment_details?.method_1 && sale.payment_details?.method_2
+                              ? `${sale.payment_details.method_1}: $${Number(sale.payment_details.amount_1).toLocaleString('es-AR')} | ${sale.payment_details.method_2}: $${Number(sale.payment_details.amount_2).toLocaleString('es-AR')}`
+                              : 'Pago dividido en 2 métodos'
+                          }
+                        >
+                          2 Métodos
+                        </span>
+                      ) : (
+                        sale.payment_method
+                      )}
+                    </td>
+                    <td className="font-bold cell-sale-total" data-label="Total">
+                      {formatCurrency(sale.total)}
+                    </td>
+                    <td className="cell-sale-status" data-label="Estado">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                        {sale.is_voided ? (
+                          <span className="badge badge-danger">ANULADA</span>
+                        ) : sale.is_refunded ? (
+                          <span className="badge badge-warning">REEMBOLSADA</span>
+                        ) : (
+                          <span className="badge badge-success">COMPLETA</span>
+                        )}
+                        {sale.electronic_invoice?.status === 'APPROVED' ? (
+                          <span
+                            className="badge badge-fiscal-arca"
+                            title={`Factura autorizada ante ARCA (CAE: ${sale.electronic_invoice.cae || 'Aprobado'})`}
+                          >
+                            <ShieldCheck size={12} />
+                            <span>
+                              {sale.electronic_invoice.voucher_letter === 'A'
+                                ? 'Factura A'
+                                : sale.electronic_invoice.voucher_letter === 'C'
+                                  ? 'Factura C'
+                                  : 'Factura B'}{' '}
+                              Nº {sale.electronic_invoice.formatted_number}
+                            </span>
+                            <span className="cae-tag">[CAE]</span>
+                          </span>
+                        ) : (
+                          <span
+                            className="badge badge-non-fiscal"
+                            title="Operación registrada como comprobante o ticket interno (no declarado ante ARCA)"
+                          >
+                            Ticket Interno
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td
+                      style={{ textAlign: 'right' }}
+                      data-label="Acciones"
+                      className="cell-sale-actions"
+                    >
+                      <div style={{ display: 'inline-flex', gap: '4px', alignItems: 'center' }}>
+                        {sale.electronic_invoice?.status === 'APPROVED' && (
+                          <button
+                            className="btn-icon"
+                            style={{ color: '#2563eb' }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDownloadOfficialArcaPDF(sale)
+                            }}
+                            title="Descargar / Imprimir Factura Oficial A4"
+                            aria-label={`Factura A4 venta #${sale.sale_number || sale.id}`}
+                          >
+                            <FileText size={18} />
+                          </button>
+                        )}
+                        <button
+                          className="btn-icon sale-view-btn"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedSale(sale)
+                          }}
+                          title="Ver detalle"
+                          aria-label={`Ver detalle de venta #${sale.sale_number || sale.id}`}
+                        >
+                          <Eye size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
 
       {totalPages > 1 && (
         <div className="pagination">

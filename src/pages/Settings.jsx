@@ -16,6 +16,16 @@ import {
   Key,
   ShieldCheck,
   RefreshCw,
+  Building2,
+  Hash,
+  MapPin,
+  Calendar,
+  Server,
+  FlaskConical,
+  KeyRound,
+  FileBadge2,
+  UploadCloud,
+  Info,
 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import { AuthContext } from '../context/AuthContext'
@@ -68,6 +78,7 @@ const Settings = () => {
 
   const [showPreview, setShowPreview] = useState(false)
   const [localViewAsSeller, setLocalViewAsSeller] = useState(false)
+  const [activeCategory, setActiveCategory] = useState('all')
 
   useEffect(() => {
     setLocalViewAsSeller(viewAsSeller)
@@ -117,6 +128,15 @@ const Settings = () => {
   const handleTestArcaConnection = async () => {
     setTestingArca(true)
     try {
+      // 1. Guardar primero la configuración fiscal en la base de datos para no testear con valores obsoletos
+      try {
+        const updated = await arcaService.updateFiscalConfig(fiscalConfig)
+        setFiscalConfig((prev) => ({ ...prev, ...updated }))
+      } catch (saveErr) {
+        console.warn('Aviso al autoguardar configuración fiscal antes de testear:', saveErr)
+      }
+
+      // 2. Ejecutar la prueba de conexión con ARCA
       const res = await arcaService.testConnection()
       if (res.connected) {
         toast.success(res.message, { autoClose: 6000 })
@@ -125,7 +145,18 @@ const Settings = () => {
       }
     } catch (error) {
       console.error(error)
-      toast.error(getErrorMessage(error) || 'Fallo de conexión con ARCA.')
+      const errorMsg = getErrorMessage(error) || 'Fallo de conexión con ARCA.'
+      if (
+        errorMsg.includes('cms.cert.untrusted') ||
+        errorMsg.includes('Certificado no emitido por AC de confianza')
+      ) {
+        toast.error(
+          'ARCA rechazó el certificado (No emitido por AC de confianza). Si tramitaste el certificado en AFIP Producción con Clave Fiscal, activá el botón "Cambiar a Modo Producción" y volvé a probar.',
+          { autoClose: 9000 },
+        )
+      } else {
+        toast.error(errorMsg)
+      }
     } finally {
       setTestingArca(false)
     }
@@ -254,8 +285,40 @@ const Settings = () => {
         </div>
       </div>
 
+      {/* Navegación por Categorías en Celular / Píldoras Rápidas */}
+      <div className="settings-category-nav">
+        <button
+          type="button"
+          className={`settings-category-pill ${activeCategory === 'all' ? 'active' : ''}`}
+          onClick={() => setActiveCategory('all')}
+        >
+          Todos los ajustes
+        </button>
+        <button
+          type="button"
+          className={`settings-category-pill ${activeCategory === 'business' ? 'active' : ''}`}
+          onClick={() => setActiveCategory('business')}
+        >
+          <Store size={14} /> Negocio
+        </button>
+        <button
+          type="button"
+          className={`settings-category-pill ${activeCategory === 'ticket' ? 'active' : ''}`}
+          onClick={() => setActiveCategory('ticket')}
+        >
+          <FileText size={14} /> Ticket
+        </button>
+        <button
+          type="button"
+          className={`settings-category-pill ${activeCategory === 'arca' ? 'active' : ''}`}
+          onClick={() => setActiveCategory('arca')}
+        >
+          <ShieldCheck size={14} /> Facturación ARCA
+        </button>
+      </div>
+
       <form onSubmit={handleSave} className="settings-form page-section">
-        {isAdminActual && (
+        {(activeCategory === 'all' || activeCategory === 'business') && isAdminActual && (
           <div className="card settings-card">
             <div className="card-header settings-card-header">
               <h3 className="text-lg font-bold flex items-center gap-2">
@@ -289,6 +352,7 @@ const Settings = () => {
           </div>
         )}
         {/* Card 1: Branch & Inventory */}
+        {(activeCategory === 'all' || activeCategory === 'business') && (
         <div className="card settings-card">
           <div className="card-header settings-card-header">
             <h3 className="text-lg font-bold flex items-center gap-2">
@@ -309,8 +373,10 @@ const Settings = () => {
             />
           </div>
         </div>
+        )}
 
         {/* Card 2: Ticket Customization */}
+        {(activeCategory === 'all' || activeCategory === 'ticket') && (
         <div className="card settings-card">
           <div className="card-header settings-card-header settings-card-header-split">
             <div className="settings-ticket-head">
@@ -464,151 +530,249 @@ const Settings = () => {
                 />
               </div>
             </label>
-          </div>
-        </div>
 
-        {/* Card: Facturación Electrónica ARCA */}
-        <div className="card">
-          <div className="card-header flex justify-between items-center">
-            <div>
-              <div className="flex items-center gap-xs">
-                <ShieldCheck size={20} className="text-primary-500" />
-                <h3 className="font-bold text-lg">Facturación Electrónica ARCA</h3>
-              </div>
-              <p className="text-xs text-muted">
-                Emisión legal de Factura A, B, C y Notas de Crédito con CAE y Código QR reglamentario oficial.
-              </p>
-            </div>
-            <div className="flex items-center gap-xs">
-              <span className={`badge ${fiscalConfig.is_production ? 'badge-danger' : 'badge-warning'}`}>
-                {fiscalConfig.is_production ? 'PRODUCCIÓN (Real)' : 'HOMOLOGACIÓN (Pruebas)'}
-              </span>
-            </div>
-          </div>
-
-          <div className="card-body flex flex-col gap-md">
-            <div className="grid two-cols gap-sm">
-              <Input
-                label="CUIT del Emisor"
-                type="text"
-                value={fiscalConfig.cuit || ''}
-                onChange={(e) => setFiscalConfig({ ...fiscalConfig, cuit: e.target.value.replace(/\D/g, '') })}
-                placeholder="Ej: 20123456789 (11 dígitos sin guiones)"
-                maxLength={11}
-              />
-              <Input
-                label="Razón Social / Nombre Legal"
-                type="text"
-                value={fiscalConfig.razon_social || ''}
-                onChange={(e) => setFiscalConfig({ ...fiscalConfig, razon_social: e.target.value })}
-                placeholder="Ej: Juan Perez o Mi Empresa SRL"
-              />
-            </div>
-
-            <div className="grid three-cols gap-sm">
-              <Select
-                label="Condición frente al IVA"
-                value={fiscalConfig.condicion_iva || 'MONOTRIBUTO'}
-                onChange={(e) => setFiscalConfig({ ...fiscalConfig, condicion_iva: e.target.value })}
-              >
-                <option value="MONOTRIBUTO">Responsable Monotributo</option>
-                <option value="RESPONSABLE_INSCRIPTO">IVA Responsable Inscripto</option>
-                <option value="EXENTO">IVA Exento</option>
-              </Select>
-              <Input
-                label="Punto de Venta Web Services"
-                type="number"
-                value={fiscalConfig.punto_venta || 1}
-                onChange={(e) => setFiscalConfig({ ...fiscalConfig, punto_venta: parseInt(e.target.value, 10) || 1 })}
-                placeholder="Ej: 1 o 2 (dado de alta en ARCA)"
-              />
-              <Input
-                label="N° Ingresos Brutos (IIBB)"
-                type="text"
-                value={fiscalConfig.iibb || ''}
-                onChange={(e) => setFiscalConfig({ ...fiscalConfig, iibb: e.target.value })}
-                placeholder="Ej: 20-12345678-9"
-              />
-            </div>
-
-            <div className="grid two-cols gap-sm">
-              <Input
-                label="Domicilio Comercial Fiscal"
-                type="text"
-                value={fiscalConfig.domicilio_comercial || ''}
-                onChange={(e) => setFiscalConfig({ ...fiscalConfig, domicilio_comercial: e.target.value })}
-                placeholder="Ej: Av. Rivadavia 1234, CABA"
-              />
-              <Input
-                label="Fecha de Inicio de Actividades"
-                type="date"
-                value={fiscalConfig.inicio_actividades || ''}
-                onChange={(e) => setFiscalConfig({ ...fiscalConfig, inicio_actividades: e.target.value })}
-              />
-            </div>
-
-            {/* Selector de Ambiente */}
-            <div
-              className="p-3 rounded-lg border flex justify-between items-center"
-              style={{
-                background: fiscalConfig.is_production
-                  ? 'rgba(239, 68, 68, 0.12)'
-                  : 'rgba(59, 130, 246, 0.12)',
-                borderColor: fiscalConfig.is_production
-                  ? 'rgba(239, 68, 68, 0.3)'
-                  : 'rgba(59, 130, 246, 0.3)',
-              }}
-            >
-              <div>
-                <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-                  Entorno de Operación
-                </p>
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  {fiscalConfig.is_production
-                    ? 'Atención: En modo Producción los comprobantes son reales y tienen valor fiscal ante ARCA.'
-                    : 'Modo Homologación: Permite emitir facturas de prueba sin valor fiscal usando los servidores de testing de ARCA.'}
-                </p>
-              </div>
+            <div className="settings-mobile-save-box">
               <Button
-                type="button"
-                variant={fiscalConfig.is_production ? 'danger' : 'secondary'}
-                onClick={() => setFiscalConfig({ ...fiscalConfig, is_production: !fiscalConfig.is_production })}
+                type="submit"
+                variant="primary"
+                fullWidth
+                loading={saving}
+                icon={<Save size={18} />}
               >
-                {fiscalConfig.is_production ? 'Cambiar a Modo Pruebas' : 'Cambiar a Modo Producción'}
+                Guardar cambios del ticket
               </Button>
             </div>
+          </div>
+        </div>
+        )}
 
-            {/* Certificados Digitales */}
-            <div className="flex flex-col gap-sm p-4 rounded-lg border border-subtle">
-              <div className="flex items-center gap-xs">
-                <Key size={18} className="text-primary-500" />
-                <h4 className="font-bold text-sm">Certificados Digitales X.509 de ARCA</h4>
+        {/* Card: Facturación Electrónica ARCA */}
+        {(activeCategory === 'all' || activeCategory === 'arca') && (
+        <div className="arca-fiscal-card">
+          {/* Header */}
+          <div className="arca-header">
+            <div className="arca-header-main">
+              <div className="arca-icon-badge">
+                <ShieldCheck size={24} />
               </div>
-              <p className="text-xs text-muted">
-                Para facturar con ARCA necesitás el certificado (.crt) emitido en el sitio de ARCA y la llave privada (.key). Si aún no los subiste, el sistema operará en modo Simulación.
-              </p>
+              <div>
+                <div className="arca-title-row">
+                  <h3 className="arca-title">Facturación Electrónica ARCA (AFIP)</h3>
+                  <span className={`arca-env-pill ${fiscalConfig.is_production ? 'prod' : 'test'}`}>
+                    <span className="arca-env-dot"></span>
+                    {fiscalConfig.is_production ? 'Producción Oficial' : 'Modo Pruebas (Testing)'}
+                  </span>
+                </div>
+                <p className="arca-subtitle">
+                  Emisión legal y directa de Facturas A, B, C y Notas de Crédito con CAE reglamentario y código QR oficial.
+                </p>
+              </div>
+            </div>
+          </div>
 
-              <div className="grid two-cols gap-md mt-2">
-                <div className="flex flex-col gap-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-semibold">Certificado Público (.crt)</span>
+          {/* Sub-sección 1: Datos Fiscales del Contribuyente */}
+          <div className="arca-section-group">
+            <div className="arca-section-title-row">
+              <Building2 size={16} className="text-primary-400" />
+              <span className="arca-section-title">Datos Fiscales del Contribuyente</span>
+            </div>
+
+            <div className="arca-form-grid">
+              {/* Fila 1: CUIT (1 col) + Razón Social (2 cols) = 3 cols */}
+              <div className="arca-field-cuit">
+                <Input
+                  label="CUIT del Emisor"
+                  type="text"
+                  value={fiscalConfig.cuit || ''}
+                  onChange={(e) => setFiscalConfig({ ...fiscalConfig, cuit: e.target.value.replace(/\D/g, '') })}
+                  placeholder="20123456789 (11 dígitos sin guiones)"
+                  maxLength={11}
+                  icon={<Hash size={15} />}
+                />
+              </div>
+              <div className="arca-field-razon">
+                <Input
+                  label="Razón Social / Nombre Legal"
+                  type="text"
+                  value={fiscalConfig.razon_social || ''}
+                  onChange={(e) => setFiscalConfig({ ...fiscalConfig, razon_social: e.target.value })}
+                  placeholder="Ej: Juan Perez o Cerrajería Central SRL"
+                  icon={<Building2 size={15} />}
+                />
+              </div>
+
+              {/* Fila 2: Condición IVA (1 col) + Punto de Venta (1 col) + IIBB (1 col) = 3 cols */}
+              <div>
+                <Select
+                  label="Condición frente al IVA"
+                  value={fiscalConfig.condicion_iva || 'MONOTRIBUTO'}
+                  onChange={(e) => setFiscalConfig({ ...fiscalConfig, condicion_iva: e.target.value })}
+                >
+                  <option value="MONOTRIBUTO">Responsable Monotributo</option>
+                  <option value="RESPONSABLE_INSCRIPTO">IVA Responsable Inscripto</option>
+                  <option value="EXENTO">IVA Exento</option>
+                </Select>
+              </div>
+              <div>
+                <Input
+                  label="Punto de Venta Web Services"
+                  type="number"
+                  value={fiscalConfig.punto_venta || 1}
+                  onChange={(e) => setFiscalConfig({ ...fiscalConfig, punto_venta: parseInt(e.target.value, 10) || 1 })}
+                  placeholder="Ej: 1 o 2 (dado de alta en ARCA)"
+                  icon={<Hash size={15} />}
+                />
+              </div>
+              <div>
+                <Input
+                  label="N° Ingresos Brutos (IIBB)"
+                  type="text"
+                  value={fiscalConfig.iibb || ''}
+                  onChange={(e) => setFiscalConfig({ ...fiscalConfig, iibb: e.target.value })}
+                  placeholder="Ej: 20-12345678-9"
+                />
+              </div>
+
+              {/* Fila 3: Domicilio Comercial (2 cols) + Inicio de Actividades (1 col) = 3 cols */}
+              <div className="arca-field-domicilio">
+                <Input
+                  label="Domicilio Comercial Fiscal"
+                  type="text"
+                  value={fiscalConfig.domicilio_comercial || ''}
+                  onChange={(e) => setFiscalConfig({ ...fiscalConfig, domicilio_comercial: e.target.value })}
+                  placeholder="Ej: Rivadavia 1234, CABA"
+                  icon={<MapPin size={15} />}
+                />
+              </div>
+              <div>
+                <Input
+                  label="Fecha de Inicio de Actividades"
+                  type="date"
+                  value={fiscalConfig.inicio_actividades || ''}
+                  onChange={(e) => setFiscalConfig({ ...fiscalConfig, inicio_actividades: e.target.value })}
+                  icon={<Calendar size={15} />}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sub-sección 2: Selector de Entorno de Operación */}
+          <div className="arca-section-group">
+            <div className="arca-section-title-row">
+              <Server size={16} className="text-primary-400" />
+              <span className="arca-section-title">Entorno de Operación de ARCA</span>
+            </div>
+
+            <div className="arca-env-cards-grid">
+              {/* Opción Homologación */}
+              <div
+                className={`arca-env-card test-env ${!fiscalConfig.is_production ? 'active' : ''}`}
+                onClick={() => setFiscalConfig({ ...fiscalConfig, is_production: false })}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setFiscalConfig({ ...fiscalConfig, is_production: false })
+                  }
+                }}
+              >
+                <div className="env-card-header">
+                  <div className="env-card-icon test">
+                    <FlaskConical size={18} />
+                  </div>
+                  <div className="env-card-radio">
+                    {!fiscalConfig.is_production && <div className="env-card-radio-checked" />}
+                  </div>
+                </div>
+                <div className="env-card-body">
+                  <div className="env-card-title-row">
+                    <span className="env-card-title">Homologación (Testing)</span>
+                    <span className="env-card-chip test">Modo Pruebas</span>
+                  </div>
+                  <p className="env-card-desc">
+                    Conexión con servidores de prueba de ARCA. Permite emitir facturas ficticias sin impacto fiscal ni impositivo.
+                  </p>
+                </div>
+              </div>
+
+              {/* Opción Producción */}
+              <div
+                className={`arca-env-card prod-env ${fiscalConfig.is_production ? 'active' : ''}`}
+                onClick={() => setFiscalConfig({ ...fiscalConfig, is_production: true })}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setFiscalConfig({ ...fiscalConfig, is_production: true })
+                  }
+                }}
+              >
+                <div className="env-card-header">
+                  <div className="env-card-icon prod">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div className="env-card-radio">
+                    {fiscalConfig.is_production && <div className="env-card-radio-checked prod" />}
+                  </div>
+                </div>
+                <div className="env-card-body">
+                  <div className="env-card-title-row">
+                    <span className="env-card-title">Producción (Real)</span>
+                    <span className="env-card-chip prod">CAE Oficial</span>
+                  </div>
+                  <p className="env-card-desc">
+                    Conexión directa con servidores reales de ARCA. Todo comprobante emitido tiene plena validez jurídica y contable.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sub-sección 3: Certificados Digitales X.509 */}
+          <div className="arca-section-group">
+            <div className="arca-section-title-row">
+              <KeyRound size={16} className="text-primary-400" />
+              <span className="arca-section-title">Certificados Digitales X.509</span>
+              <span className="arca-section-badge">Requerido para facturar</span>
+            </div>
+
+            <div className="arca-certs-grid">
+              {/* Tarjeta Certificado .crt */}
+              <div className={`arca-cert-card ${fiscalConfig.has_certificate ? 'installed' : 'pending'}`}>
+                <div className="cert-card-top">
+                  <div className="cert-card-icon">
+                    <FileBadge2 size={20} />
+                  </div>
+                  <div className="cert-card-status">
                     {fiscalConfig.has_certificate ? (
-                      <span className="badge badge-success flex items-center gap-xs" style={{ fontSize: '0.7rem' }}>
-                        <CheckCircle2 size={12} /> Cargado
+                      <span className="cert-status-badge success">
+                        <CheckCircle2 size={13} /> Instalado y Activo
                       </span>
                     ) : (
-                      <span className="badge badge-warning flex items-center gap-xs" style={{ fontSize: '0.7rem' }}>
-                        <AlertTriangle size={12} /> Pendiente
+                      <span className="cert-status-badge warning">
+                        <AlertTriangle size={13} /> Pendiente de Carga
                       </span>
                     )}
                   </div>
+                </div>
+
+                <div className="cert-card-info">
+                  <h5 className="cert-card-title">Certificado Público (.crt)</h5>
+                  <p className="cert-card-desc">
+                    Emitido en el sitio oficial de ARCA mediante el Administrador de Relaciones de Clave Fiscal.
+                  </p>
+                </div>
+
+                <div className="cert-card-action">
                   <Button
                     type="button"
-                    variant="secondary"
-                    icon={<Upload size={14} />}
+                    variant={fiscalConfig.has_certificate ? 'secondary' : 'primary'}
+                    icon={<UploadCloud size={15} />}
                     onClick={() => crtInputRef.current?.click()}
                   >
-                    {fiscalConfig.has_certificate ? 'Reemplazar archivo .crt' : 'Subir certificado .crt'}
+                    {fiscalConfig.has_certificate ? 'Reemplazar certificado (.crt)' : 'Subir certificado (.crt)'}
                   </Button>
                   <input
                     ref={crtInputRef}
@@ -618,27 +782,42 @@ const Settings = () => {
                     onChange={(e) => handleUploadCertFile(e, 'crt')}
                   />
                 </div>
+              </div>
 
-                <div className="flex flex-col gap-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-semibold">Clave Privada (.key)</span>
+              {/* Tarjeta Clave Privada .key */}
+              <div className={`arca-cert-card ${fiscalConfig.has_private_key ? 'installed' : 'pending'}`}>
+                <div className="cert-card-top">
+                  <div className="cert-card-icon">
+                    <KeyRound size={20} />
+                  </div>
+                  <div className="cert-card-status">
                     {fiscalConfig.has_private_key ? (
-                      <span className="badge badge-success flex items-center gap-xs" style={{ fontSize: '0.7rem' }}>
-                        <CheckCircle2 size={12} /> Cargada
+                      <span className="cert-status-badge success">
+                        <CheckCircle2 size={13} /> Llave Vinculada
                       </span>
                     ) : (
-                      <span className="badge badge-warning flex items-center gap-xs" style={{ fontSize: '0.7rem' }}>
-                        <AlertTriangle size={12} /> Pendiente
+                      <span className="cert-status-badge warning">
+                        <AlertTriangle size={13} /> Pendiente de Carga
                       </span>
                     )}
                   </div>
+                </div>
+
+                <div className="cert-card-info">
+                  <h5 className="cert-card-title">Clave Privada (.key)</h5>
+                  <p className="cert-card-desc">
+                    Llave privada generada con OpenSSL (X.509 de 2048 bits) para firmar digitalmente los comprobantes.
+                  </p>
+                </div>
+
+                <div className="cert-card-action">
                   <Button
                     type="button"
-                    variant="secondary"
-                    icon={<Upload size={14} />}
+                    variant={fiscalConfig.has_private_key ? 'secondary' : 'primary'}
+                    icon={<UploadCloud size={15} />}
                     onClick={() => keyInputRef.current?.click()}
                   >
-                    {fiscalConfig.has_private_key ? 'Reemplazar archivo .key' : 'Subir clave privada .key'}
+                    {fiscalConfig.has_private_key ? 'Reemplazar clave (.key)' : 'Subir clave privada (.key)'}
                   </Button>
                   <input
                     ref={keyInputRef}
@@ -650,13 +829,19 @@ const Settings = () => {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Botones de Acción Fiscal */}
-            <div className="flex justify-end gap-sm pt-2">
+          {/* Sub-sección 4: Footer de Acciones y Diagnóstico */}
+          <div className="arca-actions-footer">
+            <div className="arca-footer-hint">
+              <Info size={14} />
+              <span>Los cambios impactan de inmediato en el POS y facturación ARCA.</span>
+            </div>
+            <div className="arca-footer-buttons">
               <Button
                 type="button"
                 variant="secondary"
-                icon={<RefreshCw size={16} className={testingArca ? 'spin' : ''} />}
+                icon={<RefreshCw size={15} className={testingArca ? 'spin' : ''} />}
                 onClick={handleTestArcaConnection}
                 disabled={testingArca}
               >
@@ -674,6 +859,7 @@ const Settings = () => {
             </div>
           </div>
         </div>
+        )}
       </form>
 
       {/* Ticket Preview Modal */}

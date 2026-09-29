@@ -14,6 +14,10 @@ import {
   Receipt,
   X,
   Tag,
+  Eye,
+  MessageCircle,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import api from '../api/axios'
 import { toast } from 'react-toastify'
@@ -28,6 +32,8 @@ import PosCartItem from '../components/pos/PosCartItem'
 import {
   printCommercialQuoteTicket,
   downloadCommercialQuotePdf,
+  buildCommercialQuoteHtml,
+  getCommercialQuoteWhatsAppText,
 } from '../utils/ticketGenerator'
 
 const PAGE_SIZE = 12
@@ -123,6 +129,11 @@ const Quotes = () => {
 
   const [validityDays, setValidityDays] = useState(15)
   const [clientName, setClientName] = useState(() => localStorage.getItem('quote_client') || '')
+  const [clientDoc, setClientDoc] = useState(() => localStorage.getItem('quote_client_doc') || '')
+  const [clientPhone, setClientPhone] = useState(() => localStorage.getItem('quote_client_phone') || '')
+  const [quoteNotes, setQuoteNotes] = useState(() => localStorage.getItem('quote_notes') || '')
+  const [showExtraDetails, setShowExtraDetails] = useState(false)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
 
   const searchInputRef = useRef(null)
   const ticketConfigRef = useRef(null)
@@ -155,11 +166,16 @@ const Quotes = () => {
     discountTypeKey: 'quote_discount_type',
   })
 
-  // Persistencia de clientName con debounce
+  // Persistencia de datos del cliente con debounce
   useEffect(() => {
-    const t = setTimeout(() => localStorage.setItem('quote_client', clientName), 500)
+    const t = setTimeout(() => {
+      localStorage.setItem('quote_client', clientName)
+      localStorage.setItem('quote_client_doc', clientDoc)
+      localStorage.setItem('quote_client_phone', clientPhone)
+      localStorage.setItem('quote_notes', quoteNotes)
+    }, 500)
     return () => clearTimeout(t)
-  }, [clientName])
+  }, [clientName, clientDoc, clientPhone, quoteNotes])
 
   // ─── Fetch de productos ─────────────────────────────────────────────────────
 
@@ -302,6 +318,13 @@ const Quotes = () => {
     setTimeout(() => {
       clearCart()
       setClientName('')
+      setClientDoc('')
+      setClientPhone('')
+      setQuoteNotes('')
+      localStorage.removeItem('quote_client')
+      localStorage.removeItem('quote_client_doc')
+      localStorage.removeItem('quote_client_phone')
+      localStorage.removeItem('quote_notes')
       setIsClearingCart(false)
     }, 300)
   }, [clearCart])
@@ -312,12 +335,15 @@ const Quotes = () => {
     printCommercialQuoteTicket({
       cart,
       clientName,
+      clientDoc,
+      clientPhone,
+      notes: quoteNotes,
       validityDays,
       discount,
       discountType,
       ticketConfig: ticketConfigRef.current,
     })
-  }, [cart, clientName, validityDays, discount, discountType])
+  }, [cart, clientName, clientDoc, clientPhone, quoteNotes, validityDays, discount, discountType])
 
   const [downloadingPDF, setDownloadingPDF] = useState(false)
 
@@ -327,15 +353,55 @@ const Quotes = () => {
       await downloadCommercialQuotePdf({
         cart,
         clientName,
+        clientDoc,
+        clientPhone,
+        notes: quoteNotes,
         validityDays,
         discount,
         discountType,
-        ticketConfig: ticketConfigRef.current,
-      })
+      }, ticketConfigRef.current)
     } finally {
       setDownloadingPDF(false)
     }
-  }, [cart, clientName, validityDays, discount, discountType])
+  }, [cart, clientName, clientDoc, clientPhone, quoteNotes, validityDays, discount, discountType])
+
+  const handleCopyWhatsApp = useCallback(() => {
+    if (!cart.length) return
+    const text = getCommercialQuoteWhatsAppText({
+      cart,
+      clientName,
+      clientDoc,
+      clientPhone,
+      notes: quoteNotes,
+      validityDays,
+      discount,
+      discountType,
+    }, ticketConfigRef.current)
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        toast.success('Resumen copiado listo para enviar por WhatsApp')
+      }).catch(() => {
+        toast.info('Texto generado')
+      })
+    } else {
+      toast.info('Texto generado')
+    }
+  }, [cart, clientName, clientDoc, clientPhone, quoteNotes, validityDays, discount, discountType])
+
+  const previewHtml = useMemo(() => {
+    if (!showPreviewModal) return ''
+    return buildCommercialQuoteHtml({
+      cart,
+      clientName,
+      clientDoc,
+      clientPhone,
+      notes: quoteNotes,
+      validityDays,
+      discount,
+      discountType,
+    }, ticketConfigRef.current)
+  }, [showPreviewModal, cart, clientName, clientDoc, clientPhone, quoteNotes, validityDays, discount, discountType])
 
   useEffect(() => {
     setFocusedIndex(-1)
@@ -695,7 +761,7 @@ const Quotes = () => {
               <input
                 type="text"
                 className="quote-client-input"
-                placeholder="Nombre del cliente (opcional)…"
+                placeholder="Nombre del cliente o empresa…"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
               />
@@ -710,6 +776,57 @@ const Quotes = () => {
                 </button>
               )}
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowExtraDetails(!showExtraDetails)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                padding: '4px 2px',
+                fontSize: '0.75rem',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              <span>{showExtraDetails ? 'Ocultar datos adicionales' : '+ CUIT, Teléfono y Notas'}</span>
+              {showExtraDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+
+            {showExtraDetails && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '6px 0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  <input
+                    type="text"
+                    className="quote-client-input"
+                    style={{ fontSize: '0.78rem', padding: '6px 8px', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: '6px' }}
+                    placeholder="CUIT o DNI…"
+                    value={clientDoc}
+                    onChange={(e) => setClientDoc(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="quote-client-input"
+                    style={{ fontSize: '0.78rem', padding: '6px 8px', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: '6px' }}
+                    placeholder="Teléfono / WhatsApp…"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(e.target.value)}
+                  />
+                </div>
+                <textarea
+                  className="quote-client-input font-mono"
+                  style={{ fontSize: '0.75rem', padding: '6px 8px', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: '6px', resize: 'vertical', minHeight: '44px' }}
+                  placeholder="Observaciones / Términos de entrega…"
+                  value={quoteNotes}
+                  onChange={(e) => setQuoteNotes(e.target.value)}
+                  rows={2}
+                />
+              </div>
+            )}
 
             {/* Descuento Global y Validez */}
             <div className="quote-options-grid">
@@ -764,25 +881,48 @@ const Quotes = () => {
             </div>
 
             {/* Action buttons */}
-            <div className="quote-action-buttons-row">
-              <Button
-                variant="primary"
-                fullWidth
-                onClick={handleGenerateQuote}
-                disabled={!cart.length}
-                icon={<Printer size={17} />}
-              >
-                Imprimir [F8]
-              </Button>
-              <Button
-                variant="secondary"
-                fullWidth
-                onClick={handleDownloadQuotePDF}
-                disabled={!cart.length || downloadingPDF}
-                icon={<FileDown size={17} />}
-              >
-                {downloadingPDF ? 'Descargando…' : 'PDF'}
-              </Button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
+                <Button
+                  variant="primary"
+                  fullWidth
+                  onClick={handleDownloadQuotePDF}
+                  disabled={!cart.length || downloadingPDF}
+                  icon={<FileDown size={17} />}
+                >
+                  {downloadingPDF ? 'Generando…' : 'Descargar PDF A4'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => setShowPreviewModal(true)}
+                  disabled={!cart.length}
+                  icon={<Eye size={17} />}
+                >
+                  Vista Previa
+                </Button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  onClick={handleCopyWhatsApp}
+                  disabled={!cart.length}
+                  icon={<MessageCircle size={16} />}
+                >
+                  WhatsApp
+                </Button>
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  onClick={handleGenerateQuote}
+                  disabled={!cart.length}
+                  icon={<Printer size={16} />}
+                >
+                  Ticket [F8]
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -962,6 +1102,58 @@ const Quotes = () => {
                             </button>
                           )}
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowExtraDetails(!showExtraDetails)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            width: '100%',
+                            background: 'transparent',
+                            border: 'none',
+                            padding: '4px 2px',
+                            fontSize: '0.75rem',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <span>{showExtraDetails ? 'Ocultar datos adicionales' : '+ CUIT, Teléfono y Notas'}</span>
+                          {showExtraDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+
+                        {showExtraDetails && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '4px 0' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                              <input
+                                type="text"
+                                className="quote-client-input"
+                                style={{ fontSize: '0.78rem', padding: '6px 8px', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: '6px' }}
+                                placeholder="CUIT o DNI…"
+                                value={clientDoc}
+                                onChange={(e) => setClientDoc(e.target.value)}
+                              />
+                              <input
+                                type="text"
+                                className="quote-client-input"
+                                style={{ fontSize: '0.78rem', padding: '6px 8px', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: '6px' }}
+                                placeholder="Teléfono / WhatsApp…"
+                                value={clientPhone}
+                                onChange={(e) => setClientPhone(e.target.value)}
+                              />
+                            </div>
+                            <textarea
+                              className="quote-client-input font-mono"
+                              style={{ fontSize: '0.75rem', padding: '6px 8px', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: '6px', resize: 'vertical', minHeight: '44px' }}
+                              placeholder="Observaciones / Términos de entrega…"
+                              value={quoteNotes}
+                              onChange={(e) => setQuoteNotes(e.target.value)}
+                              rows={2}
+                            />
+                          </div>
+                        )}
+
                         <div className="ui-field" style={{ margin: 0 }}>
                           <span className="field-label">Validez del presupuesto</span>
                           <div className="field-control">
@@ -1046,22 +1238,43 @@ const Quotes = () => {
                   <Button
                     variant="primary"
                     fullWidth
-                    onClick={handleGenerateQuote}
-                    disabled={!cart.length}
-                    icon={<Printer size={18} />}
+                    onClick={handleDownloadQuotePDF}
+                    disabled={!cart.length || downloadingPDF}
+                    icon={<FileDown size={17} />}
                     className="pos-docked-submit-btn"
                   >
-                    Imprimir
+                    {downloadingPDF ? 'Generando…' : 'Descargar A4'}
                   </Button>
                   <Button
                     variant="secondary"
                     fullWidth
-                    onClick={handleDownloadQuotePDF}
-                    disabled={!cart.length || downloadingPDF}
-                    icon={<FileDown size={18} />}
+                    onClick={() => {
+                      setShowCartModal(false)
+                      setShowPreviewModal(true)
+                    }}
+                    disabled={!cart.length}
+                    icon={<Eye size={17} />}
                     className="pos-docked-submit-btn"
                   >
-                    {downloadingPDF ? 'Descargando…' : 'PDF'}
+                    Vista Previa
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    fullWidth
+                    onClick={handleCopyWhatsApp}
+                    disabled={!cart.length}
+                    icon={<MessageCircle size={16} />}
+                  >
+                    WhatsApp
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    fullWidth
+                    onClick={handleGenerateQuote}
+                    disabled={!cart.length}
+                    icon={<Printer size={16} />}
+                  >
+                    Ticket
                   </Button>
                 </div>
               </div>
@@ -1141,6 +1354,56 @@ const Quotes = () => {
           })(),
           document.body,
         )}
+      {/* ── Modal Vista Previa Presupuesto A4 ── */}
+      {showPreviewModal && (
+        <Modal
+          title="Vista Previa de Presupuesto A4"
+          onClose={() => setShowPreviewModal(false)}
+          footer={
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+              <Button variant="ghost" onClick={() => setShowPreviewModal(false)}>
+                Cerrar
+              </Button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Button variant="secondary" onClick={handleCopyWhatsApp} icon={<MessageCircle size={16} />}>
+                  Copiar WhatsApp
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    handleDownloadQuotePDF()
+                    setShowPreviewModal(false)
+                  }}
+                  disabled={downloadingPDF}
+                  icon={<FileDown size={16} />}
+                >
+                  {downloadingPDF ? 'Descargando…' : 'Descargar PDF A4'}
+                </Button>
+              </div>
+            </div>
+          }
+        >
+          <div
+            style={{
+              maxHeight: '68vh',
+              overflowY: 'auto',
+              padding: '16px',
+              background: '#f1f5f9',
+              borderRadius: '8px',
+            }}
+          >
+            <div
+              style={{
+                boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
+                borderRadius: '6px',
+                overflow: 'hidden',
+                background: '#ffffff',
+              }}
+              dangerouslySetInnerHTML={{ __html: previewHtml }}
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

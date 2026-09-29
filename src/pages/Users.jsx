@@ -186,7 +186,7 @@ const Users = () => {
 
       <div className="card users-table-card">
         <div className="table-container shadow-sm">
-          <table className="styled-table">
+          <table className="styled-table users-table">
             <thead>
               <tr>
                 <th>Usuario</th>
@@ -199,52 +199,88 @@ const Users = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td className="font-medium" data-label="Usuario">
-                    {u.username}
-                  </td>
-                  <td data-label="Email">{u.email}</td>
-                  <td data-label="Rol">
-                    <span
-                      className={`badge ${u.role === 'ADMIN' ? 'badge-primary' : 'badge-neutral'}`}
-                    >
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="toggle-cell" data-label="Estado">
-                    <div className="toggle-wrap">
-                      <label className="toggle-switch transform scale-75 origin-left">
-                        <input
-                          type="checkbox"
-                          checked={u.is_active}
-                          disabled={u.id === currentUser?.user_id}
-                          onChange={() => handleToggleStatus(u)}
-                        />
-                        <span className="slider"></span>
-                      </label>
-                    </div>
-                  </td>
-                  <td
-                    style={{ textAlign: 'center', verticalAlign: 'middle' }}
-                    data-label="Acciones"
-                  >
-                    <div className="flex justify-center gap-1">
-                      <button className="btn-icon" onClick={() => handleEdit(u)} title="Editar">
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        className="btn-icon danger"
-                        onClick={() => handleDelete(u.id)}
-                        title="Eliminar"
-                        disabled={u.id === currentUser?.user_id}
+              {users.map((u) => {
+                const isCurrent = u.id === currentUser?.user_id
+                const initial = (u.username || '?').charAt(0).toUpperCase()
+                return (
+                  <tr key={u.id} className={`user-row ${!u.is_active ? 'user-inactive' : ''}`}>
+                    <td className="cell-user-name" data-label="Usuario">
+                      <div className="user-profile-badge">
+                        <div className={`user-avatar ${u.role === 'ADMIN' ? 'admin' : 'standard'}`}>
+                          {initial}
+                          <span className={`user-status-dot ${u.is_active ? 'active' : 'inactive'}`} />
+                        </div>
+                        <div className="user-text-info">
+                          <span className="user-username">{u.username}</span>
+                          {isCurrent && <span className="user-self-pill">Tú</span>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="cell-user-email" data-label="Email">
+                      <span className="user-email-text">{u.email || 'Sin correo registrado'}</span>
+                    </td>
+                    <td className="cell-user-role" data-label="Rol">
+                      <span
+                        className={`badge ${u.role === 'ADMIN' ? 'badge-primary' : 'badge-neutral'}`}
                       >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {u.role === 'ADMIN' ? 'Administrador' : 'Vendedor'}
+                      </span>
+                    </td>
+                    <td className="cell-user-status toggle-cell" data-label="Estado">
+                      <div className="toggle-wrap">
+                        <label
+                          className="toggle-switch transform scale-75 origin-left"
+                          title={
+                            isCurrent
+                              ? 'No puedes desactivarte a ti mismo'
+                              : u.is_active
+                                ? 'Desactivar usuario'
+                                : 'Activar usuario'
+                          }
+                        >
+                          <input
+                            type="checkbox"
+                            checked={u.is_active}
+                            disabled={isCurrent}
+                            onChange={() => handleToggleStatus(u)}
+                          />
+                          <span className="slider"></span>
+                        </label>
+                        <span className={`user-status-label ${u.is_active ? 'active' : 'inactive'}`}>
+                          {u.is_active ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                    </td>
+                    <td
+                      className="cell-user-actions"
+                      style={{ textAlign: 'center', verticalAlign: 'middle' }}
+                      data-label="Acciones"
+                    >
+                      <div className="user-actions-row">
+                        <button
+                          className="btn-icon user-action-btn edit"
+                          onClick={() => handleEdit(u)}
+                          title="Editar usuario"
+                          aria-label="Editar"
+                        >
+                          <Edit size={16} />
+                          <span className="user-action-text">Editar</span>
+                        </button>
+                        <button
+                          className="btn-icon danger user-action-btn delete"
+                          onClick={() => handleDelete(u.id)}
+                          title="Eliminar usuario"
+                          disabled={isCurrent}
+                          aria-label="Eliminar"
+                        >
+                          <Trash2 size={16} />
+                          <span className="user-action-text">Eliminar</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
               {loading && (
                 <tr>
                   <td colSpan="5" className="text-center p-8 text-muted">

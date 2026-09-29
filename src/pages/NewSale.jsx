@@ -39,6 +39,8 @@ import PaymentSection from '../components/pos/PaymentSection'
 import FiscalAndDateSection from '../components/pos/FiscalAndDateSection'
 import SaleSuccessModal from '../components/pos/SaleSuccessModal'
 import ServiceModal from '../components/pos/ServiceModal'
+import WhatsAppAiModal from '../components/pos/WhatsAppAiModal'
+import { MessageSquareText } from 'lucide-react'
 import { printSaleThermalTicket, downloadSaleReceiptPdf } from '../utils/ticketGenerator'
 
 const PAGE_SIZE = 12
@@ -98,6 +100,7 @@ const NewSale = () => {
 
   const searchInputRef = useRef(null)
   const [showServiceModal, setShowServiceModal] = useState(false)
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
   const [serviceForm, setServiceForm] = useState({ description: '', price: '' })
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [lastSale, setLastSale] = useState(null)
@@ -248,6 +251,97 @@ const NewSale = () => {
         }
       }),
     [],
+  )
+
+  const handleApplyWhatsAppSale = useCallback(
+    (parsedData, mode = 'replace') => {
+      if (!parsedData || !parsedData.items) return
+
+      const newCartItems = parsedData.items.map((it, idx) => {
+        if (it.item_type === 'SERVICIO' || !it.product_id) {
+          return {
+            id: `svc-${Date.now()}-${idx}`,
+            item_type: 'SERVICIO',
+            description: it.nombre,
+            nombre: `[Servicio] ${it.nombre}`,
+            price: parseFloat(it.price) || 0,
+            quantity: parseInt(it.quantity, 10) || 1,
+            product: null,
+            discountType: '$',
+            discountValue: it.discount ? String(it.discount) : '',
+          }
+        }
+        return {
+          id: `prod-${it.product_id}`,
+          product: it.product_id,
+          codigo: it.codigo || '',
+          item_type: 'PRODUCTO',
+          nombre: it.nombre,
+          price: parseFloat(it.price) || 0,
+          quantity: parseInt(it.quantity, 10) || 1,
+          stock_actual: it.stock_actual !== undefined ? it.stock_actual : 999999,
+          originalQuantity: 0,
+          discountType: '$',
+          discountValue: it.discount ? String(it.discount) : '',
+        }
+      })
+
+      if (mode === 'append') {
+        setCart((prev) => {
+          const updated = [...prev]
+          newCartItems.forEach((newItem) => {
+            if (newItem.item_type === 'PRODUCTO' && newItem.product) {
+              const existingIndex = updated.findIndex(
+                (p) => p.item_type === 'PRODUCTO' && p.product === newItem.product,
+              )
+              if (existingIndex >= 0) {
+                const existing = updated[existingIndex]
+                updated[existingIndex] = {
+                  ...existing,
+                  quantity: existing.quantity + newItem.quantity,
+                  price: newItem.price || existing.price,
+                }
+                return
+              }
+            }
+            updated.push(newItem)
+          })
+          return updated
+        })
+      } else {
+        setCart(newCartItems)
+      }
+
+      if (parsedData.discount && parseFloat(parsedData.discount) > 0) {
+        setDiscount(parseFloat(parsedData.discount))
+        setDiscountType('$')
+      }
+
+      if (parsedData.payment_method) {
+        setPaymentMethod(parsedData.payment_method)
+      }
+      if (parsedData.customer_name && parsedData.customer_name !== 'Consumidor Final') {
+        setCustomerName(parsedData.customer_name)
+      }
+
+      // Soporte para fecha retroactiva detectada (ej: ventas de ayer o fin de semana)
+      if (parsedData.detected_date) {
+        const todayStr = new Date().toISOString().slice(0, 10)
+        if (parsedData.detected_date !== todayStr) {
+          setIsCustomDate(true)
+          setSaleCustomDate(`${parsedData.detected_date}T12:00`)
+          toast.info(`Fecha ajustada retroactivamente al ${parsedData.detected_date}`)
+        }
+      }
+
+      toast.success(
+        mode === 'append' ? '¡Artículos sumados al carrito!' : '¡Venta cargada al carrito!',
+      )
+      if (isMobile) {
+        setShowCartModal(true)
+      }
+    },
+    [setCart, setDiscount, setDiscountType, setPaymentMethod, setCustomerName, setIsCustomDate, setSaleCustomDate, isMobile],
   )
 
   const loadSaleForEdit = useCallback(
@@ -729,12 +823,12 @@ const NewSale = () => {
   return (
     <div className="pos-shell pos-page">
       <div className="catalog-panel">
-        <div className="flex-row between">
-          <div className="pos-search-wrapper" style={{ position: 'relative', flex: 1 }}>
+        <div className="flex-row between pos-catalog-header-toolbar" style={{ gap: '8px', flexWrap: 'wrap' }}>
+          <div className="pos-search-wrapper" style={{ position: 'relative' }}>
             <Input
               ref={searchInputRef}
-              placeholder="Buscar producto (Presione /)…"
-              suffix={!search && <kbd className="search-kbd">/</kbd>}
+              placeholder={isMobile ? 'Buscar producto o código...' : 'Buscar producto (Presione /)…'}
+              suffix={!isMobile && !search && <kbd className="search-kbd">/</kbd>}
               value={search}
               onChange={(e) => {
                 let val = e.target.value
@@ -824,13 +918,23 @@ const NewSale = () => {
               </span>
             )}
           </div>
-          <Button
-            variant="secondary"
-            icon={<Wrench size={16} />}
-            onClick={() => setShowServiceModal(true)}
-          >
-            + Servicio
-          </Button>
+          <div className="pos-top-actions">
+            <Button
+              variant="secondary"
+              icon={<MessageSquareText size={16} style={{ color: 'var(--primary-400, #a855f7)' }} />}
+              onClick={() => setShowWhatsAppModal(true)}
+              title="Cargar venta por mensaje con IA"
+            >
+              {isMobile ? 'Por Mensaje' : 'Cargar por Mensaje'}
+            </Button>
+            <Button
+              variant="secondary"
+              icon={<Wrench size={16} />}
+              onClick={() => setShowServiceModal(true)}
+            >
+              + Servicio
+            </Button>
+          </div>
         </div>
         <div
           className="pos-tip-banner"
@@ -1551,6 +1655,13 @@ const NewSale = () => {
         downloadingPDF={downloadingPDF}
         downloadingArcaPDF={downloadingArcaPDF}
         setDownloadingArcaPDF={setDownloadingArcaPDF}
+      />
+
+      <WhatsAppAiModal
+        isOpen={showWhatsAppModal}
+        onClose={() => setShowWhatsAppModal(false)}
+        onApplySale={handleApplyWhatsAppSale}
+        currentCartCount={cart.length}
       />
 
       <ConfirmModal

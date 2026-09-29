@@ -6,12 +6,93 @@
 
 .users-table-card {
   padding: 0;
+  border-radius: var(--radius-lg, 16px);
+  overflow: hidden;
 }
 
 .users-table-card .table-container {
   border: none;
-  border-radius: var(--radius-lg);
   box-shadow: none;
+}
+
+/* User Avatar & Info */
+.user-profile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.user-avatar.admin {
+  background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+  border: 1.5px solid rgba(165, 180, 252, 0.4);
+}
+
+.user-avatar.standard {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+  border: 1.5px solid rgba(125, 211, 252, 0.4);
+}
+
+.user-status-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-0, #0f172a);
+}
+
+.user-status-dot.active {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+
+.user-status-dot.inactive {
+  background: #ef4444;
+}
+
+.user-text-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.user-username {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.user-self-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary-300, #a5b4fc);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  letter-spacing: 0.3px;
+}
+
+.user-email-text {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
 }
 
 .users-table-card .styled-table td.toggle-cell {
@@ -20,18 +101,254 @@
 }
 
 .users-table-card .toggle-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  gap: 8px;
   min-height: 32px;
 }
 
-@media (max-width: 390px) {
+.user-status-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+.user-status-label.active {
+  color: #10b981;
+}
+
+.user-status-label.inactive {
+  color: var(--text-muted, #94a3b8);
+}
+
+.user-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.user-action-text {
+  display: none;
+}
+
+.user-row.user-inactive {
+  opacity: 0.75;
+}
+
+/* ─── Adaptación Responsiva para Celulares (<= 768px) ─── */
+@media (max-width: 768px) {
+  .users-page {
+    gap: 14px;
+    padding-bottom: 24px;
+  }
+
+  .users-page .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
   .users-page .page-header-actions {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    width: 100%;
   }
 
   .users-page .page-header-actions .btn {
     width: 100%;
+    height: 44px;
+    font-size: 0.92rem;
+    justify-content: center;
+  }
+
+  .users-table-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .users-table-card .table-container {
+    background: transparent !important;
+    border: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .users-table {
+    display: block !important;
+    width: 100% !important;
+    border: none !important;
+  }
+
+  .users-table thead {
+    display: none !important;
+  }
+
+  .users-table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* Tarjeta de Usuario en Mobile */
+  .users-table tbody tr.user-row {
+    display: flex !important;
+    flex-direction: column !important;
+    background: var(--surface-1, #111726) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 16px !important;
+    padding: 14px 16px !important;
+    gap: 10px !important;
+    box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.15)) !important;
+    margin-bottom: 0 !important;
+    transition: transform 0.15s var(--ease-smooth), border-color 0.15s !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .users-table tbody tr.user-row:active {
+    transform: scale(0.99) !important;
+  }
+
+  .users-table tbody td {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    width: 100% !important;
+  }
+
+  .users-table tbody td::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* Fila 1: Perfil (Avatar + Nombre) y Toggle de Estado */
+  .users-table tbody td.cell-user-name {
+    order: 1;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+  }
+
+  .users-table tbody td.cell-user-status {
+    order: 2;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .users-table tbody td.cell-user-status::before {
+    display: inline-block !important;
+    content: 'Estado de la cuenta' !important;
+    font-size: 0.8rem !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+  }
+
+  /* Fila 3: Email */
+  .users-table tbody td.cell-user-email {
+    order: 3;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .users-table tbody td.cell-user-email::before {
+    display: inline-block !important;
+    content: 'Correo electrónico' !important;
+    font-size: 0.8rem !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+  }
+
+  .user-email-text {
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+    color: var(--text-primary) !important;
+    text-align: right !important;
+    word-break: break-all !important;
+  }
+
+  /* Fila 4: Rol */
+  .users-table tbody td.cell-user-role {
+    order: 4;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .users-table tbody td.cell-user-role::before {
+    display: inline-block !important;
+    content: 'Rol en el sistema' !important;
+    font-size: 0.8rem !important;
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+  }
+
+  /* Fila 5: Barra de Acciones Táctil */
+  .users-table tbody td.cell-user-actions {
+    order: 5;
+    padding-top: 10px !important;
+    margin-top: 2px !important;
+    border-top: 1px dashed var(--border-subtle) !important;
+    width: 100% !important;
+  }
+
+  .user-actions-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .user-action-btn {
+    width: 100% !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    font-size: 0.84rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+    transition: all 0.15s !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .user-action-btn:active {
+    transform: scale(0.97) !important;
+  }
+
+  .user-action-btn.edit {
+    color: var(--primary-300, #a5b4fc) !important;
+    background: rgba(99, 102, 241, 0.1) !important;
+    border-color: rgba(99, 102, 241, 0.25) !important;
+  }
+
+  .user-action-btn.delete {
+    color: var(--danger-text, #f87171) !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.25) !important;
+  }
+
+  .user-action-btn:disabled {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+  }
+
+  .user-action-text {
+    display: inline !important;
   }
 }

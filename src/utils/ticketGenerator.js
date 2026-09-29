@@ -1,6 +1,7 @@
 import { escapeHtml, safeImageUrl } from './sanitize'
 import { loadHtml2Pdf } from './pdfUtils'
 import { toast } from 'react-toastify'
+import { formatDate } from './format'
 
 /**
  * Genera el documento HTML e imprime un ticket térmico de 58mm o 80mm en una impresora local.
@@ -232,7 +233,31 @@ export const printSaleThermalTicket = (sale, ticketConfig = {}) => {
 
         <div class="footer">
           <p>${footerText}</p>
-          <p style="border-top: 1px dashed #000; padding-top: 6px; margin-top: 8px; font-size: ${is58mm ? '8px' : '9px'}; color: #000;">*** Copia Cliente ***</p>
+          <div style="margin: 10px auto 4px auto; text-align: center;">
+            <div style="display: inline-block; letter-spacing: 2px; font-family: monospace; font-size: ${is58mm ? '11px' : '13px'}; font-weight: bold;">
+              *${String(sale.sale_number || sale.id).padStart(8, '0')}*
+            </div>
+            <div style="display: flex; justify-content: center; align-items: flex-end; gap: 1.5px; height: 24px; margin: 4px auto 2px auto; max-width: ${is58mm ? '120px' : '150px'};">
+              <span style="background:#000; width:2px; height:100%;"></span>
+              <span style="background:#000; width:1px; height:80%;"></span>
+              <span style="background:#000; width:3px; height:100%;"></span>
+              <span style="background:#000; width:1px; height:90%;"></span>
+              <span style="background:#000; width:2px; height:100%;"></span>
+              <span style="background:#000; width:1px; height:70%;"></span>
+              <span style="background:#000; width:3px; height:100%;"></span>
+              <span style="background:#000; width:2px; height:85%;"></span>
+              <span style="background:#000; width:1px; height:100%;"></span>
+              <span style="background:#000; width:4px; height:100%;"></span>
+              <span style="background:#000; width:1px; height:75%;"></span>
+              <span style="background:#000; width:2px; height:100%;"></span>
+              <span style="background:#000; width:3px; height:90%;"></span>
+              <span style="background:#000; width:1px; height:100%;"></span>
+              <span style="background:#000; width:2px; height:80%;"></span>
+              <span style="background:#000; width:3px; height:100%;"></span>
+            </div>
+          </div>
+          ${sale.is_edited ? `<p style="margin: 4px 0 0 0; font-size: ${is58mm ? '8px' : '9px'}; font-weight: bold; color: #000;">* REIMPRESIÓN: Venta editada (${escapeHtml(sale.edited_by_name || 'operador')}) *</p>` : ''}
+          <p style="border-top: 1px dashed #000; padding-top: 6px; margin-top: 8px; font-size: ${is58mm ? '8px' : '9px'}; color: #000;">*** Comprobante de Venta - Balance360 ***</p>
         </div>
       </body>
     </html>
@@ -384,6 +409,7 @@ export const downloadSaleReceiptPdf = async (sale, ticketConfig = {}) => {
       </div>
 
       <div style="text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 9px; color: #64748b; white-space: pre-wrap; line-height: 1.6;">
+        ${sale.is_edited ? `<p style="margin: 0 0 6px 0; font-size: 10px; font-weight: 700; color: #b45309;">* Comprobante modificado por ${escapeHtml(sale.edited_by_name || 'operador')} (${formatDate(sale.edited_at)}) *</p>` : ''}
         <p style="margin: 0 0 4px 0;">${footerText}</p>
       </div>
     </div>
@@ -687,29 +713,27 @@ export const printCommercialQuoteTicket = (quote, ticketConfig = {}) => {
 }
 
 /**
- * Genera y descarga el PDF de un presupuesto comercial en hoja A4.
- *
- * @param {object} quote - Datos del presupuesto
- * @param {object} ticketConfig - Configuración de sucursal
- * @returns {Promise<boolean>}
+ * Construye el HTML con diseño ultra-profesional y corporativo para presupuestos A4.
  */
-export const downloadCommercialQuotePdf = async (quote, ticketConfig = {}) => {
-  if (!quote || !quote.cart || !quote.cart.length) return false
+export const buildCommercialQuoteHtml = (quote, ticketConfig = {}) => {
+  if (!quote || !quote.cart || !quote.cart.length) return ''
 
   const branchName = escapeHtml(ticketConfig?.branch_name || 'TU NEGOCIO')
-  const headerText = escapeHtml(ticketConfig?.ticket_header || 'BALANCE 360')
+  const headerText = escapeHtml(ticketConfig?.ticket_header || '')
   const footerText = escapeHtml(ticketConfig?.ticket_footer || '¡Gracias por su consulta!')
   const address = escapeHtml(ticketConfig?.ticket_address)
   const cuit = escapeHtml(ticketConfig?.ticket_cuit)
-  const iibb = escapeHtml(ticketConfig?.ticket_iibb)
-  const iva = escapeHtml(ticketConfig?.ticket_iva)
   const phone = escapeHtml(ticketConfig?.ticket_phone)
   const email = escapeHtml(ticketConfig?.ticket_email)
-  const dateStr = new Date().toLocaleString('es-AR', { hour12: false })
+  const dateStr = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
   const safeClientName = escapeHtml(quote.clientName)
+  const safeClientDoc = escapeHtml(quote.clientDoc)
+  const safeClientPhone = escapeHtml(quote.clientPhone)
+  const safeQuoteNotes = escapeHtml(quote.notes)
   const rawLogoDataUrl = ticketConfig?.ticket_logo || localStorage.getItem('ticket_logo') || ''
   const safeLogoUrl = safeImageUrl(rawLogoDataUrl)
-  const validityDays = quote.validityDays || 15
+  const validityDays = parseInt(quote.validityDays, 10) || 15
+  const quoteNumber = String(quote.id || Date.now().toString().slice(-6)).padStart(6, '0')
 
   const itemsBaseSubtotal = quote.cart.reduce(
     (acc, item) => acc + (parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1),
@@ -731,40 +755,61 @@ export const downloadCommercialQuotePdf = async (quote, ticketConfig = {}) => {
   const totalDiscount = itemsDiscountTotal + globalDiscount
   const finalTotal = itemsBaseSubtotal - totalDiscount
 
-  const htmlContent = `
-    <div style="font-family: system-ui, -apple-system, sans-serif; padding: 20px; font-size: 11px; box-sizing: border-box; background: white; color: #1e293b; line-height: 1.5;">
-      <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px;">
-        <div style="display: flex; align-items: flex-start; gap: 15px;">
-          ${safeLogoUrl ? `<img src="${safeLogoUrl}" alt="Logo" style="max-height: 60px; max-width: 90px; object-fit: contain;" />` : ''}
+  const hasAnyItemDiscount = quote.cart.some((it) => {
+    const dv = parseFloat(it.discountValue)
+    return !isNaN(dv) && dv > 0
+  })
+  const hasDiscounts = totalDiscount > 0
+
+  return `
+    <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px 28px; font-size: 11px; box-sizing: border-box; background: #ffffff; color: #1e293b; line-height: 1.5; max-width: 820px; margin: 0 auto;">
+      <!-- ENCABEZADO -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          ${safeLogoUrl ? `<img src="${safeLogoUrl}" alt="Logo" style="max-height: 52px; max-width: 90px; object-fit: contain; border-radius: 4px;" />` : ''}
           <div>
-            <h1 style="font-size: 20px; font-weight: 800; margin: 0; text-transform: uppercase; color: #0f172a; letter-spacing: -0.5px;">${branchName}</h1>
-            <p style="font-size: 11px; color: #64748b; margin: 4px 0 6px 0; white-space: pre-wrap; max-width: 320px;">${headerText}</p>
-            <div style="font-size: 10px; color: #475569; display: flex; flex-direction: column; gap: 2px;">
-              ${address ? `<div>Dirección: ${address}</div>` : ''}
-              ${phone ? `<div>Teléfono: ${phone}</div>` : ''}
-              ${email ? `<div>Email: ${email}</div>` : ''}
-              ${cuit ? `<div>CUIT: ${cuit}</div>` : ''}
-              ${iibb ? `<div>IIBB: ${iibb}</div>` : ''}
-              ${iva ? `<div>Condición IVA: ${iva}</div>` : ''}
+            <h1 style="font-size: 18px; font-weight: 800; margin: 0; text-transform: uppercase; color: #0f172a; letter-spacing: -0.3px;">${branchName}</h1>
+            ${headerText && headerText !== branchName ? `<p style="font-size: 10px; color: #64748b; margin: 2px 0 4px 0;">${headerText}</p>` : ''}
+            <div style="font-size: 9.5px; color: #475569; display: flex; flex-direction: column; gap: 1px; margin-top: 2px;">
+              ${address ? `<div>${address}</div>` : ''}
+              ${cuit || phone || email ? `<div>${cuit ? `CUIT: ${cuit}` : ''}${phone ? ` • Tel: ${phone}` : ''}${email ? ` • ${email}` : ''}</div>` : ''}
             </div>
           </div>
         </div>
+
         <div style="text-align: right;">
-          <h2 style="font-size: 18px; font-weight: 800; color: #0284c7; margin: 0 0 5px 0; text-transform: uppercase;">Presupuesto</h2>
-          ${safeClientName ? `<div style="font-size: 12px; font-weight: 700; color: #0f172a;">Cliente: ${safeClientName}</div>` : ''}
-          <div style="font-size: 11px; color: #64748b; margin-top: 5px;">Fecha: ${dateStr}</div>
-          <div style="font-size: 11px; font-weight: 600; color: #0284c7; margin-top: 4px;">Validez: ${validityDays} días</div>
+          <h2 style="font-size: 18px; font-weight: 900; color: #0284c7; margin: 0; text-transform: uppercase; letter-spacing: -0.3px;">Presupuesto</h2>
+          <div style="font-size: 11.5px; font-weight: 700; color: #0f172a; margin-top: 1px;">#PRE-${quoteNumber}</div>
+          <div style="font-size: 10px; color: #64748b; margin-top: 3px;">Fecha: <strong>${dateStr}</strong></div>
+          <div style="font-size: 10px; color: #0284c7; font-weight: 600; margin-top: 1px;">Validez: ${validityDays} días</div>
         </div>
       </div>
 
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <!-- DESTINATARIO / CLIENTE -->
+      <div style="padding: 10px 14px; background: #f8fafc; border-left: 3px solid #0284c7; border-radius: 4px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div>
+          <span style="font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Presupuesto para:</span>
+          <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-top: 1px;">
+            ${safeClientName || 'Cliente Particular / Consumidor Final'}
+          </div>
+        </div>
+        ${safeClientDoc || safeClientPhone ? `
+          <div style="font-size: 10px; color: #475569; text-align: right;">
+            ${safeClientDoc ? `<div><strong>Doc / CUIT:</strong> ${safeClientDoc}</div>` : ''}
+            ${safeClientPhone ? `<div><strong>Teléfono:</strong> ${safeClientPhone}</div>` : ''}
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- TABLA DE ARTÍCULOS -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
         <thead>
-          <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-            <th style="padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; color: #475569;">Cant.</th>
-            <th style="padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; color: #475569;">Descripción</th>
-            <th style="padding: 8px 10px; text-align: right; font-size: 10px; text-transform: uppercase; color: #475569;">P. Unit</th>
-            <th style="padding: 8px 10px; text-align: right; font-size: 10px; text-transform: uppercase; color: #475569;">Desc.</th>
-            <th style="padding: 8px 10px; text-align: right; font-size: 10px; text-transform: uppercase; color: #475569;">Subtotal</th>
+          <tr style="border-bottom: 2px solid #cbd5e1; color: #475569;">
+            <th style="padding: 7px 6px; text-align: center; font-size: 9.5px; font-weight: 700; text-transform: uppercase; width: 45px;">Cant.</th>
+            <th style="padding: 7px 10px; text-align: left; font-size: 9.5px; font-weight: 700; text-transform: uppercase;">Descripción</th>
+            <th style="padding: 7px 8px; text-align: right; font-size: 9.5px; font-weight: 700; text-transform: uppercase; width: 100px;">P. Unitario</th>
+            ${hasAnyItemDiscount ? `<th style="padding: 7px 8px; text-align: right; font-size: 9.5px; font-weight: 700; text-transform: uppercase; width: 80px;">Bonif.</th>` : ''}
+            <th style="padding: 7px 10px; text-align: right; font-size: 9.5px; font-weight: 700; text-transform: uppercase; width: 110px;">Subtotal</th>
           </tr>
         </thead>
         <tbody>
@@ -786,13 +831,21 @@ export const downloadCommercialQuotePdf = async (quote, ticketConfig = {}) => {
                   ? item.description || 'Servicio'
                   : item.nombre || item.producto_nombre || 'Producto',
               )
+              const itemCode = escapeHtml(item.codigo || '')
               return `
-              <tr style="border-bottom: 1px solid #f1f5f9; background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-                <td style="padding: 8px 10px; font-weight: 600; color: #0f172a;">${qty}</td>
-                <td style="padding: 8px 10px; color: #1e293b;">${label}</td>
-                <td style="padding: 8px 10px; text-align: right; color: #475569;">$${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                <td style="padding: 8px 10px; text-align: right; color: ${desc > 0 ? '#dc2626' : '#94a3b8'};">${desc > 0 ? `-$${desc.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '-'}</td>
-                <td style="padding: 8px 10px; text-align: right; font-weight: 700; color: #0f172a;">$${finalItemSub.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+              <tr style="border-bottom: 1px solid #f1f5f9; background: ${idx % 2 === 0 ? '#ffffff' : '#fcfcfd'};">
+                <td style="padding: 7px 6px; text-align: center; font-weight: 700; color: #0f172a;">${qty}</td>
+                <td style="padding: 7px 10px; color: #1e293b;">
+                  <div style="font-weight: 600;">${label}</div>
+                  ${itemCode ? `<div style="font-size: 9px; color: #94a3b8; font-family: monospace;">Cód: ${itemCode}</div>` : ''}
+                </td>
+                <td style="padding: 7px 8px; text-align: right; color: #475569;">$${itemPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                ${hasAnyItemDiscount ? `
+                  <td style="padding: 7px 8px; text-align: right; color: ${desc > 0 ? '#dc2626' : '#94a3b8'}; font-weight: ${desc > 0 ? '600' : 'normal'};">
+                    ${desc > 0 ? `-$${desc.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}
+                  </td>
+                ` : ''}
+                <td style="padding: 7px 10px; text-align: right; font-weight: 700; color: #0f172a;">$${finalItemSub.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             `
             })
@@ -800,41 +853,127 @@ export const downloadCommercialQuotePdf = async (quote, ticketConfig = {}) => {
         </tbody>
       </table>
 
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 25px;">
-        <table style="width: 250px; border-collapse: collapse;">
-          <tr>
-            <td style="padding: 4px 10px; font-size: 11px; color: #64748b;">Subtotal</td>
-            <td style="padding: 4px 10px; text-align: right; font-size: 11px; font-weight: 600; color: #1e293b;">$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-          </tr>
-          ${totalDiscount > 0
-            ? `
+      <!-- TOTALES -->
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+        <table style="width: 260px; border-collapse: collapse; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+          ${hasDiscounts ? `
             <tr>
-              <td style="padding: 4px 10px; font-size: 11px; color: #dc2626;">Descuento Total</td>
-              <td style="padding: 4px 10px; text-align: right; font-size: 11px; font-weight: 600; color: #dc2626;">-$${totalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+              <td style="padding: 6px 10px; font-size: 10px; color: #64748b;">Subtotal</td>
+              <td style="padding: 6px 10px; text-align: right; font-size: 10px; font-weight: 600; color: #1e293b;">$${itemsBaseSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
-          `
-            : ''
-          }
-          <tr style="border-top: 2px solid #0f172a;">
-            <td style="padding: 8px 10px; font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase;">Total Presupuestado</td>
-            <td style="padding: 8px 10px; text-align: right; font-size: 14px; font-weight: 800; color: #0284c7;">$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+            ${itemsDiscountTotal > 0 ? `
+              <tr>
+                <td style="padding: 4px 10px; font-size: 9.5px; color: #dc2626;">Descuento Artículos</td>
+                <td style="padding: 4px 10px; text-align: right; font-size: 9.5px; font-weight: 600; color: #dc2626;">-$${itemsDiscountTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              </tr>
+            ` : ''}
+            ${globalDiscount > 0 ? `
+              <tr>
+                <td style="padding: 4px 10px; font-size: 9.5px; color: #dc2626;">Descuento Especial (${quote.discountType === '%' ? `${quote.discount}%` : '$'})</td>
+                <td style="padding: 4px 10px; text-align: right; font-size: 9.5px; font-weight: 600; color: #dc2626;">-$${globalDiscount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              </tr>
+            ` : ''}
+          ` : ''}
+          <tr style="border-top: ${hasDiscounts ? '2px solid #0f172a' : 'none'}; background: #f1f5f9;">
+            <td style="padding: 8px 10px; font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase;">Total</td>
+            <td style="padding: 8px 10px; text-align: right; font-size: 15px; font-weight: 900; color: #0284c7;">$${finalTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
           </tr>
         </table>
       </div>
 
-      <div style="text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 9px; color: #64748b; white-space: pre-wrap; line-height: 1.6;">
-        <p style="margin: 0 0 4px 0;">${footerText}</p>
-        <p style="margin: 0; color: #94a3b8;">Los precios informados están sujetos a modificaciones según la fecha de aceptación.</p>
+      <!-- OBSERVACIONES (SI EXISTEN) -->
+      ${safeQuoteNotes ? `
+        <div style="background: #f8fafc; border-left: 3px solid #94a3b8; padding: 8px 12px; margin-bottom: 14px; border-radius: 0 4px 4px 0;">
+          <div style="font-weight: 700; color: #475569; font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px;">Notas:</div>
+          <div style="font-size: 10px; color: #334155; margin-top: 2px; white-space: pre-wrap; line-height: 1.4;">${safeQuoteNotes}</div>
+        </div>
+      ` : ''}
+
+      <!-- PIE DE HOJA: VALIDEZ Y MENSAJE SIMPLE -->
+      <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 9.5px; color: #64748b;">
+        <div>
+          <span>Precios válidos por <strong>${validityDays} días corridos</strong>.</span>
+          <span style="margin-left: 8px; color: #94a3b8;">Documento informativo no vinculante como factura.</span>
+        </div>
+        ${footerText ? `<div style="font-weight: 600; color: #475569;">${footerText}</div>` : ''}
       </div>
     </div>
-  `;
+  `
+}
+
+/**
+ * Genera el texto formateado con emojis listo para copiar o compartir por WhatsApp.
+ */
+export const getCommercialQuoteWhatsAppText = (quote, ticketConfig = {}) => {
+  if (!quote || !quote.cart || !quote.cart.length) return ''
+  const branch = ticketConfig?.branch_name || 'Balance360'
+  const client = quote.clientName || 'Cliente'
+  const validity = quote.validityDays || 15
+  const dateStr = new Date().toLocaleDateString('es-AR')
+
+  const items = quote.cart
+    .map((item) => {
+      const qty = parseInt(item.quantity, 10) || 1
+      const price = parseFloat(item.price) || 0
+      const label = item.item_type === 'SERVICIO' ? (item.description || 'Servicio') : (item.nombre || 'Producto')
+      const sub = qty * price
+      return `• *${qty}x* ${label} ($${price.toLocaleString('es-AR')}) = _$${sub.toLocaleString('es-AR')}_`
+    })
+    .join('\n')
+
+  const itemsBaseSubtotal = quote.cart.reduce(
+    (acc, item) => acc + (parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1),
+    0,
+  )
+  const itemsDiscountTotal = quote.cart.reduce((acc, item) => {
+    const baseSub = (parseFloat(item.price) || 0) * (parseInt(item.quantity, 10) || 1)
+    const dv = parseFloat(item.discountValue)
+    const descItem =
+      !item.discountValue || isNaN(dv) ? 0 : item.discountType === '%' ? baseSub * (dv / 100) : dv
+    return acc + descItem
+  }, 0)
+  const globalDiscount = (() => {
+    const currentSub = itemsBaseSubtotal - itemsDiscountTotal
+    const dv = parseFloat(quote.discount)
+    if (isNaN(dv) || dv <= 0) return 0
+    return quote.discountType === '%' ? currentSub * (dv / 100) : dv
+  })()
+  const totalDiscount = itemsDiscountTotal + globalDiscount
+  const finalTotal = itemsBaseSubtotal - totalDiscount
+
+  let msg = `📋 *PRESUPUESTO - ${branch.toUpperCase()}*\n` +
+    `🗓️ *Fecha:* ${dateStr} | *Validez:* ${validity} días corridos\n` +
+    `👤 *Cliente:* ${client}\n` +
+    `--------------------------------------\n` +
+    `${items}\n` +
+    `--------------------------------------\n`
+
+  if (totalDiscount > 0) {
+    msg += `📉 *Descuento:* -$${totalDiscount.toLocaleString('es-AR')}\n`
+  }
+
+  msg += `💰 *TOTAL: $${finalTotal.toLocaleString('es-AR')}*\n\n`
+  if (quote.notes) {
+    msg += `📝 *Notas:* ${quote.notes}\n\n`
+  }
+  msg += `_Presupuesto informativo sujeto a disponibilidad y confirmación._`
+  return msg
+}
+
+/**
+ * Genera y descarga el PDF de un presupuesto comercial en hoja A4.
+ */
+export const downloadCommercialQuotePdf = async (quote, ticketConfig = {}) => {
+  if (!quote || !quote.cart || !quote.cart.length) return false
+
+  const htmlContent = buildCommercialQuoteHtml(quote, ticketConfig)
 
   try {
     const html2pdf = await loadHtml2Pdf()
     const element = document.createElement('div')
     element.innerHTML = htmlContent
     const opt = {
-      margin: 15,
+      margin: 12,
       filename: `Presupuesto_${quote.clientName ? quote.clientName.replace(/\s+/g, '_') : 'Comercial'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, logging: false },

@@ -1,22 +1,35 @@
 .pos-shell {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: minmax(0, 1fr) 430px;
   gap: 20px;
   height: calc(100vh - 140px);
   min-height: 520px;
 }
 
-@media (min-width: 1500px) {
+/* Laptops y pantallas de resolución compacta (1025px - 1366px, 1280x800, 1366x768) */
+@media (min-width: 1025px) and (max-width: 1366px) {
   .pos-shell {
-    grid-template-columns: 1fr 440px;
+    grid-template-columns: minmax(0, 1fr) clamp(340px, 30vw, 385px);
+    gap: 14px;
+  }
+}
+
+/* Pantallas 2K / QHD (1700px - 2199px) */
+@media (min-width: 1700px) and (max-width: 2199px) {
+  .pos-shell {
+    grid-template-columns: minmax(0, 1fr) 470px;
     gap: 24px;
   }
 }
 
-@media (max-width: 1200px) {
+/* Pantallas Ultrawide (21:9) y 4K UHD (>= 2200px) */
+@media (min-width: 2200px) {
   .pos-shell {
-    grid-template-columns: 1fr 380px;
-    gap: 16px;
+    max-width: 2400px;
+    margin: 0 auto;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) 520px;
+    gap: 32px;
   }
 }
 
@@ -89,7 +102,16 @@
 }
 
 .pos-search-wrapper {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 240px;
   margin-right: 16px;
+}
+
+.pos-top-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .catalog-grid {
@@ -1209,7 +1231,7 @@
   color: rgba(148, 163, 184, 0.9);
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1024px) {
   .pos-shell {
     grid-template-columns: 1fr;
     height: auto;
@@ -1237,7 +1259,7 @@
   }
 }
 
-@media (min-width: 1101px) {
+@media (min-width: 1025px) {
   body:has(.pos-shell) {
     overflow: hidden !important;
   }
@@ -1261,6 +1283,98 @@
 
   .catalog-panel {
     overflow: hidden;
+  }
+}
+
+/* ─── Adaptación Ergonómica para Laptops por debajo de 1080p (1366x768, 1280x800) ─── */
+@media (min-width: 1025px) and (max-height: 820px) {
+  body:has(.pos-shell) .app-main {
+    padding: 0 16px 8px !important;
+    gap: 8px !important;
+  }
+
+  body:has(.pos-shell) .app-header {
+    padding: 8px 16px !important;
+    margin: 8px 0 0 !important;
+  }
+
+  .pos-shell {
+    gap: 12px !important;
+    min-height: 0 !important;
+  }
+
+  .catalog-panel,
+  .cart-panel {
+    padding: 12px 14px !important;
+    gap: 8px !important;
+    border-radius: 12px !important;
+  }
+
+  .pos-desktop-card-head {
+    padding: 10px 14px !important;
+  }
+
+  /* Filas más compactas en catálogo para ver 8-10 productos sin scroll */
+  .pos-table-wrapper tr td {
+    padding: 6px 10px !important;
+    font-size: 0.84rem !important;
+  }
+
+  .pos-table-wrapper tr th {
+    padding: 6px 10px !important;
+    font-size: 0.76rem !important;
+  }
+
+  /* Filas compactas en el carrito de compra */
+  .pos-cart-item {
+    padding: 6px 10px !important;
+    margin-bottom: 6px !important;
+    gap: 4px !important;
+  }
+
+  .pos-item-name {
+    font-size: 0.84rem !important;
+  }
+
+  .pos-payment-select {
+    height: 38px !important;
+    font-size: 0.84rem !important;
+  }
+
+  .pos-cash-input {
+    height: 38px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .pos-submit-btn {
+    height: 44px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .cart-footer {
+    padding: 10px 14px !important;
+    gap: 8px !important;
+  }
+}
+
+@media (min-width: 1025px) and (max-height: 720px) {
+  body:has(.pos-shell) .app-header {
+    padding: 6px 14px !important;
+    margin: 6px 0 0 !important;
+  }
+
+  .pos-table-wrapper tr td {
+    padding: 5px 8px !important;
+    font-size: 0.82rem !important;
+  }
+
+  .pos-cart-item {
+    padding: 5px 8px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .pos-quick-bills-wrap {
+    display: none !important;
   }
 }
 

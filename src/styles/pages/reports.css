@@ -137,6 +137,72 @@
   cursor: not-allowed;
 }
 
+.reports-export-btn.reports-export-green {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.reports-export-btn.reports-export-green:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+}
+
+.reports-export-btn.reports-export-indigo {
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+}
+
+.reports-export-btn.reports-export-indigo:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+}
+
+.reports-actions-group-fiscal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Tabs Navigation (Métricas vs Libro IVA) ─────────────────── */
+.reports-tabs-nav {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-0, #090e1a);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+  width: fit-content;
+  box-shadow: var(--shadow-xs);
+}
+
+.reports-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.reports-tab-pill:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.reports-tab-pill.active {
+  background: var(--primary-600, #4f46e5);
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.35);
+}
+
+
 /* ─── Quick Presets Bar ───────────────────────────────────────── */
 .reports-presets-bar {
   display: flex;
@@ -498,6 +564,185 @@
   position: relative;
 }
 
+/* ─── Libro IVA Ventas Digital Display ────────────────────────── */
+.reports-table-desktop {
+  display: block;
+  width: 100%;
+}
+
+.reports-cards-mobile {
+  display: none;
+}
+
+/* ─── Fiscal Cards for Mobile (Libro IVA) ─────────────────────── */
+.reports-fiscal-card-item {
+  background: var(--surface-0, #090e1a);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--duration-fast) var(--ease-smooth),
+    box-shadow var(--duration-fast) var(--ease-smooth);
+}
+
+.reports-fiscal-card-item.is-nc {
+  border-left: 3px solid #ef4444;
+}
+
+.reports-fiscal-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reports-fiscal-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reports-fiscal-card-num {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.reports-fiscal-card-date {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.reports-fiscal-card-client {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.reports-fiscal-client-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.reports-fiscal-client-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.reports-fiscal-doc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.reports-fiscal-card-financials {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 8px;
+  background: var(--surface-1, #111726);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+}
+
+.reports-fiscal-fin-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reports-fiscal-fin-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.reports-fiscal-fin-val {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.reports-fiscal-fin-val.is-total {
+  font-weight: 800;
+  color: var(--primary-300, #a5b4fc);
+  font-size: 0.92rem;
+}
+
+.reports-fiscal-fin-val.is-nc {
+  font-weight: 800;
+  color: #f87171;
+  font-size: 0.92rem;
+}
+
+.reports-fiscal-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.reports-fiscal-cae-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reports-fiscal-cae-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.reports-fiscal-cae-code {
+  font-size: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.reports-fiscal-pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: rgba(94, 106, 210, 0.14);
+  border: 1px solid rgba(94, 106, 210, 0.3);
+  color: var(--primary-300, #c7d2fe);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.reports-fiscal-pdf-btn:hover {
+  background: var(--primary-600);
+  color: #ffffff;
+  border-color: var(--primary-500);
+}
+
 /* ─── Responsive Breakpoints (Tablet & Mobile) ────────────────── */
 @media (max-width: 1024px) {
   .reports-kpi-grid {
@@ -528,6 +773,62 @@
   .reports-export-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .reports-actions-group-fiscal {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .reports-tabs-nav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reports-tab-pill {
+    justify-content: center;
+    padding: 9px 8px;
+    font-size: 0.82rem;
+  }
+
+  /* Swipable Presets on Mobile */
+  .reports-presets-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .reports-presets-list {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .reports-presets-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .reports-preset-chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* Table to Cards switch for Libro IVA */
+  .reports-table-desktop {
+    display: none !important;
+  }
+
+  .reports-cards-mobile {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
   }
 }
 
@@ -619,6 +920,21 @@
   .reports-date-divider {
     display: none;
   }
+
+  .reports-actions-group-fiscal {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-fiscal-card-financials {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reports-fiscal-fin-item.total {
+    grid-column: span 2;
+    border-top: 1px dashed var(--border-subtle);
+    padding-top: 6px;
+    margin-top: 2px;
+  }
 }
 
 @media (max-width: 360px) {
@@ -635,3 +951,4 @@
     font-size: 0.74rem;
   }
 }
+
