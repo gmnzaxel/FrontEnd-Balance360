@@ -28,6 +28,7 @@ import {
   Info,
 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
+import ArcaDiagnosticModal from '../components/settings/ArcaDiagnosticModal'
 import { AuthContext } from '../context/AuthContext'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
@@ -68,6 +69,8 @@ const Settings = () => {
   })
   const [testingArca, setTestingArca] = useState(false)
   const [savingFiscal, setSavingFiscal] = useState(false)
+  const [diagnosticResult, setDiagnosticResult] = useState(null)
+  const [showDiagnosticModal, setShowDiagnosticModal] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -138,25 +141,26 @@ const Settings = () => {
 
       // 2. Ejecutar la prueba de conexión con ARCA
       const res = await arcaService.testConnection()
-      if (res.connected) {
-        toast.success(res.message, { autoClose: 6000 })
+      setDiagnosticResult(res)
+      setShowDiagnosticModal(true)
+
+      if (res.connected && res.pto_vta_ok) {
+        toast.success('Conexión con ARCA 100% operativa y lista para facturar.', { autoClose: 5000 })
+      } else if (res.connected && !res.pto_vta_ok) {
+        toast.warn('Autenticado con ARCA. El Punto de Venta requiere verificación.', { autoClose: 6000 })
       } else {
-        toast.warn(res.message || 'Verificá los certificados en ARCA.')
+        toast.info(res.message || 'Prueba de conexión completada.')
       }
     } catch (error) {
       console.error(error)
-      const errorMsg = getErrorMessage(error) || 'Fallo de conexión con ARCA.'
-      if (
-        errorMsg.includes('cms.cert.untrusted') ||
-        errorMsg.includes('Certificado no emitido por AC de confianza')
-      ) {
-        toast.error(
-          'ARCA rechazó el certificado (No emitido por AC de confianza). Si tramitaste el certificado en AFIP Producción con Clave Fiscal, activá el botón "Cambiar a Modo Producción" y volvé a probar.',
-          { autoClose: 9000 },
-        )
-      } else {
-        toast.error(errorMsg)
-      }
+      const cleanError = getErrorMessage(error) || 'Fallo de conexión con ARCA.'
+      setDiagnosticResult({
+        connected: false,
+        error: cleanError,
+        mode: fiscalConfig.is_production ? 'PRODUCCION' : 'HOMOLOGACION',
+      })
+      setShowDiagnosticModal(true)
+      toast.error(cleanError)
     } finally {
       setTestingArca(false)
     }
@@ -1200,6 +1204,15 @@ const Settings = () => {
           </div>
         </Modal>
       )}
+
+      {/* Modal de Diagnóstico Inteligente de ARCA */}
+      <ArcaDiagnosticModal
+        isOpen={showDiagnosticModal}
+        onClose={() => setShowDiagnosticModal(false)}
+        result={diagnosticResult}
+        onRetry={handleTestArcaConnection}
+        retrying={testingArca}
+      />
     </div>
   )
 }

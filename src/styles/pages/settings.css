@@ -855,3 +855,297 @@
   }
 }
 
+/* ─── Arca Diagnostic Modal Premium Styles ─────────────────── */
+.arca-diagnostic-modal-container {
+  max-width: 580px !important;
+}
+
+.diagnostic-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Banner de Estado */
+.diagnostic-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid;
+  transition: all 0.2s ease;
+}
+
+.diagnostic-banner.status-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(10, 12, 16, 0.9) 100%);
+  border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.08);
+}
+.diagnostic-banner.status-success .diagnostic-banner-icon {
+  color: #34d399;
+}
+
+.diagnostic-banner.status-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(10, 12, 16, 0.9) 100%);
+  border-color: rgba(245, 158, 11, 0.35);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.08);
+}
+.diagnostic-banner.status-warning .diagnostic-banner-icon {
+  color: #fbbf24;
+}
+
+.diagnostic-banner.status-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(10, 12, 16, 0.9) 100%);
+  border-color: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.08);
+}
+.diagnostic-banner.status-error .diagnostic-banner-icon {
+  color: #f87171;
+}
+
+.diagnostic-banner.status-info {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(10, 12, 16, 0.9) 100%);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.08);
+}
+.diagnostic-banner.status-info .diagnostic-banner-icon {
+  color: #60a5fa;
+}
+
+.diagnostic-banner-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.diagnostic-banner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.diagnostic-banner-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.diagnostic-banner-desc {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Capas de Integración */
+.diagnostic-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.diagnostic-layer-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.diagnostic-layer-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.layer-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.layer-icon.pass {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+.layer-icon.warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+.layer-icon.fail {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.layer-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.layer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.layer-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.layer-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.layer-tag.pass {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.layer-tag.warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.layer-tag.fail {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.layer-sub {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Guía de Resolución AFIP */
+.diagnostic-guide-card {
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(20, 24, 33, 0.8) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.guide-card-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fbbf24;
+  color: #0f172a;
+}
+
+.guide-card-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.guide-card-intro {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+.guide-steps-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  line-height: 1.45;
+}
+
+.guide-steps-list li strong {
+  color: #ffffff;
+}
+
+.guide-link {
+  color: #38bdf8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+
+.guide-subnote {
+  display: block;
+  font-size: 0.74rem;
+  color: #fbbf24;
+  font-style: italic;
+  margin-top: 1px;
+}
+
+.diagnostic-error-advice {
+  padding: 14px 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+}
+
+.advice-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #f87171;
+  margin-bottom: 4px;
+}
+
+.advice-text {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.diagnostic-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+
