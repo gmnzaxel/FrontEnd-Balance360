@@ -134,6 +134,7 @@ const NewSale = () => {
   const [isArcaInvoice, setIsArcaInvoice] = useState(false)
   const [voucherType, setVoucherType] = useState(11) // 11: Factura C (por defecto), 6: Factura B, 1: Factura A
   const [emitterIvaCondition, setEmitterIvaCondition] = useState('MONOTRIBUTO')
+  const [fiscalPuntoVenta, setFiscalPuntoVenta] = useState(1)
   const [customerDocType, setCustomerDocType] = useState('96') // 96: DNI, 80: CUIT, 99: Sin Identificar
   const [customerDocNumber, setCustomerDocNumber] = useState('')
   const [customerName, setCustomerName] = useState('')
@@ -192,6 +193,9 @@ const NewSale = () => {
     arcaService
       .getFiscalConfig()
       .then((cfg) => {
+        if (cfg?.punto_venta) {
+          setFiscalPuntoVenta(cfg.punto_venta)
+        }
         if (cfg?.condicion_iva) {
           setEmitterIvaCondition(cfg.condicion_iva)
           if (cfg.condicion_iva === 'RESPONSABLE_INSCRIPTO') {
@@ -1308,6 +1312,7 @@ const NewSale = () => {
                 total={total}
                 paymentMethod={isSplitPayment ? 'MIXTO' : paymentMethod}
                 emitterIvaCondition={emitterIvaCondition}
+                puntoVenta={fiscalPuntoVenta}
               />
             </div>
           </>
@@ -1582,6 +1587,7 @@ const NewSale = () => {
                       total={total}
                       paymentMethod={isSplitPayment ? 'MIXTO' : paymentMethod}
                       emitterIvaCondition={emitterIvaCondition}
+                      puntoVenta={fiscalPuntoVenta}
                     />
 
                     {/* Section: Summary Breakdown */}

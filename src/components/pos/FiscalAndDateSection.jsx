@@ -56,6 +56,7 @@ const FiscalAndDateSection = ({
   total = 0,
   paymentMethod = '',
   emitterIvaCondition = 'MONOTRIBUTO',
+  puntoVenta = 1,
 }) => {
   const [isLookingUpCuit, setIsLookingUpCuit] = useState(false)
   const [cuitLookupSuccess, setCuitLookupSuccess] = useState(false)
@@ -200,7 +201,7 @@ const FiscalAndDateSection = ({
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 600, color: '#2563eb' }}>
                   <ShieldCheck size={16} />
-                  <span>Comprobante Oficial: <strong>Factura C</strong></span>
+                  <span>Comprobante Oficial: <strong>Factura C</strong> (Pto. Vta. {puntoVenta || 1})</span>
                 </div>
                 <span
                   style={{

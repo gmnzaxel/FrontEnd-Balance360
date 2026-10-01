@@ -50,7 +50,9 @@ export const sanitizeTechnicalMessage = (rawMsg) => {
   }
 
   if (str.includes('10015') || str.toLowerCase().includes('punto de venta no se encuentra habilitado')) {
-    return 'El punto de venta no se encuentra habilitado en AFIP para Facturación Electrónica - Web Services. Debe darlo de alta en el portal de AFIP.'
+    const ptoMatch = str.match(/punto de venta\s*(?:n°?\s*)?(\d+)/i)
+    const ptoTxt = ptoMatch ? ` N° ${ptoMatch[1]}` : ''
+    return `El Punto de Venta${ptoTxt} no se encuentra habilitado en AFIP para Facturación Electrónica - Web Services. Verifique en Configuración o en el portal de AFIP.`
   }
 
   if (str.includes('10016')) {
