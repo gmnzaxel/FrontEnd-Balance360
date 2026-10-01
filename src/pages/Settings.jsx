@@ -139,8 +139,8 @@ const Settings = () => {
         console.warn('Aviso al autoguardar configuración fiscal antes de testear:', saveErr)
       }
 
-      // 2. Ejecutar la prueba de conexión con ARCA
-      const res = await arcaService.testConnection()
+      // 2. Ejecutar la prueba de conexión con ARCA enviando el punto de venta actual en pantalla
+      const res = await arcaService.testConnection({ punto_venta: fiscalConfig.punto_venta })
       setDiagnosticResult(res)
       setShowDiagnosticModal(true)
 

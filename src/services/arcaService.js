@@ -12,8 +12,8 @@ export const arcaService = {
     return res.data
   },
 
-  testConnection: async () => {
-    const res = await api.post('settings/fiscal/test-connection/')
+  testConnection: async (data = {}) => {
+    const res = await api.post('settings/fiscal/test-connection/', data)
     return res.data
   },
 
