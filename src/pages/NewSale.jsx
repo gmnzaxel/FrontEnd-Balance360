@@ -21,6 +21,8 @@ import {
   FileText,
   CalendarClock,
   ShieldCheck,
+  GripHorizontal,
+  ChevronDown,
 } from 'lucide-react'
 import api from '../api/axios'
 import { toast } from 'react-toastify'
@@ -141,6 +143,120 @@ const NewSale = () => {
   const [customerIvaCondition, setCustomerIvaCondition] = useState('CONSUMIDOR_FINAL')
   const [customerAddress, setCustomerAddress] = useState('')
   const [downloadingArcaPDF, setDownloadingArcaPDF] = useState(false)
+
+  // ─── Ventana Deslizante / Resizer para Ajustes de Venta (Desktop) ──────────
+  const DEFAULT_CONFIG_HEIGHT = 220
+  const MIN_CONFIG_HEIGHT = 110 // Límite mínimo para evitar que los controles se rompan
+  const MAX_CONFIG_HEIGHT = 520 // Límite máximo para mantener visible la lista del carrito
+  const cartPanelRef = useRef(null)
+  const dragStartYRef = useRef(0)
+  const dragStartHeightRef = useRef(0)
+
+  const [configPanelHeight, setConfigPanelHeight] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pos_config_panel_height')
+      if (saved !== null) {
+        const val = parseInt(saved, 10)
+        if (!isNaN(val) && val >= MIN_CONFIG_HEIGHT && val <= MAX_CONFIG_HEIGHT) {
+          return val
+        }
+      }
+    } catch {
+      // Ignorar fallo de acceso a localStorage
+    }
+    return DEFAULT_CONFIG_HEIGHT
+  })
+  const [isConfigCollapsed, setIsConfigCollapsed] = useState(false)
+  const [isDraggingConfig, setIsDraggingConfig] = useState(false)
+
+  // Cursor global y prevención de selección de texto durante el arrastre
+  useEffect(() => {
+    if (isDraggingConfig) {
+      document.body.style.cursor = 'row-resize'
+      document.body.style.userSelect = 'none'
+    } else {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    return () => {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isDraggingConfig])
+
+  // Iniciar arrastre del divisor
+  const handleConfigPointerDown = (e) => {
+    if (e.target.closest('button')) return
+    e.preventDefault()
+
+    if (isConfigCollapsed) {
+      setIsConfigCollapsed(false)
+    }
+
+    dragStartYRef.current = e.clientY
+    dragStartHeightRef.current = configPanelHeight
+    setIsDraggingConfig(true)
+
+    const onPointerMove = (moveEvent) => {
+      const deltaY = dragStartYRef.current - moveEvent.clientY
+      let dynamicMax = MAX_CONFIG_HEIGHT
+      if (cartPanelRef.current) {
+        const containerHeight = cartPanelRef.current.offsetHeight
+        const availableForConfig = containerHeight - 240
+        if (availableForConfig > MIN_CONFIG_HEIGHT) {
+          dynamicMax = Math.min(MAX_CONFIG_HEIGHT, availableForConfig)
+        }
+      }
+      const newHeight = Math.round(
+        Math.max(MIN_CONFIG_HEIGHT, Math.min(dynamicMax, dragStartHeightRef.current + deltaY))
+      )
+      setConfigPanelHeight(newHeight)
+    }
+
+    const onPointerUp = (upEvent) => {
+      setIsDraggingConfig(false)
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+      window.removeEventListener('pointercancel', onPointerUp)
+
+      const deltaY = dragStartYRef.current - upEvent.clientY
+      let dynamicMax = MAX_CONFIG_HEIGHT
+      if (cartPanelRef.current) {
+        const containerHeight = cartPanelRef.current.offsetHeight
+        const availableForConfig = containerHeight - 240
+        if (availableForConfig > MIN_CONFIG_HEIGHT) {
+          dynamicMax = Math.min(MAX_CONFIG_HEIGHT, availableForConfig)
+        }
+      }
+      const finalHeight = Math.round(
+        Math.max(MIN_CONFIG_HEIGHT, Math.min(dynamicMax, dragStartHeightRef.current + deltaY))
+      )
+      try {
+        localStorage.setItem('pos_config_panel_height', String(finalHeight))
+      } catch {
+        // Ignorar fallo de almacenamiento
+      }
+    }
+
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', onPointerUp)
+    window.addEventListener('pointercancel', onPointerUp)
+  }
+
+  // Doble clic para restablecer al tamaño estándar (220px)
+  const handleConfigDoubleClick = (e) => {
+    if (e.target.closest('button')) return
+    setConfigPanelHeight(DEFAULT_CONFIG_HEIGHT)
+    setIsConfigCollapsed(false)
+    try {
+      localStorage.setItem('pos_config_panel_height', String(DEFAULT_CONFIG_HEIGHT))
+    } catch {}
+  }
+
+  // Alternar colapsado con 1 clic
+  const toggleConfigCollapse = () => {
+    setIsConfigCollapsed((prev) => !prev)
+  }
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -1134,7 +1250,10 @@ const NewSale = () => {
         )}
       </div>
 
-      <div className="cart-panel">
+      <div
+        className={`cart-panel ${isDraggingConfig ? 'is-resizing-config' : ''}`}
+        ref={cartPanelRef}
+      >
         <div
           className="card-head pos-desktop-card-head"
           style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-subtle)' }}
@@ -1243,14 +1362,55 @@ const NewSale = () => {
           )}
         </div>
 
-        {/* ─── APARTADO 2: Opciones y Ajustes de Venta (Scroll Vertical Independiente) ─── */}
+        {/* ─── APARTADO 2: Opciones y Ajustes de Venta (Ventana Deslizante / Splitter) ─── */}
         {cart.length > 0 && (
           <>
-            <div className="pos-desktop-config-header">
-              <span>Ajustes, Pago y Facturación</span>
+            <div
+              className={`pos-desktop-config-header ${isDraggingConfig ? 'is-dragging' : ''} ${isConfigCollapsed ? 'is-collapsed' : ''}`}
+              onPointerDown={handleConfigPointerDown}
+              onDoubleClick={handleConfigDoubleClick}
+              title="Arrastrá para redimensionar · Doble clic para restablecer"
+              role="separator"
+              aria-orientation="horizontal"
+              aria-valuenow={isConfigCollapsed ? 0 : configPanelHeight}
+              aria-valuemin={MIN_CONFIG_HEIGHT}
+              aria-valuemax={MAX_CONFIG_HEIGHT}
+            >
+              <div className="pos-config-header-left">
+                <GripHorizontal size={14} className="pos-config-grip-icon" />
+                <span className="pos-config-title">Ajustes, Pago y Facturación</span>
+              </div>
+
+              <div className="pos-config-header-center">
+                <div className="pos-config-grip-pill" />
+              </div>
+
+              <div className="pos-config-header-right">
+                <button
+                  type="button"
+                  className="pos-config-collapse-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleConfigCollapse()
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  title={isConfigCollapsed ? 'Expandir opciones (o arrastrá)' : 'Colapsar opciones'}
+                  aria-label={isConfigCollapsed ? 'Expandir opciones' : 'Colapsar opciones'}
+                >
+                  <ChevronDown
+                    size={14}
+                    className={`pos-config-chevron ${isConfigCollapsed ? 'is-collapsed' : ''}`}
+                  />
+                </button>
+              </div>
             </div>
 
-            <div className="pos-desktop-cart-config-section">
+            <div
+              className={`pos-desktop-cart-config-section ${isConfigCollapsed ? 'is-collapsed' : ''} ${isDraggingConfig ? 'is-dragging' : ''}`}
+              style={{
+                '--config-panel-height': `${isConfigCollapsed ? 0 : configPanelHeight}px`,
+              }}
+            >
               <div className="ui-field" style={{ marginBottom: 0 }}>
                 <span className="field-label">Descuento Global</span>
                 <div className="flex-row gap-xs">

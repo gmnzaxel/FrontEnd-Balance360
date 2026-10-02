@@ -1133,30 +1133,152 @@
   gap: 8px;
 }
 
+/* ─── Splitter / Ventana Deslizante para Ajustes de Venta (Estilo Robusto y Profesional) ─── */
 .pos-desktop-config-header {
   flex-shrink: 0 !important;
-  padding: 7px 14px !important;
-  background: var(--surface-1, rgba(30, 41, 59, 0.3)) !important;
+  padding: 6px 14px !important;
+  background: var(--surface-1, #1e293b) !important;
   border-top: 1px solid var(--border-subtle) !important;
   border-bottom: 1px solid var(--border-subtle) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
+  cursor: row-resize !important;
+  user-select: none !important;
+  touch-action: none !important;
+  position: relative !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
 }
 
-.pos-desktop-config-header span {
+/* Área de captura vertical accesible */
+.pos-desktop-config-header::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  cursor: row-resize;
+  z-index: 5;
+}
+
+/* Estado Hover: Respuesta sólida y precisa */
+.pos-desktop-config-header:hover {
+  background: var(--surface-2, #334155) !important;
+  border-top-color: var(--color-primary-500, #6366f1) !important;
+}
+
+/* Estado Activo / Arrastre: Firmeza visual */
+.pos-desktop-config-header.is-dragging {
+  cursor: row-resize !important;
+  background: var(--surface-2, #334155) !important;
+  border-top-color: var(--color-primary-400, #818cf8) !important;
+  border-bottom-color: var(--border-default, #334155) !important;
+}
+
+.pos-config-header-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pos-config-grip-icon {
+  color: var(--text-tertiary, #64748b);
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.pos-desktop-config-header:hover .pos-config-grip-icon {
+  color: var(--text-secondary, #94a3b8);
+}
+
+.pos-desktop-config-header.is-dragging .pos-config-grip-icon {
+  color: var(--color-primary-400, #818cf8);
+}
+
+.pos-desktop-config-header .pos-config-title {
   font-size: 0.72rem !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
   color: var(--text-secondary) !important;
+  transition: color 0.15s ease;
+}
+
+.pos-desktop-config-header:hover .pos-config-title {
+  color: var(--text-primary) !important;
+}
+
+.pos-desktop-config-header.is-dragging .pos-config-title {
+  color: var(--text-primary) !important;
+}
+
+.pos-config-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 0 10px;
+}
+
+/* Manija central sobria y precisa */
+.pos-config-grip-pill {
+  width: 32px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border-default, #475569);
+  transition: background-color 0.15s ease, width 0.15s ease;
+}
+
+.pos-desktop-config-header:hover .pos-config-grip-pill {
+  background: var(--text-secondary, #94a3b8);
+  width: 40px;
+}
+
+.pos-desktop-config-header.is-dragging .pos-config-grip-pill {
+  background: var(--color-primary-400, #818cf8);
+  width: 46px;
+}
+
+.pos-config-header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pos-config-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.pos-config-collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.pos-config-chevron {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pos-config-chevron.is-collapsed {
+  transform: rotate(180deg);
 }
 
 .pos-desktop-cart-config-section {
-  flex: 0 0 200px !important;
-  height: 200px !important;
-  min-height: 200px !important;
-  max-height: 200px !important;
+  flex: 0 0 var(--config-panel-height, 220px) !important;
+  height: var(--config-panel-height, 220px) !important;
+  min-height: 0 !important;
+  max-height: none !important;
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
   padding: 8px 14px 10px 14px !important;
@@ -1164,6 +1286,30 @@
   flex-direction: column !important;
   gap: 8px !important;
   background: var(--surface-0) !important;
+  transition: height 0.2s cubic-bezier(0.16, 1, 0.3, 1), padding 0.2s ease, opacity 0.18s ease;
+}
+
+.pos-desktop-cart-config-section.is-dragging {
+  transition: none !important;
+}
+
+.pos-desktop-cart-config-section.is-collapsed {
+  height: 0 !important;
+  flex: 0 0 0px !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-top-width: 0 !important;
+  border-bottom-width: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.cart-panel.is-resizing-config,
+.cart-panel.is-resizing-config * {
+  user-select: none !important;
 }
 
 .pos-desktop-docked-footer {
