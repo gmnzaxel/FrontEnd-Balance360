@@ -369,9 +369,44 @@ export default function WhatsAppAiModal({ isOpen, onClose, onApplySale, currentC
                               className={`whatsapp-item-badge ${it.item_type === 'SERVICIO' ? 'service' : 'product'
                                 }`}
                             >
-                              {it.item_type}
+                              {it.nombre.toLowerCase().includes('mano de obra')
+                                ? 'MANO DE OBRA'
+                                : it.item_type}
                             </span>
                             <span className="whatsapp-item-name-text">{it.nombre}</span>
+                            {it.product_id ? (
+                              <span
+                                style={{
+                                  fontSize: '0.68rem',
+                                  color: '#10b981',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  fontWeight: 600,
+                                  background: 'rgba(16, 185, 129, 0.12)',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                }}
+                              >
+                                <CheckCircle2 size={11} /> Catálogo {it.codigo ? `#${it.codigo}` : ''}
+                              </span>
+                            ) : it.nombre.toLowerCase().includes('mano de obra') ? (
+                              <span
+                                style={{
+                                  fontSize: '0.68rem',
+                                  color: '#a855f7',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  fontWeight: 600,
+                                  background: 'rgba(168, 85, 247, 0.14)',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                }}
+                              >
+                                Ajuste automático
+                              </span>
+                            ) : null}
                           </div>
                           {it.stock_actual !== undefined && it.item_type === 'PRODUCTO' && (
                             <span
@@ -422,9 +457,28 @@ export default function WhatsAppAiModal({ isOpen, onClose, onApplySale, currentC
                         className={`whatsapp-item-badge ${it.item_type === 'SERVICIO' ? 'service' : 'product'
                           }`}
                       >
-                        {it.item_type}
+                        {it.nombre.toLowerCase().includes('mano de obra')
+                          ? 'MANO DE OBRA'
+                          : it.item_type}
                       </span>
                       <span>{it.nombre}</span>
+                      {it.product_id ? (
+                        <span
+                          style={{
+                            fontSize: '0.66rem',
+                            color: '#10b981',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '2px',
+                            fontWeight: 600,
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            padding: '1px 5px',
+                            borderRadius: '4px',
+                          }}
+                        >
+                          <CheckCircle2 size={10} /> Catálogo
+                        </span>
+                      ) : null}
                     </div>
                     <button
                       type="button"
@@ -539,9 +593,14 @@ export default function WhatsAppAiModal({ isOpen, onClose, onApplySale, currentC
 
               <div className="whatsapp-summary-totals">
                 {result.discount > 0 && (
-                  <span className="whatsapp-discount-badge">
-                    Descuento: -{formatARS(result.discount)}
-                  </span>
+                  <>
+                    <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                      Subtotal catálogo: {formatARS(result.items.reduce((acc, it) => acc + (it.line_total || it.price * it.quantity), 0))}
+                    </span>
+                    <span className="whatsapp-discount-badge">
+                      Descuento: -{formatARS(result.discount)}
+                    </span>
+                  </>
                 )}
                 <span className="whatsapp-total-label">
                   Total a Facturar:

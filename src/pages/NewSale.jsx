@@ -263,15 +263,12 @@ const NewSale = () => {
 
       const newCartItems = parsedData.items.map((it, idx) => {
         if (it.item_type === 'SERVICIO' || !it.product_id) {
-          const isService = it.item_type === 'SERVICIO'
           const cleanName = it.nombre || 'Ítem'
           return {
             id: `adhoc-${Date.now()}-${idx}`,
             item_type: 'SERVICIO',
             description: cleanName,
-            nombre: isService
-              ? (cleanName.startsWith('[Servicio]') ? cleanName : `[Servicio] ${cleanName}`)
-              : cleanName,
+            nombre: cleanName,
             price: parseFloat(it.price) || 0,
             quantity: parseInt(it.quantity, 10) || 1,
             product: null,
@@ -316,17 +313,20 @@ const NewSale = () => {
           })
           return updated
         })
+        if (parsedData.discount && parseFloat(parsedData.discount) > 0) {
+          setDiscount(parseFloat(parsedData.discount))
+          setDiscountType('$')
+        }
       } else {
         setCart(newCartItems)
-      }
-
-      if (parsedData.discount && parseFloat(parsedData.discount) > 0) {
-        setDiscount(parseFloat(parsedData.discount))
+        const parsedDiscount = parseFloat(parsedData.discount) || 0
+        setDiscount(parsedDiscount > 0 ? String(parsedDiscount) : '')
         setDiscountType('$')
       }
 
       if (parsedData.payment_method) {
         setPaymentMethod(parsedData.payment_method)
+        setIsSplitPayment(false)
       }
       if (parsedData.customer_name && parsedData.customer_name !== 'Consumidor Final') {
         setCustomerName(parsedData.customer_name)
