@@ -117,6 +117,8 @@ const NewSale = () => {
   const [loadingSale, setLoadingSale] = useState(false)
   const [lastSaleWasEdit, setLastSaleWasEdit] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const isSubmittingRef = useRef(false)
+  const clientTxIdRef = useRef(null)
 
   const [multiplier, setMultiplier] = useState(1)
   const [focusedIndex, setFocusedIndex] = useState(-1)
@@ -682,39 +684,57 @@ const NewSale = () => {
   // cartCount viene de useCart
 
   const handleSubmit = useCallback(async () => {
-    if (submitting) return
+    // ─── Guardia síncrona inmediata contra doble clic o peticiones múltiples ───
+    if (isSubmittingRef.current || submitting) return
+    isSubmittingRef.current = true
+    setSubmitting(true)
+
     if (!cart.length) {
+      isSubmittingRef.current = false
+      setSubmitting(false)
       toast.warning('El carrito está vacío')
       return
     }
     const invalidItem = cart.find((item) => !item.quantity || parseInt(item.quantity, 10) <= 0)
     if (invalidItem) {
+      isSubmittingRef.current = false
+      setSubmitting(false)
       toast.warning(`La cantidad para el producto "${invalidItem.nombre}" debe ser mayor a 0.`)
       return
     }
     if (!isSplitPayment) {
       if (!paymentMethod || !paymentMethod.trim()) {
+        isSubmittingRef.current = false
+        setSubmitting(false)
         toast.error('Debe seleccionar un método de pago para registrar la venta')
         return
       }
     } else {
       if (!splitMethod1 || !splitMethod2) {
+        isSubmittingRef.current = false
+        setSubmitting(false)
         toast.error('Debe seleccionar ambos métodos de pago para el pago dividido')
         return
       }
       if (splitMethod1 === splitMethod2) {
+        isSubmittingRef.current = false
+        setSubmitting(false)
         toast.error('Los dos métodos de pago deben ser diferentes')
         return
       }
       const a1 = parseFloat(splitAmount1) || 0
       const a2 = parseFloat(splitAmount2) || 0
       if (a1 <= 0 || a2 <= 0) {
+        isSubmittingRef.current = false
+        setSubmitting(false)
         toast.error('El monto asignado a cada método de pago debe ser mayor a 0')
         return
       }
       const sum = Number((a1 + a2).toFixed(2))
       const expTotal = Number(total.toFixed(2))
       if (Math.abs(sum - expTotal) > 0.01) {
+        isSubmittingRef.current = false
+        setSubmitting(false)
         toast.error(
           `La suma de los métodos ($${sum.toLocaleString('es-AR')}) no coincide con el total ($${expTotal.toLocaleString('es-AR')})`,
         )
@@ -725,10 +745,14 @@ const NewSale = () => {
     if (isArcaInvoice && Number(voucherType) === 1) {
       const cleanCuit = customerDocNumber.replace(/\D/g, '')
       if (cleanCuit.length !== 11) {
+        isSubmittingRef.current = false
+        setSubmitting(false)
         toast.error('Para emitir Factura A, el CUIT del cliente debe contener 11 dígitos válidos.')
         return
       }
       if (!customerName.trim()) {
+        isSubmittingRef.current = false
+        setSubmitting(false)
         toast.error('Para emitir Factura A, la Razón Social del cliente es obligatoria.')
         return
       }
@@ -740,6 +764,8 @@ const NewSale = () => {
       const isCash = (!isSplitPayment && paymentMethod === 'EFECTIVO') || (isSplitPayment && (splitMethod1 === 'EFECTIVO' || splitMethod2 === 'EFECTIVO'))
       const rg4444Limit = isCash ? 344488 : 688976
       if (cleanDoc.length === 0 && total >= rg4444Limit) {
+        isSubmittingRef.current = false
+        setSubmitting(false)
         toast.error(
           `Para ventas a Consumidor Final desde $${rg4444Limit.toLocaleString('es-AR')}, ARCA exige identificar al cliente con DNI o CUIT (RG 4444).`,
         )
@@ -747,7 +773,6 @@ const NewSale = () => {
       }
     }
 
-    setSubmitting(true)
     try {
       const wasEditing = Boolean(editingSaleId)
       const parsedDiscount = parseFloat(discount) || 0
@@ -756,7 +781,13 @@ const NewSale = () => {
           ? Number((subtotal * (parsedDiscount / 100)).toFixed(2)) || 0
           : Number(parsedDiscount.toFixed(2)) || 0
 
+      if (!clientTxIdRef.current) {
+        clientTxIdRef.current = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+      }
+      const txId = clientTxIdRef.current
+
       const payload = {
+        client_tx_id: txId,
         payment_method: isSplitPayment ? 'MIXTO' : paymentMethod,
         payment_details: isSplitPayment
           ? {
@@ -839,6 +870,7 @@ const NewSale = () => {
 
       setShowCartModal(false)
       setCart([])
+      clientTxIdRef.current = null
       setDiscount('')
       setDiscountType('$')
       setPaymentMethod('')
@@ -862,6 +894,7 @@ const NewSale = () => {
       console.error(error)
       toast.error(getErrorMessage(error))
     } finally {
+      isSubmittingRef.current = false
       setSubmitting(false)
     }
   }, [
@@ -909,6 +942,7 @@ const NewSale = () => {
       }
       if (e.key === 'F8') {
         e.preventDefault()
+        if (isSubmittingRef.current || submitting) return
         if (cart.length > 0) {
           if (isMobile) {
             setShowCartModal(true)
@@ -1495,7 +1529,8 @@ const NewSale = () => {
             variant="primary"
             fullWidth
             onClick={handleSubmit}
-            disabled={!cart.length || loadingSale || submitting}
+            disabled={!cart.length || loadingSale || submitting || isSubmittingRef.current}
+            style={{ pointerEvents: submitting || isSubmittingRef.current ? 'none' : 'auto' }}
             icon={<CreditCard size={18} />}
             className="pos-docked-submit-btn"
           >
@@ -1791,7 +1826,8 @@ const NewSale = () => {
                   variant="primary"
                   fullWidth
                   onClick={handleSubmit}
-                  disabled={!cart.length || loadingSale || submitting}
+                  disabled={!cart.length || loadingSale || submitting || isSubmittingRef.current}
+                  style={{ pointerEvents: submitting || isSubmittingRef.current ? 'none' : 'auto' }}
                   icon={<CreditCard size={18} />}
                   className="pos-docked-submit-btn"
                 >
