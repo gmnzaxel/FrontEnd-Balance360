@@ -24,6 +24,7 @@ import {
  * Retorna los límites de fecha del mes calendario actual (01 al último día del mes)
  * formateados en YYYY-MM-DD y etiquetas legibles en español.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function getCurrentMonthBounds() {
   const now = new Date()
   const year = now.getFullYear()

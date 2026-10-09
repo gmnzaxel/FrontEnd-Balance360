@@ -252,7 +252,10 @@ const NewSale = () => {
     setIsConfigCollapsed(false)
     try {
       localStorage.setItem('pos_config_panel_height', String(DEFAULT_CONFIG_HEIGHT))
-    } catch {}
+    } catch {
+      // Ignorar fallo de almacenamiento
+      void 0
+    }
   }
 
   // Alternar colapsado con 1 clic
@@ -975,6 +978,7 @@ const NewSale = () => {
     discount,
     discountType,
     paymentMethod,
+    submitting,
     handleSubmit,
   ])
 
